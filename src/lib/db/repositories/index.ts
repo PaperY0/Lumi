@@ -1,0 +1,10 @@
+/**
+ * Repository 统一出口。
+ * 业务里只需 `import { userProfileRepository } from '@/lib/db/repositories'`。
+ */
+export { userProfileRepository } from './userProfileRepo';
+export { girlProfileRepository } from './girlProfileRepo';
+export { questionnaireRepository } from './questionnaireRepo';
+export { chatRepository } from './chatRepo';
+export { analysisRepository } from './analysisRepo';
+export { settingsRepository } from './settingsRepo';

@@ -1,0 +1,49 @@
+{
+  // ===== 编译目标与模块 =====
+  "compilerOptions": {
+    // 编译后 JS 的语言级别。ES2020 在现代浏览器里都支持
+    "target": "ES2020",
+    // 使用 class 字段时遵循标准语义（Vite 模板默认值）
+    "useDefineForClassFields": true,
+    // 运行环境里可用的内置 API 类型：ES2020 语法 + 浏览器 DOM + DOM 迭代器
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    // 输出 ES Module 格式（Vite 用的是原生 ESM）
+    "module": "ESNext",
+    // 允许从 .ts 里直接 import .json 等资源（与 Vite 行为一致）
+    "moduleResolution": "bundler",
+    // 允许在 import 路径里带 .ts/.tsx 扩展名（bundler 模式下需要）
+    "allowImportingTsExtensions": true,
+    // 允许 import xxx.json
+    "resolveJsonModule": true,
+    // 把每个文件当作独立模块编译（Vite/esbuild 的要求）
+    "isolatedModules": true,
+    // 强制每个文件都必须是一个模块（有 import/export）
+    "moduleDetection": "force",
+    // 只做类型检查，不产出 JS 文件（真正打包交给 Vite）
+    "noEmit": true,
+    // JSX 走 React 17+ 的自动运行时，无需手动 import React
+    "jsx": "react-jsx",
+
+    // ===== 路径别名 =====
+    // 解析非相对路径的基准目录
+    "baseUrl": ".",
+    // 让 TypeScript 认识 `@/xxx` 这种写法（要和 vite.config.ts 的 alias 保持一致）
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+
+    // ===== 严格模式与代码质量 =====
+    // 打开全部严格类型检查（null 检查、隐式 any 报错等）
+    "strict": true,
+    // 报错：声明了却没用到的局部变量
+    "noUnusedLocals": false,
+    // 报错：声明了却没用到的函数参数
+    "noUnusedParameters": false,
+    // 报错：switch 里 case 漏写 break 导致的穿透
+    "noFallthroughCasesInSwitch": true,
+    // 跳过对第三方库 .d.ts 的检查，加快编译
+    "skipLibCheck": true
+  },
+  // 只对 src 目录做类型检查（验证时 `npx tsc --noEmit` 只看这里）
+  "include": ["src"]
+}
