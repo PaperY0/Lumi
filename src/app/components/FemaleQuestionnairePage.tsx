@@ -1,38 +1,88 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, AlertCircle, BarChart3 } from 'lucide-react';
 import { GlassCard, LiquidButton, ProgressStepper, WarningNotice } from './GlassUI';
 import { CountUp } from './CountUp';
 import { BlurText } from './BlurText';
 import type { PageName } from './GlassUI';
+// ✅ 接入题库
+import { femaleQuestions, femaleDimensionMeta, inferStage, type FemaleDimension } from '@/data/femaleQuestions';
+import { questionnaireRepository } from '@/lib/db';
+import { useUserStore, useUiStore } from '@/stores';
+import type { FemaleQuestionAnswer, FemaleQuestionnaireResult } from '@/types/questionnaire';
 
 interface Props { onNavigate: (page: PageName) => void; }
 
 const steps = ['资料建档', '男生问卷', '女生问卷', '关系画像', '聊天导入'];
 
-const questions = [
-  { q: '她是否会主动分享自己的日常生活？', hint: '比如今天吃了什么、发生了什么有趣的事' },
-  { q: '她是否接受过你的邀约（线上或线下）？', hint: '哪怕只是聊天、看视频这类轻量邀约' },
-  { q: '她是否明确表达过不喜欢的行为或话题？', hint: '比如告诉你某类话题让她不舒服' },
-  { q: '她回复慢时，通常是否会解释原因？', hint: '比如说"刚才在忙"或"刚看到"' },
-  { q: '她是否主动发起过聊天（而非只回复你）？', hint: '哪怕只是发了个表情或分享一个内容' },
-  { q: '她和你聊天时，是否会问起你的生活？', hint: '说明她对你也有一定好奇心' },
-  { q: '她是否在你们互动中使用过亲昵的称呼？', hint: '比如你的名字的特别叫法、"哈哈哈"等语气词频繁使用' },
-  { q: '她在现实中见面时，是否表现得自然轻松？', hint: '相比聊天时没有明显的紧张或疏远' },
-];
+// ✅ 使用题库数据
+const questions = femaleQuestions;
 
-const freqOptions = ['经常', '偶尔', '很少', '不确定'];
+// ✅ 计分函数
+function computeFemaleResult(userPicks: { questionId: string; option: { label: string; score: number; }; dimension: FemaleDimension }[]) {
+  // 按维度分组求均分
+  const dimSum: Record<string, { sum: number; count: number }> = {};
+  let totalScore = 0;
+  userPicks.forEach(p => {
+    if (!dimSum[p.dimension]) dimSum[p.dimension] = { sum: 0, count: 0 };
+    dimSum[p.dimension].sum += p.option.score;
+    dimSum[p.dimension].count += 1;
+    totalScore += p.option.score;
+  });
 
-const freqColors: Record<string, string> = {
-  '经常': 'rgba(232,116,138,0.12)',
-  '偶尔': 'rgba(212,165,201,0.12)',
-  '很少': 'rgba(245,184,165,0.1)',
-  '不确定': 'rgba(200,200,220,0.12)',
-};
+  const personalityTags: string[] = [];
+  const positiveSignals: string[] = [];
+  const cautionSignals: string[] = [];
+
+  (Object.keys(dimSum) as FemaleDimension[]).forEach(dim => {
+    const avg = dimSum[dim].sum / dimSum[dim].count;
+    const meta = femaleDimensionMeta[dim];
+    if (avg >= 2) {
+      personalityTags.push(meta.positive);
+      positiveSignals.push(meta.positive);
+    } else {
+      cautionSignals.push(meta.caution);
+    }
+  });
+
+  const possibleStage = inferStage(totalScore);
+
+  // 根据 cautionSignals 生成建议
+  const cautionToSuggestion: Record<string, string> = {
+    '被动型': '她较少主动联系，你可以降低期待，保持适度互动而非频繁追问。',
+    '情绪封闭': '她不太表达情绪，给她安全感和时间，不要逼问"怎么了"。',
+    '边界模糊': '她可能不善于直接拒绝，注意观察非言语信号，避免让她感到压力。',
+    '回应较冷': '她回复较慢或字数少，不要把延迟当成态度变化，给她空间。',
+    '分享欲弱': '她较少主动分享，可以用开放式问题引导，但不要追问隐私。',
+    '回避线下': '她对见面邀约谨慎，可能需要更多线上信任积累，不要急于推进。',
+    '回避亲密': '她对亲密话题或接触回避，尊重边界，慢慢建立安全感。',
+    '不重仪式': '她不太在意节日仪式感，不要用"她不重视我"来解读。',
+    '冲突回避': '她倾向回避冲突，主动表达不满前先建立安全感，让她知道说"不"是被接受的。',
+    '低投入度': '她对关系投入较低，可能还在观察阶段，不要过早定义关系或要求承诺。',
+  };
+
+  const suggestions: string[] = cautionSignals.map(sig => cautionToSuggestion[sig] || '保持耐心，给彼此更多时间了解。').filter(Boolean);
+
+  // 至少有一条建议
+  if (suggestions.length === 0) {
+    suggestions.push('关系进展顺利，保持当前节奏，继续真诚互动。');
+  }
+
+  return { personalityTags, possibleStage, positiveSignals, cautionSignals, suggestions };
+}
 
 export function FemaleQuestionnairePage({ onNavigate }: Props) {
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [showResult, setShowResult] = useState(false);
+
+  // ✅ 修复：挂载时加载用户数据
+  useEffect(() => {
+    console.log('[FemaleQuestionnaire] 组件挂载，加载用户数据');
+    useUserStore.getState().loadCurrentUser().then(() => {
+      const user = useUserStore.getState().currentUser;
+      console.log('[FemaleQuestionnaire] 用户数据加载完成:', user);
+    });
+  }, []);
 
   const handleSelect = (val: string) => setAnswers(prev => ({ ...prev, [current]: val }));
 
@@ -43,15 +93,105 @@ export function FemaleQuestionnairePage({ onNavigate }: Props) {
 
   const handlePrev = () => { if (current > 0) setCurrent(current - 1); };
 
-  const countPositive = () =>
-    Object.values(answers).filter(a => a === '经常' || a === '偶尔').length;
-  const countUncertain = () =>
-    Object.values(answers).filter(a => a === '不确定').length;
+  // ✅ 提交逻辑：落库
+  const handleFinish = async () => {
+    console.log('[FemaleQuestionnaire] handleFinish 被调用');
+
+    const ui = useUiStore.getState();
+    const user = useUserStore.getState().currentUser;
+    const girl = useUserStore.getState().currentGirl;
+
+    console.log('[FemaleQuestionnaire] 当前用户:', user);
+    console.log('[FemaleQuestionnaire] 当前女生:', girl);
+
+    if (!user) {
+      console.warn('[FemaleQuestionnaire] 没有用户信息，中断提交');
+      ui.showToast('请先完成资料建档', 'error');
+      return;
+    }
+
+    try {
+      console.log('[FemaleQuestionnaire] 开始保存问卷结果...');
+      ui.showLoading('保存问卷结果...');
+
+      // 把现有用户答题状态转成 answers
+      const userPicks = questions.map((q, i) => {
+        const picked = q.options.find(o => o.label === answers[i]) ?? q.options[0];
+        return { questionId: q.id, option: { label: picked.label, score: picked.score }, dimension: q.dimension };
+      });
+
+      console.log('[FemaleQuestionnaire] 用户选择:', userPicks.length, '题');
+
+      const { personalityTags, possibleStage, positiveSignals, cautionSignals, suggestions } = computeFemaleResult(userPicks);
+
+      console.log('[FemaleQuestionnaire] 计算结果 - possibleStage:', possibleStage);
+      console.log('[FemaleQuestionnaire] 计算结果 - personalityTags:', personalityTags);
+      console.log('[FemaleQuestionnaire] 计算结果 - positiveSignals:', positiveSignals);
+      console.log('[FemaleQuestionnaire] 计算结果 - cautionSignals:', cautionSignals);
+
+      const answerRecords: FemaleQuestionAnswer[] = userPicks.map(p => ({
+        questionId: p.questionId,
+        optionLabel: p.option.label,
+        score: p.option.score,
+      }));
+
+      const result: Partial<FemaleQuestionnaireResult> = {
+        userId: user.id,
+        girlId: girl?.id ?? '',
+        answers: answerRecords,
+        personalityTags,
+        possibleStage,
+        positiveSignals,
+        cautionSignals,
+        suggestions,
+        completedAt: new Date().toISOString(),
+      };
+
+      console.log('[FemaleQuestionnaire] 准备保存结果:', result);
+
+      await questionnaireRepository.saveFemaleResult(result);
+
+      console.log('[FemaleQuestionnaire] 保存成功，显示 toast');
+      ui.showToast('女生问卷已完成', 'success');
+
+      console.log('[FemaleQuestionnaire] 准备跳转到 relationship-portrait');
+      onNavigate('relationship-portrait');
+
+      console.log('[FemaleQuestionnaire] 跳转调用完成');
+
+    } catch (e) {
+      console.error('[FemaleQuestionnaire] 保存失败:', e);
+      ui.showToast('保存失败：' + (e as Error).message, 'error');
+    } finally {
+      ui.hideLoading();
+      console.log('[FemaleQuestionnaire] handleFinish 执行完毕');
+    }
+  };
+
+  const countPositive = () => {
+    // 计算积极信号数量（用于结果预览）
+    const userPicks = questions.map((q, i) => {
+      const picked = q.options.find(o => o.label === answers[i]) ?? q.options[0];
+      return { questionId: q.id, option: { label: picked.label, score: picked.score }, dimension: q.dimension };
+    });
+    const { positiveSignals } = computeFemaleResult(userPicks);
+    return positiveSignals.length;
+  };
+
+  const countCaution = () => {
+    const userPicks = questions.map((q, i) => {
+      const picked = q.options.find(o => o.label === answers[i]) ?? q.options[0];
+      return { questionId: q.id, option: { label: picked.label, score: picked.score }, dimension: q.dimension };
+    });
+    const { cautionSignals } = computeFemaleResult(userPicks);
+    return cautionSignals.length;
+  };
 
   if (showResult) {
     const positive = countPositive();
-    const uncertain = countUncertain();
-    const confidence = Math.max(30, 100 - uncertain * 10);
+    const caution = countCaution();
+    const total = positive + caution;
+    const confidence = total > 0 ? Math.round((positive / total) * 100) : 50;
 
     return (
       <div style={{ padding: '32px', maxWidth: 600, margin: '0 auto' }} className="page-enter">
@@ -59,7 +199,7 @@ export function FemaleQuestionnairePage({ onNavigate }: Props) {
           <ProgressStepper steps={steps} current={2} />
         </GlassCard>
 
-        <WarningNotice text="以下结果基于你的观察，不代表对方真实想法的绝对结论。AI 会根据不确定项降低判断置信度。" />
+        <WarningNotice text="以下结果基于你的观察，不代表对方真实想法的绝对结论。" />
 
         <div style={{ marginTop: 24, marginBottom: 24 }}>
           <h2 style={{ margin: 0, fontSize: 22, fontWeight: 600, color: 'var(--text-rose)' }}>观察结果概览</h2>
@@ -67,8 +207,8 @@ export function FemaleQuestionnairePage({ onNavigate }: Props) {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 20 }}>
           {[
-            { label: '积极信号', value: positive, total: 8, color: '#E8748A' },
-            { label: '不确定项', value: uncertain, total: 8, color: '#D4A5C9' },
+            { label: '积极信号', value: positive, total: 10, color: '#E8748A' },
+            { label: '谨慎信号', value: caution, total: 10, color: '#D4A5C9' },
             { label: '判断置信度', value: confidence, color: '#C5956C', noSlash: true },
           ].map(item => (
             <GlassCard key={item.label} padding="16px" style={{ textAlign: 'center' }}>
@@ -80,36 +220,14 @@ export function FemaleQuestionnairePage({ onNavigate }: Props) {
           ))}
         </div>
 
-        <GlassCard style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-rose)', marginBottom: 12, display: 'flex', gap: 6, alignItems: 'center' }}>
-            <BarChart3 size={14} color="var(--soft-rose)" /> 观察汇总
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {questions.map((q, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-                <span style={{ fontSize: 13, color: 'var(--text-purple)', opacity: 0.85, flex: 1, lineHeight: 1.4 }}>{q.q}</span>
-                <span style={{
-                  fontSize: 12, fontWeight: 500,
-                  padding: '3px 10px', borderRadius: 999,
-                  background: freqColors[answers[i] || '不确定'],
-                  color: answers[i] === '经常' ? 'var(--pink-primary)' : answers[i] === '偶尔' ? '#8B6A9E' : answers[i] === '很少' ? '#B07060' : 'var(--text-purple)',
-                  flexShrink: 0,
-                }}>
-                  {answers[i] || '未答'}
-                </span>
-              </div>
-            ))}
-          </div>
-        </GlassCard>
-
         <GlassCard style={{ marginBottom: 24, background: 'rgba(232,116,138,0.05)', border: '1px solid rgba(232,116,138,0.15)' }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-rose)', marginBottom: 8 }}>💡 AI 初步判断</div>
           <p style={{ margin: 0, fontSize: 13, color: 'var(--text-purple)', lineHeight: 1.7 }}>
-            {positive >= 5
-              ? '基于你的观察，她表现出一定程度的互动意愿。建议导入聊天记录获得更精准的分析。'
-              : positive >= 3
+            {positive >= 6
+              ? '基于你的观察，她表现出较强的互动意愿。建议查看关系画像获得更精准的分析。'
+              : positive >= 4
               ? '互动信号有些混合，可能处于暧昧观察阶段。不要过快推进，保持自然互动更重要。'
-              : '目前信号偏少或不确定项较多。AI 置信度较低，建议增加更多自然互动后再分析。'}
+              : '目前信号偏少或谨慎项较多。置信度较低，建议增加更多自然互动后再分析。'}
           </p>
         </GlassCard>
 
@@ -117,7 +235,7 @@ export function FemaleQuestionnairePage({ onNavigate }: Props) {
           <LiquidButton variant="secondary" onClick={() => { setShowResult(false); setCurrent(0); }} style={{ flex: 1, justifyContent: 'center' }}>
             重新填写
           </LiquidButton>
-          <LiquidButton onClick={() => onNavigate('relationship-portrait')} style={{ flex: 1, justifyContent: 'center' }}>
+          <LiquidButton onClick={handleFinish} style={{ flex: 1, justifyContent: 'center' }}>
             查看关系画像 <ArrowRight size={16} />
           </LiquidButton>
         </div>
@@ -141,7 +259,7 @@ export function FemaleQuestionnairePage({ onNavigate }: Props) {
         </p>
       </div>
 
-      <WarningNotice text="这是基于你已知信息的辅助判断，不代表对方真实想法的绝对结论。不确定也是重要答案，AI 会降低判断置信度。" />
+      <WarningNotice text="这是基于你已知信息的辅助判断，不代表对方真实想法的绝对结论。" />
 
       <div style={{ marginTop: 24, marginBottom: 8 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -158,26 +276,26 @@ export function FemaleQuestionnairePage({ onNavigate }: Props) {
       </div>
 
       <GlassCard style={{ marginBottom: 12, marginTop: 20 }}>
-        <p style={{ margin: 0, fontSize: 18, fontWeight: 600, color: 'var(--text-rose)', lineHeight: 1.5 }}>{q.q}</p>
-        <p style={{ margin: '10px 0 0', fontSize: 13, color: 'var(--text-purple)', opacity: 0.65, lineHeight: 1.5 }}>{q.hint}</p>
+        <p style={{ margin: 0, fontSize: 18, fontWeight: 600, color: 'var(--text-rose)', lineHeight: 1.5 }}>{q.text}</p>
+        {q.hint && <p style={{ margin: '10px 0 0', fontSize: 13, color: 'var(--text-purple)', opacity: 0.65, lineHeight: 1.5 }}>{q.hint}</p>}
       </GlassCard>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 32 }}>
-        {freqOptions.map((opt) => {
-          const isSelected = selectedAnswer === opt;
+        {q.options.map((opt) => {
+          const isSelected = selectedAnswer === opt.label;
           return (
             <div
-              key={opt}
+              key={opt.label}
               className={`option-card ${isSelected ? 'option-card-selected' : ''}`}
-              onClick={() => handleSelect(opt)}
+              onClick={() => handleSelect(opt.label)}
               style={{
                 borderRadius: 20,
                 padding: '20px',
                 textAlign: 'center',
-                background: isSelected ? freqColors[opt] : undefined,
+                background: isSelected ? 'rgba(232,116,138,0.12)' : undefined,
               }}
             >
-              <div style={{ fontSize: 15, fontWeight: isSelected ? 600 : 400, color: 'var(--text-rose)' }}>{opt}</div>
+              <div style={{ fontSize: 15, fontWeight: isSelected ? 600 : 400, color: 'var(--text-rose)' }}>{opt.text}</div>
             </div>
           );
         })}

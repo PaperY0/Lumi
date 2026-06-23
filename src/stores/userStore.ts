@@ -25,12 +25,19 @@ interface UserState {
   setCurrentGirl: (girl: GirlProfile | null) => void;
   /** 重置为初始状态 */
   clear: () => void;
+  /** ✅ 重置为初始状态（别名，与其他 store 统一） */
+  reset: () => void;
 }
 
-export const useUserStore = create<UserState>((set) => ({
+/** ✅ 初始状态提取为常量，供 reset 复用 */
+const initialState = {
   currentUser: null,
   currentGirl: null,
   isLoading: false,
+};
+
+export const useUserStore = create<UserState>((set) => ({
+  ...initialState,
 
   loadCurrentUser: async () => {
     set({ isLoading: true });
@@ -52,5 +59,8 @@ export const useUserStore = create<UserState>((set) => ({
 
   setCurrentGirl: (girl) => set({ currentGirl: girl }),
 
-  clear: () => set({ currentUser: null, currentGirl: null, isLoading: false }),
+  clear: () => set({ ...initialState }),
+
+  // ✅ reset 方法（与 clear 功能相同）
+  reset: () => set({ ...initialState }),
 }));

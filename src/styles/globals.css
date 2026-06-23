@@ -313,9 +313,14 @@ body {
 }
 .pill-tag:hover { transform: scale(1.06); }
 .pill-tag-selected {
-  background: linear-gradient(135deg, rgba(200,96,122,0.18), rgba(196,160,112,0.2));
-  border-color: rgba(200,96,122,0.44);
-  box-shadow: 0 0 0 2px rgba(200,96,122,0.12);
+  /* ✅ 选中态加深：饱和粉色渐变背景 */
+  background: linear-gradient(135deg, #E8748A 0%, #D0856C 100%);
+  /* ✅ 选中态加深：白色文字确保对比度 */
+  color: white;
+  /* ✅ 选中态加深：深粉色边框 */
+  border: 1px solid rgba(200, 96, 122, 0.7);
+  /* ✅ 选中态加深：玫瑰色阴影让按钮"凸起" */
+  box-shadow: 0 2px 8px rgba(232, 116, 138, 0.35), 0 0 0 2px rgba(232, 116, 138, 0.15);
 }
 
 /* ─── Upload zone ──────────────────────────────────────────── */

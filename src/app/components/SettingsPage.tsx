@@ -4,12 +4,58 @@ import { GlassCard, LiquidButton, WarningNotice } from './GlassUI';
 import { IconBadge, type IconToken } from './IconBadge';
 import { BlurText } from './BlurText';
 import { BRAND_NAME, BRAND_SUBTITLE, BRAND_VERSION } from '../brand';
+import type { PageName } from './GlassUI';
+// ✅ 导入数据库和 stores
+import { db } from '@/lib/db';
+import { useUserStore, useChatImportStore, useUiStore, useSettingsStore } from '@/stores';
 
-export function SettingsPage() {
+interface Props {
+  onNavigate: (page: PageName) => void;
+}
+
+export function SettingsPage({ onNavigate }: Props) {
   const [mockMode, setMockMode] = useState(true);
   const [confirmBeforeAnalysis, setConfirmBeforeAnalysis] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [deleted, setDeleted] = useState<string[]>([]);
+
+  // ✅ 二次确认对话框状态
+  const [confirmClearAllOpen, setConfirmClearAllOpen] = useState(false);
+
+  // ✅ 清空所有本地数据
+  const handleClearAll = async () => {
+    console.log('[SettingsPage] 开始清空所有本地数据');
+
+    try {
+      // 1. 清空 IndexedDB
+      await db.clearAllData();
+      console.log('[SettingsPage] IndexedDB 已清空');
+
+      // 2. 重置所有 Zustand stores
+      useUserStore.getState().reset();
+      useChatImportStore.getState().reset();
+      useUiStore.getState().reset();
+      useSettingsStore.getState().reset();
+      console.log('[SettingsPage] Zustand stores 已重置');
+
+      // 3. 清空 localStorage（兜底）
+      localStorage.clear();
+      console.log('[SettingsPage] localStorage 已清空');
+
+      // 4. 显示成功提示
+      useUiStore.getState().showToast('数据已清空', 'success');
+
+      // 5. 关闭确认框
+      setConfirmClearAllOpen(false);
+
+      // 6. 跳转到资料建档页，让用户重新开始
+      console.log('[SettingsPage] 跳转到资料建档页');
+      onNavigate('profile');
+    } catch (e) {
+      console.error('[SettingsPage] 清空失败:', e);
+      useUiStore.getState().showToast('清空失败，请重试', 'error');
+    }
+  };
 
   const handleDelete = (type: string) => {
     setDeleted(prev => [...prev, type]);
@@ -62,7 +108,6 @@ export function SettingsPage() {
   const dataItems = [
     { id: 'chat', label: '清空聊天记录', desc: '删除所有已导入的聊天内容' },
     { id: 'report', label: '清空分析报告', desc: '删除所有 AI 生成的分析结果' },
-    { id: 'all', label: '清空所有本地数据', desc: '清除所有档案、问卷、分析和设置' },
   ];
 
   return (
@@ -78,7 +123,7 @@ export function SettingsPage() {
       <Section icon={<Trash2 size={14} color="#C5956C" />} title="本地数据管理">
         {dataItems.map((item, i) => (
           <div key={item.id}>
-            <div style={{ padding: '16px 20px', borderBottom: i < dataItems.length - 1 ? '1px solid rgba(255,255,255,0.3)' : undefined, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
               <div>
                 <div style={{ fontSize: 14, color: deleted.includes(item.id) ? '#999' : 'var(--text-rose)', fontWeight: 500, display: 'flex', gap: 6, alignItems: 'center' }}>
                   {item.label}
@@ -114,6 +159,89 @@ export function SettingsPage() {
           </div>
         ))}
       </Section>
+
+      {/* ✅ 危险操作区域 */}
+      <Section icon={<AlertCircle size={14} color="#C96A6A" />} title="危险操作">
+        <div style={{ padding: '20px' }}>
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#C96A6A', marginBottom: 6 }}>清空所有本地数据</div>
+            <div style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.75, lineHeight: 1.6, marginBottom: 16 }}>
+              这将永久删除你的资料、问卷结果、聊天记录、模拟对话等所有本地数据，且无法恢复。
+            </div>
+            <LiquidButton
+              variant="secondary"
+              onClick={() => setConfirmClearAllOpen(true)}
+              style={{
+                background: 'rgba(255,235,235,0.5)',
+                border: '1px solid rgba(200,100,100,0.3)',
+                color: '#C96A6A',
+              }}
+            >
+              <Trash2 size={16} />
+              清空所有本地数据
+            </LiquidButton>
+          </div>
+        </div>
+      </Section>
+
+      {/* ✅ 二次确认对话框 */}
+      {confirmClearAllOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.4)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+          }}
+          onClick={() => setConfirmClearAllOpen(false)}
+        >
+          <div
+            style={{
+              maxWidth: 420,
+              margin: '20px',
+            }}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+          >
+            <GlassCard>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 18, fontWeight: 600, color: '#C96A6A', marginBottom: 8 }}>
+                确认清空所有数据？
+              </div>
+              <div style={{ fontSize: 14, color: 'var(--text-purple)', lineHeight: 1.7 }}>
+                这将永久删除你的资料、问卷结果、聊天记录、模拟对话等<strong>所有本地数据</strong>，且无法恢复。
+              </div>
+            </div>
+            <WarningNotice text="此操作不可撤销，请确保你已备份重要信息。" />
+            <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+              <LiquidButton
+                variant="secondary"
+                onClick={() => setConfirmClearAllOpen(false)}
+                style={{ flex: 1, justifyContent: 'center' }}
+              >
+                取消
+              </LiquidButton>
+              <LiquidButton
+                onClick={handleClearAll}
+                style={{
+                  flex: 1,
+                  justifyContent: 'center',
+                  background: 'linear-gradient(135deg, #C96A6A, #B05555)',
+                }}
+              >
+                确认清空
+              </LiquidButton>
+            </div>
+            </GlassCard>
+          </div>
+        </div>
+      )}
 
       {/* AI Settings */}
       <Section icon={<Brain size={14} color="#D4A5C9" />} title="AI 设置">

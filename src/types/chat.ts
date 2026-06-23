@@ -9,6 +9,8 @@ export interface ChatMessage {
   sessionId: string;
   /** 发送者：user 表示男生本人，other 表示对方（女生） */
   sender: 'user' | 'other';
+  /** 发送者原始昵称（从聊天记录中提取，便于追溯） */
+  senderName?: string;
   /** 发送时间，ISO 8601 字符串 */
   sentAt: string;
   /** 消息内容文本 */

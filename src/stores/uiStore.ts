@@ -40,13 +40,20 @@ interface UiState {
   showToast: (message: string, type?: ToastType) => void;
   /** 立即清空 toast */
   clearToast: () => void;
+  /** ✅ 重置为初始状态 */
+  reset: () => void;
 }
 
-export const useUiStore = create<UiState>((set, get) => ({
+/** ✅ 初始状态提取为常量 */
+const initialState = {
   globalLoading: false,
   loadingMessage: '',
   error: null,
   toast: null,
+};
+
+export const useUiStore = create<UiState>((set, get) => ({
+  ...initialState,
 
   showLoading: (message = '') =>
     set({ globalLoading: true, loadingMessage: message }),
@@ -67,4 +74,7 @@ export const useUiStore = create<UiState>((set, get) => ({
   },
 
   clearToast: () => set({ toast: null }),
+
+  // ✅ reset 方法
+  reset: () => set({ ...initialState }),
 }));

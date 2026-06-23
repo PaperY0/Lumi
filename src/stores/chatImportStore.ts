@@ -27,12 +27,19 @@ interface ChatImportState {
   removeMessage: (messageId: string) => void;
   /** 全部清空，回到初始状态 */
   clear: () => void;
+  /** ✅ 重置为初始状态（别名，与其他 store 统一） */
+  reset: () => void;
 }
 
-export const useChatImportStore = create<ChatImportState>((set) => ({
+/** ✅ 初始状态提取为常量 */
+const initialState = {
   pendingMessages: [],
   sourceMethod: null,
   importedAt: null,
+};
+
+export const useChatImportStore = create<ChatImportState>((set) => ({
+  ...initialState,
 
   setPendingMessages: (messages, sourceMethod) =>
     set({
@@ -53,6 +60,8 @@ export const useChatImportStore = create<ChatImportState>((set) => ({
       pendingMessages: state.pendingMessages.filter((m) => m.id !== messageId),
     })),
 
-  clear: () =>
-    set({ pendingMessages: [], sourceMethod: null, importedAt: null }),
+  clear: () => set({ ...initialState }),
+
+  // ✅ reset 方法（与 clear 功能相同）
+  reset: () => set({ ...initialState }),
 }));

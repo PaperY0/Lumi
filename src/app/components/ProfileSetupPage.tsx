@@ -10,7 +10,7 @@ import { userProfileSchema, type ProfileFormValues } from '@/lib/validation/prof
 // ✅ 数据库 repository（真正落库）
 import { userProfileRepository } from '@/lib/db';
 // ✅ 全局 store：用户身份 + UI 提示
-import { useUserStore, useUiStore } from '@/stores';
+import { useUserStore, useUiStore, useSettingsStore } from '@/stores';
 
 interface ProfileSetupPageProps {
   onNavigate: (page: PageName) => void;
@@ -77,6 +77,9 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
     },
   });
 
+  // ✅ 记住用户选的具体焦虑等级 label（用于正确回显）
+  const [anxiousLabel, setAnxiousLabel] = useState<string | undefined>(undefined);
+
   // ── 「她的信息」本次不接库，保留为本地 state（与原文件一致）──
   const [herName, setHerName] = useState('');
   const [knowDuration, setKnowDuration] = useState('');
@@ -109,6 +112,12 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
           isAnxious: existing.isAnxious,
           isProactive: existing.isProactive,
         });
+        // 回填焦虑等级 label（根据 boolean 取代表性 label）
+        if (existing.isAnxious === true) {
+          setAnxiousLabel('经常焦虑'); // 默认用"经常焦虑"代表 true
+        } else if (existing.isAnxious === false) {
+          setAnxiousLabel('不太会'); // 默认用"不太会"代表 false
+        }
       }
     });
     // 仅挂载时执行一次
@@ -152,6 +161,24 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
           信息越准确，AI 分析越贴近真实情况；但不要填写未经允许的敏感隐私。
         </p>
       </div>
+
+      {/* ✅ 欢迎卡片：仅新用户首次显示 */}
+      {!useSettingsStore(s => s.onboardingCompleted) && (
+        <GlassCard className="mb-6" style={{ marginBottom: 24 }} padding="20px">
+          <div style={{ display: 'flex', alignItems: 'start', gap: 12 }}>
+            <div style={{ fontSize: 28, flexShrink: 0 }}>👋</div>
+            <div style={{ flex: 1 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--pink-primary)', marginBottom: 8, marginTop: 0 }}>先来做一份你的小档案吧</h3>
+              <p style={{ fontSize: 14, color: 'var(--text-rose)', lineHeight: 1.6, marginBottom: 10, marginTop: 0 }}>
+                接下来会用 4 步帮你建立关系画像：填资料 → 做两份问卷 → 看你和她的画像。大约 3 分钟。
+              </p>
+              <p style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.75, lineHeight: 1.65, marginTop: 0, marginBottom: 0 }}>
+                🔒 所有信息只存在你的浏览器本地，关掉浏览器只有你能看到，我们绝不上传到任何服务器。
+              </p>
+            </div>
+          </div>
+        </GlassCard>
+      )}
 
       {/* THE GRID wraps BOTH cards AND the notice — notice uses grid-column: 1/-1 to span full width */}
       <div className="profile-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 20 }}>
@@ -272,15 +299,25 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
 
             <div>
               <label style={{ fontSize: 13, color: 'var(--text-purple)', fontWeight: 500, display: 'block', marginBottom: 8, paddingLeft: 4 }}>是否容易焦虑</label>
-              {/* ✅ 4 档界面 → boolean（经常/非常焦虑 = true）；回填按 boolean 取代表标签高亮 */}
+              {/* ✅ 用 state 记住用户选的具体 label，点击时：若再次点击已选项则清空（undefined），否则更新 */}
               <Controller
                 name="isAnxious"
                 control={form.control}
                 render={({ field }) => (
                   <PillTagSelector
                     options={anxiousOptions}
-                    selected={field.value === undefined ? [] : field.value ? ['经常焦虑'] : ['不太会']}
-                    onToggle={(label) => field.onChange(anxiousLabelToBool[label])}
+                    selected={anxiousLabel ? [anxiousLabel] : []}
+                    onToggle={(label) => {
+                      // 如果点击的是当前已选项 → 取消选择（变成 undefined）
+                      if (anxiousLabel === label) {
+                        setAnxiousLabel(undefined);
+                        field.onChange(undefined);
+                      } else {
+                        // 否则 → 记住新 label + 转换成 boolean 存 RHF
+                        setAnxiousLabel(label);
+                        field.onChange(anxiousLabelToBool[label]);
+                      }
+                    }}
                   />
                 )}
               />

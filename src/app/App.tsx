@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar, BottomTabBar } from './components/Sidebar';
 import { OnboardingPage } from './components/OnboardingPage';
 import { DashboardPage } from './components/DashboardPage';
@@ -14,6 +14,8 @@ import { SimulationPage } from './components/SimulationPage';
 import { LoveCodePage } from './components/LoveCodePage';
 import { SettingsPage } from './components/SettingsPage';
 import type { PageName } from './components/GlassUI';
+import { useSettingsStore, useUserStore } from '@/stores';
+import { questionnaireRepository } from '@/lib/db';
 
 // Background ambient orbs
 function BackgroundOrbs() {
@@ -42,6 +44,31 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<PageName>('dashboard');
 
   const navigate = (page: PageName) => setCurrentPage(page);
+
+  // ✅ Onboarding 守卫：挂载时检查是否需要强制引导
+  useEffect(() => {
+    (async () => {
+      const settings = useSettingsStore.getState();
+      if (settings.onboardingCompleted) return; // 老用户放行
+
+      // 加载已有数据判断是不是存量用户
+      await useUserStore.getState().loadCurrentUser();
+      const user = useUserStore.getState().currentUser;
+
+      if (user) {
+        const maleResult = await questionnaireRepository.getLatestMale(user.id);
+        const femaleResult = await questionnaireRepository.getLatestFemale(user.id);
+        // 资料 + 男生问卷 + 女生问卷都有 → 视为已完成引导
+        if (maleResult && femaleResult) {
+          settings.setOnboardingCompleted(true);
+          return;
+        }
+      }
+
+      // 真新用户或未走完 → 强制跳到 ProfileSetup
+      setCurrentPage('profile');
+    })();
+  }, []);
 
   const bgStyle: React.CSSProperties = {
     width: '100%',
@@ -88,7 +115,7 @@ export default function App() {
       case 'love-code':
         return <LoveCodePage />;
       case 'settings':
-        return <SettingsPage />;
+        return <SettingsPage onNavigate={navigate} />;
       default:
         return <DashboardPage onNavigate={navigate} />;
     }

@@ -87,6 +87,23 @@ export class LumiDB extends Dexie {
       appSettings: 'key',
     });
   }
+
+  /**
+   * ✅ 清空所有本地数据（危险操作）
+   * 一次性清空 IndexedDB 里的所有表
+   */
+  async clearAllData(): Promise<void> {
+    console.log('[LumiDB] 开始清空所有数据...');
+
+    await this.transaction('rw', this.tables, async () => {
+      for (const table of this.tables) {
+        console.log(`[LumiDB] 清空表: ${table.name}`);
+        await table.clear();
+      }
+    });
+
+    console.log('[LumiDB] 所有表已清空');
+  }
 }
 
 /** 数据库单例：整个应用共用这一个实例 */

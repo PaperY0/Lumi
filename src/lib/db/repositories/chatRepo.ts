@@ -79,4 +79,125 @@ export const chatRepository = {
     await db.chatSessions.clear();
     await db.chatMessages.clear();
   },
+
+  /**
+   * 一次性创建会话并导入消息（常用于聊天导入场景）
+   * @param userId 男生用户 id
+   * @param girlId 女生资料 id（可为 'default-girl' 兜底值）
+   * @param messages 消息列表（需包含 sender, content, sentAt, senderName 等字段）
+   * @param sourceMethod 来源方式
+   * @param title 可选的会话标题
+   * @returns 创建的会话对象
+   */
+  async createSessionWithMessages(
+    userId: string,
+    girlId: string,
+    messages: Array<{
+      sender: 'user' | 'other';
+      content: string;
+      sentAt: Date;
+      senderName?: string;
+    }>,
+    sourceMethod: 'paste' | 'ocr' | 'file' = 'paste',
+    title?: string,
+  ): Promise<ChatSession> {
+    console.log('[chatRepo] createSessionWithMessages 被调用');
+    console.log('[chatRepo] 入参 userId:', userId);
+    console.log('[chatRepo] 入参 girlId:', girlId);
+    console.log('[chatRepo] 入参 messages 数量:', messages.length);
+    console.log('[chatRepo] 入参 messages 前 3 条:', messages.slice(0, 3));
+
+    if (!userId) {
+      const error = new Error('[chatRepo] userId 为空，无法创建聊天会话');
+      console.error(error);
+      throw error;
+    }
+
+    if (!messages || messages.length === 0) {
+      const error = new Error('[chatRepo] messages 为空，无法导入');
+      console.error(error);
+      throw error;
+    }
+
+    // girlId 为空时使用兜底值
+    const safeGirlId = girlId || 'default-girl';
+    console.log('[chatRepo] 使用 safeGirlId:', safeGirlId);
+
+    const now = new Date().toISOString();
+    const sessionId = uuidv4();
+
+    console.log('[chatRepo] 准备创建 sessionId:', sessionId);
+
+    // 创建会话
+    const session: ChatSession = {
+      id: sessionId,
+      userId,
+      girlId: safeGirlId,
+      title,
+      importedAt: now,
+      messageCount: messages.length,
+      sourceMethod,
+    };
+
+    // 构建消息实体
+    const messageEntities: ChatMessage[] = messages.map((m) => ({
+      id: uuidv4(),
+      sessionId,
+      sender: m.sender,
+      senderName: m.senderName,
+      sentAt: m.sentAt.toISOString(),
+      content: m.content,
+      messageType: 'text' as const,
+      sourceMethod,
+    }));
+
+    console.log('[chatRepo] 准备写入 session:', session);
+    console.log('[chatRepo] 准备写入 messages 数量:', messageEntities.length);
+    console.log('[chatRepo] messages 前 3 条:', messageEntities.slice(0, 3));
+
+    try {
+      // 事务内同时写入会话和消息
+      await db.transaction('rw', db.chatSessions, db.chatMessages, async () => {
+        console.log('[chatRepo] transaction 开始');
+
+        await db.chatSessions.put(session);
+        console.log('[chatRepo] ✅ chatSessions 写入成功');
+
+        await db.chatMessages.bulkPut(messageEntities);
+        console.log('[chatRepo] ✅ chatMessages bulkPut 成功');
+      });
+
+      console.log('[chatRepo] transaction 完成，开始写入后验证');
+
+      // 写入后验证
+      const savedSession = await db.chatSessions.get(sessionId);
+      const savedMessages = await db.chatMessages
+        .where('sessionId')
+        .equals(sessionId)
+        .toArray();
+
+      console.log('[chatRepo] 写入后验证 session:', savedSession);
+      console.log('[chatRepo] 写入后验证 messages 数量:', savedMessages.length);
+      console.log('[chatRepo] 写入后验证 messages 前 3 条:', savedMessages.slice(0, 3));
+
+      if (!savedSession) {
+        console.warn('[chatRepo] ⚠️ 警告：写入后没有查到 session');
+      }
+
+      if (savedMessages.length !== messages.length) {
+        console.warn(
+          '[chatRepo] ⚠️ 警告：写入消息数不一致，期望:',
+          messages.length,
+          '实际:',
+          savedMessages.length
+        );
+      }
+
+      console.log('[chatRepo] ✅ 导入完成，返回 session');
+      return session;
+    } catch (error) {
+      console.error('[chatRepo] ❌ createSessionWithMessages 写入失败:', error);
+      throw error;
+    }
+  },
 };

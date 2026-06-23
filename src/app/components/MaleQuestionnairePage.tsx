@@ -1,119 +1,59 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, PartyPopper, Lightbulb } from 'lucide-react';
 import { GlassCard, LiquidButton, ProgressStepper, StageBadge } from './GlassUI';
 import { CountUp } from './CountUp';
 import { BlurText } from './BlurText';
 import { IconBadge } from './IconBadge';
 import type { PageName } from './GlassUI';
+// ✅ 接入题库
+import { maleQuestions, maleDimensionMeta, type MaleDimension } from '@/data/maleQuestions';
+import { questionnaireRepository } from '@/lib/db';
+import { useUserStore, useUiStore } from '@/stores';
+import type { MaleQuestionAnswer, MaleQuestionnaireResult } from '@/types/questionnaire';
 
 interface Props { onNavigate: (page: PageName) => void; }
 
 const steps = ['资料建档', '男生问卷', '女生问卷', '关系画像', '聊天导入'];
 
-const questions = [
-  {
-    q: '当她回复变慢时，你通常会怎么想？',
-    options: [
-      { label: 'A', text: '她是不是不想理我了' },
-      { label: 'B', text: '可能只是忙，晚点再说' },
-      { label: 'C', text: '我会忍不住连续追问' },
-      { label: 'D', text: '我会先做自己的事' },
-    ],
-  },
-  {
-    q: '你想表达喜欢时，通常会怎么做？',
-    options: [
-      { label: 'A', text: '直接说出来，不拐弯抹角' },
-      { label: 'B', text: '通过行动表达，不太说' },
-      { label: 'C', text: '先暗示，看她反应再决定' },
-      { label: 'D', text: '一直等待合适时机，但没说' },
-    ],
-  },
-  {
-    q: '她发了个模糊的消息，你看不太懂，你会？',
-    options: [
-      { label: 'A', text: '反复研究，分析各种可能含义' },
-      { label: 'B', text: '直接问她什么意思' },
-      { label: 'C', text: '随便回一个，看她怎么接' },
-      { label: 'D', text: '先放着，等之后再接话题' },
-    ],
-  },
-  {
-    q: '发出消息后，你一般多久会查看是否已读？',
-    options: [
-      { label: 'A', text: '几分钟内就会反复看' },
-      { label: 'B', text: '半小时内会看一次' },
-      { label: 'C', text: '发完基本不管，等她回' },
-      { label: 'D', text: '会看但尽量控制自己' },
-    ],
-  },
-  {
-    q: '聊天冷场时你会怎么做？',
-    options: [
-      { label: 'A', text: '立刻找话题，害怕冷场' },
-      { label: 'B', text: '等一等，看她会不会主动' },
-      { label: 'C', text: '说"那我先去忙了"，给彼此空间' },
-      { label: 'D', text: '把话题切换到更轻松的内容' },
-    ],
-  },
-  {
-    q: '你认为关系推进最重要的是？',
-    options: [
-      { label: 'A', text: '创造仪式感和特别时刻' },
-      { label: 'B', text: '持续稳定的日常陪伴' },
-      { label: 'C', text: '坦诚地表达自己的感受' },
-      { label: 'D', text: '给对方充足的空间和自由' },
-    ],
-  },
-  {
-    q: '她说"最近有点累"，你第一反应是？',
-    options: [
-      { label: 'A', text: '立刻问她发生了什么事' },
-      { label: 'B', text: '说"辛苦了，好好休息"' },
-      { label: 'C', text: '分享自己也有过类似感受' },
-      { label: 'D', text: '问她需不需要帮忙或陪伴' },
-    ],
-  },
-  {
-    q: '你在追一个人时最大的恐惧是什么？',
-    options: [
-      { label: 'A', text: '被明确拒绝，很难堪' },
-      { label: 'B', text: '一直不表白，错过机会' },
-      { label: 'C', text: '对方只是把我当朋友' },
-      { label: 'D', text: '自己说错话，关系变差' },
-    ],
-  },
-  {
-    q: '在关系初期，你更倾向于？',
-    options: [
-      { label: 'A', text: '主动频繁联系，让对方感受到热情' },
-      { label: 'B', text: '保持适当距离，不想给压力' },
-      { label: 'C', text: '跟随对方节奏，她多聊我多聊' },
-      { label: 'D', text: '做自己，不会特意调整节奏' },
-    ],
-  },
-  {
-    q: '如果她暂时没有回复你，你觉得大概率是？',
-    options: [
-      { label: 'A', text: '她不想和我聊，可能要冷静' },
-      { label: 'B', text: '她肯定在忙，没什么特别原因' },
-      { label: 'C', text: '说不准，要看之前聊天的状态' },
-      { label: 'D', text: '我没想太多，等她回就好' },
-    ],
-  },
-];
+// ✅ 使用题库数据
+const questions = maleQuestions;
 
-const resultTags: Record<string, string[]> = {
-  A: ['过度分析型', '焦虑敏感型'],
-  B: ['稳重等待型', '表达保守型'],
-  C: ['冲动行动型', '急于表达型'],
-  D: ['情绪稳定型', '独立自主型'],
-};
+// ✅ 计分函数
+function computeMaleResult(userPicks: { questionId: string; option: { label: string; score: number; }; dimension: MaleDimension }[]) {
+  // 按维度分组求均分
+  const dimSum: Record<string, { sum: number; count: number }> = {};
+  userPicks.forEach(p => {
+    if (!dimSum[p.dimension]) dimSum[p.dimension] = { sum: 0, count: 0 };
+    dimSum[p.dimension].sum += p.option.score;
+    dimSum[p.dimension].count += 1;
+  });
+  const typeTags: string[] = [];
+  const weaknesses: string[] = [];
+  const suggestions: string[] = [];
+  (Object.keys(dimSum) as MaleDimension[]).forEach(dim => {
+    const avg = dimSum[dim].sum / dimSum[dim].count;
+    const meta = maleDimensionMeta[dim];
+    if (avg >= 2) typeTags.push(meta.label);
+    else { weaknesses.push(meta.weak); suggestions.push(meta.suggest); }
+  });
+  // 至少 1 个标签兜底
+  if (typeTags.length === 0) typeTags.push('成长进行中');
+  return { typeTags, weaknesses, suggestions };
+}
 
 export function MaleQuestionnairePage({ onNavigate }: Props) {
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [showResult, setShowResult] = useState(false);
+
+  // ✅ 修复：挂载时加载用户数据
+  useEffect(() => {
+    console.log('[MaleQuestionnaire] 组件挂载，加载用户数据');
+    useUserStore.getState().loadCurrentUser().then(() => {
+      const user = useUserStore.getState().currentUser;
+      console.log('[MaleQuestionnaire] 用户数据加载完成:', user);
+    });
+  }, []);
 
   const handleSelect = (label: string) => {
     setAnswers(prev => ({ ...prev, [current]: label }));
@@ -128,15 +68,81 @@ export function MaleQuestionnairePage({ onNavigate }: Props) {
     if (current > 0) setCurrent(current - 1);
   };
 
-  const getMostCommonAnswer = () => {
-    const counts: Record<string, number> = {};
-    Object.values(answers).forEach(a => { counts[a] = (counts[a] || 0) + 1; });
-    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'B';
+  // ✅ 提交逻辑
+  const handleFinish = async () => {
+    console.log('[MaleQuestionnaire] handleFinish 被调用');
+
+    const ui = useUiStore.getState();
+    const user = useUserStore.getState().currentUser;
+
+    console.log('[MaleQuestionnaire] 当前用户:', user);
+
+    if (!user) {
+      console.warn('[MaleQuestionnaire] 没有用户信息，中断提交');
+      ui.showToast('请先完成资料建档', 'error');
+      return;
+    }
+
+    try {
+      console.log('[MaleQuestionnaire] 开始保存问卷结果...');
+      ui.showLoading('保存问卷结果...');
+
+      // 把现有用户答题状态转成 answers
+      const userPicks = questions.map((q, i) => {
+        const picked = q.options.find(o => o.label === answers[i]) ?? q.options[0];
+        return { questionId: q.id, option: { label: picked.label, score: picked.score }, dimension: q.dimension };
+      });
+
+      console.log('[MaleQuestionnaire] 用户选择:', userPicks.length, '题');
+
+      const { typeTags, weaknesses, suggestions } = computeMaleResult(userPicks);
+
+      const answerRecords: MaleQuestionAnswer[] = userPicks.map(p => ({
+        questionId: p.questionId,
+        optionLabel: p.option.label,
+        score: p.option.score,
+      }));
+
+      const result: Partial<MaleQuestionnaireResult> = {
+        userId: user.id,
+        answers: answerRecords,
+        typeTags,
+        weaknesses,
+        suggestions,
+        completedAt: new Date().toISOString(),
+      };
+
+      console.log('[MaleQuestionnaire] 准备保存结果:', result);
+
+      await questionnaireRepository.saveMaleResult(result);
+
+      console.log('[MaleQuestionnaire] 保存成功，显示 toast');
+      ui.showToast('男生问卷已完成', 'success');
+
+      console.log('[MaleQuestionnaire] 准备跳转到 female-questionnaire');
+
+      // ✅ 跳转到女生问卷
+      onNavigate('female-questionnaire');
+
+      console.log('[MaleQuestionnaire] 跳转调用完成');
+
+    } catch (e) {
+      console.error('[MaleQuestionnaire] 保存失败:', e);
+      ui.showToast('保存失败：' + (e as Error).message, 'error');
+    } finally {
+      ui.hideLoading();
+      console.log('[MaleQuestionnaire] handleFinish 执行完毕');
+    }
   };
 
   if (showResult) {
-    const topAnswer = getMostCommonAnswer();
-    const tags = resultTags[topAnswer] || resultTags['B'];
+    // 计算结果预览（用于显示，不再重复落库）
+    const userPicks = questions.map((q, i) => {
+      const picked = q.options.find(o => o.label === answers[i]) ?? q.options[0];
+      return { questionId: q.id, option: { label: picked.label, score: picked.score }, dimension: q.dimension };
+    });
+    const { typeTags } = computeMaleResult(userPicks);
+
     return (
       <div style={{ padding: '32px', maxWidth: 600, margin: '0 auto' }} className="page-enter">
         <GlassCard hover={false} style={{ marginBottom: 24 }} padding="20px 24px">
@@ -152,7 +158,7 @@ export function MaleQuestionnairePage({ onNavigate }: Props) {
         <GlassCard style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.6, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>你的沟通类型</div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-            {tags.map(t => <StageBadge key={t} stage={t} active />)}
+            {typeTags.map(t => <StageBadge key={t} stage={t} active />)}
           </div>
           <p style={{ margin: 0, fontSize: 14, color: 'var(--text-rose)', lineHeight: 1.7 }}>
             你不是不会聊天，只是容易把不确定放大。你认真、重视关系，愿意用心对待喜欢的人——这是难得的品质。
@@ -172,7 +178,7 @@ export function MaleQuestionnairePage({ onNavigate }: Props) {
           <LiquidButton variant="secondary" onClick={() => { setShowResult(false); setCurrent(0); }} style={{ flex: 1, justifyContent: 'center' }}>
             重新作答
           </LiquidButton>
-          <LiquidButton onClick={() => onNavigate('female-questionnaire')} style={{ flex: 1, justifyContent: 'center' }}>
+          <LiquidButton onClick={handleFinish} style={{ flex: 1, justifyContent: 'center' }}>
             继续：她的观察问卷 <ArrowRight size={16} />
           </LiquidButton>
         </div>
@@ -210,7 +216,7 @@ export function MaleQuestionnairePage({ onNavigate }: Props) {
       {/* Question Card */}
       <GlassCard style={{ marginBottom: 16 }}>
         <p style={{ margin: 0, fontSize: 18, fontWeight: 600, color: 'var(--text-rose)', lineHeight: 1.5, letterSpacing: '-0.01em' }}>
-          {q.q}
+          {q.text}
         </p>
       </GlassCard>
 
