@@ -55,8 +55,12 @@ export interface GirlProfile {
   knownDuration: string;
   /** 当前关系阶段：陌生 / 观察中 / 暧昧 / 追求中 / 恋爱中 */
   currentStage: 'stranger' | 'observing' | 'ambiguous' | 'pursuing' | 'dating';
+  /** 当前关系阶段的原始 UI 选项，用于精确回显，例如"普通朋友""熟悉朋友""追求中" */
+  currentStageLabel?: string;
   /** 互动频率：低 / 中 / 高 */
   interactionFrequency: 'low' | 'medium' | 'high';
+  /** 联系频率的原始 UI 选项，用于精确回显，例如"隔天聊""一周几次" */
+  interactionFrequencyLabel?: string;
   /** 创建时间，ISO 8601 字符串 */
   createdAt: string;
   /** 最后更新时间，ISO 8601 字符串 */

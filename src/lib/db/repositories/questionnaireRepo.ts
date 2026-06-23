@@ -16,21 +16,44 @@ export const questionnaireRepository = {
     result: Partial<MaleQuestionnaireResult>,
   ): Promise<MaleQuestionnaireResult> {
     const now = new Date().toISOString();
-    const entity: MaleQuestionnaireResult = {
-      ...result,
-      id: result.id ?? uuidv4(),
-      completedAt: result.completedAt ?? now,
-    } as MaleQuestionnaireResult;
 
-    console.log('[questionnaireRepo] saveMaleResult 开始保存:', entity.id);
-    await db.maleQuestionnaireResults.put(entity);
-    console.log('[questionnaireRepo] saveMaleResult 保存成功，立即验证...');
+    if (!result.userId) {
+      throw new Error('saveMaleResult: userId 不能为空');
+    }
 
-    // ✅ 修复：保存后立即读取验证
-    const saved = await db.maleQuestionnaireResults.get(entity.id);
-    console.log('[questionnaireRepo] saveMaleResult 验证结果:', saved ? '成功' : '失败');
+    // ✅ 任务 3：查询是否已存在结果，存在则覆盖更新
+    const existing = await this.getLatestMale(result.userId);
 
-    return entity;
+    if (existing) {
+      console.log('♻️ [questionnaireRepo.saveMaleResult] 已存在结果，执行覆盖更新，id:', existing.id);
+      const updated: MaleQuestionnaireResult = {
+        ...existing,
+        ...result,
+        id: existing.id, // 保留原有 id
+        completedAt: now, // 更新时间
+      } as MaleQuestionnaireResult;
+
+      await db.maleQuestionnaireResults.put(updated);
+      console.log('[questionnaireRepo] saveMaleResult 覆盖更新完成');
+      return updated;
+    } else {
+      console.log('✅ [questionnaireRepo.saveMaleResult] 首次创建结果');
+      const entity: MaleQuestionnaireResult = {
+        ...result,
+        id: result.id ?? uuidv4(),
+        completedAt: result.completedAt ?? now,
+      } as MaleQuestionnaireResult;
+
+      console.log('[questionnaireRepo] saveMaleResult 开始保存:', entity.id);
+      await db.maleQuestionnaireResults.put(entity);
+      console.log('[questionnaireRepo] saveMaleResult 保存成功，立即验证...');
+
+      // ✅ 修复：保存后立即读取验证
+      const saved = await db.maleQuestionnaireResults.get(entity.id);
+      console.log('[questionnaireRepo] saveMaleResult 验证结果:', saved ? '成功' : '失败');
+
+      return entity;
+    }
   },
 
   /** 保存一条女生问卷结果：缺 id 自动生成，缺 completedAt 自动填当前时间 */
@@ -38,21 +61,52 @@ export const questionnaireRepository = {
     result: Partial<FemaleQuestionnaireResult>,
   ): Promise<FemaleQuestionnaireResult> {
     const now = new Date().toISOString();
-    const entity: FemaleQuestionnaireResult = {
-      ...result,
-      id: result.id ?? uuidv4(),
-      completedAt: result.completedAt ?? now,
-    } as FemaleQuestionnaireResult;
 
-    console.log('[questionnaireRepo] saveFemaleResult 开始保存:', entity.id);
-    await db.femaleQuestionnaireResults.put(entity);
-    console.log('[questionnaireRepo] saveFemaleResult 保存成功，立即验证...');
+    if (!result.userId) {
+      throw new Error('saveFemaleResult: userId 不能为空');
+    }
 
-    // ✅ 修复：保存后立即读取验证
-    const saved = await db.femaleQuestionnaireResults.get(entity.id);
-    console.log('[questionnaireRepo] saveFemaleResult 验证结果:', saved ? '成功' : '失败');
+    // ✅ 任务 3：查询是否已存在同 userId + girlId 的结果，存在则覆盖更新
+    const existing = result.girlId
+      ? await db.femaleQuestionnaireResults
+          .where('userId')
+          .equals(result.userId)
+          .filter((x) => x.girlId === result.girlId)
+          .reverse()
+          .sortBy('completedAt')
+          .then((list) => list[0])
+      : undefined;
 
-    return entity;
+    if (existing) {
+      console.log('♻️ [questionnaireRepo.saveFemaleResult] 已存在结果，执行覆盖更新，id:', existing.id);
+      const updated: FemaleQuestionnaireResult = {
+        ...existing,
+        ...result,
+        id: existing.id, // 保留原有 id
+        completedAt: now, // 更新时间
+      } as FemaleQuestionnaireResult;
+
+      await db.femaleQuestionnaireResults.put(updated);
+      console.log('[questionnaireRepo] saveFemaleResult 覆盖更新完成');
+      return updated;
+    } else {
+      console.log('✅ [questionnaireRepo.saveFemaleResult] 首次创建结果');
+      const entity: FemaleQuestionnaireResult = {
+        ...result,
+        id: result.id ?? uuidv4(),
+        completedAt: result.completedAt ?? now,
+      } as FemaleQuestionnaireResult;
+
+      console.log('[questionnaireRepo] saveFemaleResult 开始保存:', entity.id);
+      await db.femaleQuestionnaireResults.put(entity);
+      console.log('[questionnaireRepo] saveFemaleResult 保存成功，立即验证...');
+
+      // ✅ 修复：保存后立即读取验证
+      const saved = await db.femaleQuestionnaireResults.get(entity.id);
+      console.log('[questionnaireRepo] saveFemaleResult 验证结果:', saved ? '成功' : '失败');
+
+      return entity;
+    }
   },
 
   /** 取某男生最新一条男生问卷结果（按 completedAt 倒序取第一条） */

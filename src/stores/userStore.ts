@@ -40,15 +40,25 @@ export const useUserStore = create<UserState>((set) => ({
   ...initialState,
 
   loadCurrentUser: async () => {
+    console.log('🔄 [userStore.loadCurrentUser] 开始加载用户数据');
     set({ isLoading: true });
     try {
       const user = await userProfileRepository.getCurrent();
+      console.log('📤 [userStore.loadCurrentUser] user:', user ? `id: ${user.id}, nickname: ${user.nickname}` : 'null');
+
       let girl: GirlProfile | null = null;
       if (user?.id) {
         const girls = await girlProfileRepository.getByUserId(user.id);
+        console.log('📤 [userStore.loadCurrentUser] girls 数组长度:', girls.length);
         girl = girls[0] ?? null;
+        if (girl) {
+          console.log('  - girl:', `id: ${girl.id}, nickname: ${girl.nickname}, userId: ${girl.userId}`);
+        } else {
+          console.log('  - girl: null（数组为空或第一个元素不存在）');
+        }
       }
       set({ currentUser: user ?? null, currentGirl: girl });
+      console.log('✅ [userStore.loadCurrentUser] 加载完成');
     } finally {
       // 无论成功失败都要关掉 loading
       set({ isLoading: false });

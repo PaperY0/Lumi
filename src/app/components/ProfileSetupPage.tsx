@@ -8,9 +8,10 @@ import { BRAND_NAME } from '../brand';
 // ✅ 表单校验 + 类型
 import { userProfileSchema, type ProfileFormValues } from '@/lib/validation/profileSchema';
 // ✅ 数据库 repository（真正落库）
-import { userProfileRepository } from '@/lib/db';
+import { userProfileRepository, girlProfileRepository, questionnaireRepository } from '@/lib/db';
 // ✅ 全局 store：用户身份 + UI 提示
 import { useUserStore, useUiStore, useSettingsStore } from '@/stores';
+import type { GirlProfile } from '@/types'; // ✅ 添加类型导入
 
 interface ProfileSetupPageProps {
   onNavigate: (page: PageName) => void;
@@ -77,6 +78,9 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
     },
   });
 
+  // ✅ 任务 1：读取 onboardingCompleted 状态
+  const onboardingCompleted = useSettingsStore((s) => s.onboardingCompleted);
+
   // ✅ 记住用户选的具体焦虑等级 label（用于正确回显）
   const [anxiousLabel, setAnxiousLabel] = useState<string | undefined>(undefined);
 
@@ -90,54 +94,267 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
   const [importantDate, setImportantDate] = useState('');
   const [notes, setNotes] = useState('');
 
+  // ✅ 任务 2：女生称呼必填校验
+  const [girlNameError, setGirlNameError] = useState<string | null>(null);
+
+  // ✅ 任务 2：单选函数
+  const selectSingle = (
+    value: string,
+    setter: React.Dispatch<React.SetStateAction<string[]>>
+  ) => {
+    setter([value]);
+  };
+
   const toggle = (arr: string[], val: string, setArr: (a: string[]) => void) =>
     setArr(arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val]);
 
-  // ✅ 挂载时加载已有资料并回填表单
+  // ✅ 任务 3：挂载时加载已有资料并回填表单
   useEffect(() => {
-    useUserStore.getState().loadCurrentUser().then(() => {
-      const existing = useUserStore.getState().currentUser;
-      if (existing) {
+    async function loadExistingProfile() {
+      console.log('🔍 [ProfileSetupPage] 开始加载已保存资料用于回显');
+
+      await useUserStore.getState().loadCurrentUser();
+      const user = useUserStore.getState().currentUser;
+
+      if (user) {
+        console.log('✅ [ProfileSetupPage] 找到 userProfile，开始回显:', user);
+        // 回显男生资料
         form.reset({
-          nickname: existing.nickname,
-          ageRange: existing.ageRange,
-          relationshipStatus: existing.relationshipStatus,
-          loveExperience: existing.loveExperience,
-          mainConfusion: existing.mainConfusion,
-          mbti: existing.mbti,
-          selfPersonality: existing.selfPersonality,
-          communicationHabit: existing.communicationHabit,
-          emotionExpression: existing.emotionExpression,
-          chatStyle: existing.chatStyle,
-          isAnxious: existing.isAnxious,
-          isProactive: existing.isProactive,
+          nickname: user.nickname,
+          ageRange: user.ageRange,
+          relationshipStatus: user.relationshipStatus,
+          loveExperience: user.loveExperience,
+          mainConfusion: user.mainConfusion,
+          mbti: user.mbti,
+          selfPersonality: user.selfPersonality,
+          communicationHabit: user.communicationHabit,
+          emotionExpression: user.emotionExpression,
+          chatStyle: user.chatStyle,
+          isAnxious: user.isAnxious,
+          isProactive: user.isProactive,
         });
+
         // 回填焦虑等级 label（根据 boolean 取代表性 label）
-        if (existing.isAnxious === true) {
-          setAnxiousLabel('经常焦虑'); // 默认用"经常焦虑"代表 true
-        } else if (existing.isAnxious === false) {
-          setAnxiousLabel('不太会'); // 默认用"不太会"代表 false
+        if (user.isAnxious === true) {
+          setAnxiousLabel('经常焦虑');
+        } else if (user.isAnxious === false) {
+          setAnxiousLabel('不太会');
+        }
+
+        console.log('✅ [ProfileSetupPage] userProfile 回显完成');
+      }
+
+      if (user?.id) {
+        const girls = await girlProfileRepository.getByUserId(user.id);
+        const girl = girls[0];
+        if (girl) {
+          console.log('✅ [ProfileSetupPage] 找到 girlProfile，开始回显:', girl);
+
+          // ✅ 任务 5：回显女生资料
+          setHerName(girl.nickname || '');
+          setKnowDuration(girl.knownDuration || '');
+
+          // currentStage → relation 反向映射
+          const stageToRelation: Record<string, string> = {
+            'stranger': '陌生人',
+            'observing': '普通朋友',
+            'ambiguous': '暧昧关系',
+            'pursuing': '暧昧关系',
+            'dating': '熟悉朋友',
+          };
+          const relationLabel = stageToRelation[girl.currentStage] || '普通朋友';
+          setRelation([relationLabel]);
+
+          // interactionFrequency → freq 反向映射
+          const freqToLabel: Record<string, string> = {
+            'high': '每天聊',
+            'medium': '隔天聊',
+            'low': '断断续续',
+          };
+          const freqLabel = freqToLabel[girl.interactionFrequency] || '隔天聊';
+          setFreq([freqLabel]);
+
+          // likes / interests
+          setLikes(girl.likes || girl.interests || []);
+
+          // tabooBehaviors
+          setTriggers(girl.tabooBehaviors || []);
+
+          // ✅ 任务 6：回显生日
+          setImportantDate(girl.birthday || '');
+
+          console.log('✅ [ProfileSetupPage] girlProfile 回显完成:', {
+            id: girl.id,
+            nickname: girl.nickname,
+            birthday: girl.birthday,
+            updatedAt: girl.updatedAt,
+          });
+        } else {
+          console.log('⚠️ [ProfileSetupPage] 没有找到 girlProfile');
         }
       }
-    });
-    // 仅挂载时执行一次
+    }
+
+    loadExistingProfile();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ✅ 提交：校验通过后真正落库 + 更新 store + toast + 跳转
   const onSubmit = async (data: ProfileFormValues) => {
+    console.log('📥 [ProfileSetupPage] onSubmit 开始，收集到的数据：');
+    console.log('  - 男生表单 (userForm):', data);
+    console.log('  - 女生表单 (girlForm):', {
+      herName,
+      knowDuration,
+      relation,
+      freq,
+      likes,
+      triggers,
+      importantDate,
+      notes,
+    });
+
+    // ✅ 任务 2：女生称呼必填校验（最优先）
+    if (!herName || !herName.trim()) {
+      setGirlNameError('请填写她的称呼');
+      console.warn('⚠️ [ProfileSetupPage] 女生称呼为空，阻止提交');
+      return;
+    }
+
     const ui = useUiStore.getState();
     const userStore = useUserStore.getState();
     try {
       ui.showLoading('保存中...');
-      const saved = await userProfileRepository.save({
+
+      // 1. 保存男生资料
+      console.log('📥 [ProfileSetupPage] 准备保存 userProfile，合并数据：', {
+        existing: userStore.currentUser,
+        new: data,
+      });
+      const savedUser = await userProfileRepository.save({
         ...(userStore.currentUser ?? {}),
         ...data,
       });
-      userStore.setCurrentUser(saved);
+      console.log('✅ [ProfileSetupPage] userProfile 保存成功，user.id:', savedUser.id);
+
+      userStore.setCurrentUser(savedUser);
+
+      // 2. ✅ 保存女生资料（修复：之前完全没有这段代码）
+      // ✅ 任务 3：在构造 girlPayload 前先记录 state
+      console.log('📥 [ProfileSetupPage] 保存前 relation:', relation);
+      console.log('📥 [ProfileSetupPage] 保存前 freq:', freq);
+
+      const selectedRelation = relation[0] || '';
+      const selectedFreq = freq[0] || '';
+
+      console.log('📥 [ProfileSetupPage] 最终选中的关系阶段:', selectedRelation);
+      console.log('📥 [ProfileSetupPage] 最终选中的联系频率:', selectedFreq);
+
+      // 构造女生资料对象
+      const relationMap: Record<string, GirlProfile['currentStage']> = {
+        '陌生人': 'stranger',
+        '普通朋友': 'observing',
+        '熟悉朋友': 'observing',
+        '暧昧关系': 'ambiguous',
+        '追求中': 'pursuing',
+        '已在一起': 'dating',
+      };
+
+      const freqMap: Record<string, GirlProfile['interactionFrequency']> = {
+        '每天聊': 'high',
+        '隔天聊': 'medium',
+        '一周几次': 'medium',
+        '断断续续': 'low',
+      };
+
+      const currentStage = relationMap[selectedRelation] || 'observing';
+      const interactionFrequency = freqMap[selectedFreq] || 'medium';
+
+      console.log('🔁 [ProfileSetupPage] 关系阶段最终保存映射:', {
+        ui: selectedRelation,
+        db: currentStage,
+      });
+      console.log('🔁 [ProfileSetupPage] 联系频率最终保存映射:', {
+        ui: selectedFreq,
+        db: interactionFrequency,
+      });
+
+      const girlPayload = {
+        userId: savedUser.id, // ✅ 关键：绑定到刚保存的 user.id
+        nickname: herName,
+        ageRange: '23-27' as const, // 默认值（UI 暂未收集）
+        knownChannel: '其他', // 默认值（UI 暂未收集）
+        knownDuration: knowDuration || '未知',
+        currentStage,
+        currentStageLabel: selectedRelation || undefined, // ✅ 任务 3：保存原始 UI 标签
+        interactionFrequency,
+        interactionFrequencyLabel: selectedFreq || undefined, // ✅ 任务 3：保存原始 UI 标签
+        interests: likes,
+        likes: likes,
+        tabooBehaviors: triggers,
+        birthday: importantDate || undefined, // ✅ 任务 6：保存生日
+        importantDates: importantDate ? [{ name: '生日', date: importantDate }] : [],
+      };
+
+      console.log('📥 [ProfileSetupPage] girlPayload birthday:', girlPayload.birthday);
+
+      // ✅ 任务 4：防止保存空女生资料（兜底检查）
+      if (!girlPayload.nickname || !girlPayload.nickname.trim()) {
+        console.error('❌ [ProfileSetupPage] girlPayload.nickname 为空，取消保存');
+        setGirlNameError('请填写她的称呼');
+        ui.hideLoading();
+        return;
+      }
+
+      console.log('📥 [ProfileSetupPage] 准备保存 girlProfile:', girlPayload);
+      const savedGirl = await girlProfileRepository.save(girlPayload);
+      console.log('✅ [ProfileSetupPage] girlProfile 保存成功:', {
+        id: savedGirl.id,
+        userId: savedGirl.userId,
+        nickname: savedGirl.nickname,
+        birthday: savedGirl.birthday,
+      });
+
+      // ✅ 任务 4：清理重复记录
+      await girlProfileRepository.cleanupDuplicatesByUserId(savedUser.id);
+      console.log('🧹 [ProfileSetupPage] 已清理重复 girlProfiles');
+
+      // 3. ✅ 立即同步 store
+      await userStore.loadCurrentUser();
+      console.log('✅ [ProfileSetupPage] 已同步 store，currentGirl 应为最新女生资料:', userStore.currentGirl?.id);
+      console.log('✅ [ProfileSetupPage] 已同步 store，currentGirl:', userStore.currentGirl?.id);
+
+      // ✅ 任务 1：根据 onboardingCompleted 决定跳转
+      if (onboardingCompleted) {
+        console.log('✅ [ProfileSetupPage] 老用户资料保存成功，停留当前页，不跳转问卷');
+        ui.showToast('资料已保存', 'success');
+        ui.hideLoading();
+        return;
+      }
+
+      // ✅ 新手引导阶段：只跳到缺失的下一步
+      const maleQ = await questionnaireRepository.getLatestMale(savedUser.id);
+      const femaleQ = await questionnaireRepository.getLatestFemale(savedUser.id);
+
+      if (!maleQ) {
+        console.log('🔀 [ProfileSetupPage] 新手引导：未完成男生问卷，跳转 male-questionnaire');
+        ui.showToast('资料已保存', 'success');
+        onNavigate('male-questionnaire');
+        return;
+      }
+
+      if (!femaleQ || !femaleQ.girlId) {
+        console.log('🔀 [ProfileSetupPage] 新手引导：未完成女生问卷，跳转 female-questionnaire');
+        ui.showToast('资料已保存', 'success');
+        onNavigate('female-questionnaire');
+        return;
+      }
+
+      console.log('🔀 [ProfileSetupPage] 新手引导：问卷已完成，跳转 relationship-portrait');
       ui.showToast('资料已保存', 'success');
-      onNavigate('male-questionnaire');
+      onNavigate('relationship-portrait');
     } catch (e) {
+      console.error('❌ [ProfileSetupPage] 保存失败:', e);
       ui.showToast('保存失败：' + (e as Error).message, 'error');
     } finally {
       ui.hideLoading();
@@ -170,10 +387,10 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
             <div style={{ flex: 1 }}>
               <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--pink-primary)', marginBottom: 8, marginTop: 0 }}>先来做一份你的小档案吧</h3>
               <p style={{ fontSize: 14, color: 'var(--text-rose)', lineHeight: 1.6, marginBottom: 10, marginTop: 0 }}>
-                接下来会用 4 步帮你建立关系画像：填资料 → 做两份问卷 → 看你和她的画像。大约 3 分钟。
+                接下来会用几步帮你建立关系画像：填资料 → 做两份问卷 → 生成关系画像。大约 3 分钟。
               </p>
               <p style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.75, lineHeight: 1.65, marginTop: 0, marginBottom: 0 }}>
-                🔒 所有信息只存在你的浏览器本地，关掉浏览器只有你能看到，我们绝不上传到任何服务器。
+                🔒 所有信息优先保存在你的浏览器本地，你可以随时清空。
               </p>
             </div>
           </div>
@@ -335,17 +552,58 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-            <GlassInput label="称呼（你对她的叫法）" placeholder="例如：小林、阿雅" value={herName} onChange={setHerName} />
+            <div>
+              <GlassInput
+                label="称呼（你对她的叫法）"
+                placeholder="例如：小林、阿雅"
+                value={herName}
+                onChange={(v) => {
+                  setHerName(v);
+                  // ✅ 任务 2：输入时清除错误
+                  if (v && v.trim()) {
+                    setGirlNameError(null);
+                  }
+                }}
+              />
+              {/* ✅ 任务 2：显示红色错误提示 */}
+              {girlNameError && (
+                <p style={{ color: '#e5484d', fontSize: 13, margin: '6px 0 0', paddingLeft: 4 }}>
+                  {girlNameError}
+                </p>
+              )}
+            </div>
             <GlassInput label="认识时长" placeholder="例如：3个月、半年" value={knowDuration} onChange={setKnowDuration} />
 
             <div>
               <label style={{ fontSize: 13, color: 'var(--text-purple)', fontWeight: 500, display: 'block', marginBottom: 8, paddingLeft: 4 }}>当前关系阶段</label>
-              <PillTagSelector options={relationOptions} selected={relation} onToggle={v => toggle(relation, v, setRelation)} />
+              <PillTagSelector
+                options={relationOptions}
+                selected={relation}
+                onToggle={(v: string) => {
+                  console.log('📌 [ProfileSetupPage] 单选关系阶段:', {
+                    clicked: v,
+                    before: relation,
+                    after: [v],
+                  });
+                  selectSingle(v, setRelation);
+                }}
+              />
             </div>
 
             <div>
               <label style={{ fontSize: 13, color: 'var(--text-purple)', fontWeight: 500, display: 'block', marginBottom: 8, paddingLeft: 4 }}>联系频率</label>
-              <PillTagSelector options={freqOptions} selected={freq} onToggle={v => toggle(freq, v, setFreq)} />
+              <PillTagSelector
+                options={freqOptions}
+                selected={freq}
+                onToggle={(v: string) => {
+                  console.log('📌 [ProfileSetupPage] 单选联系频率:', {
+                    clicked: v,
+                    before: freq,
+                    after: [v],
+                  });
+                  selectSingle(v, setFreq);
+                }}
+              />
             </div>
 
             <div>
@@ -407,12 +665,37 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
         <LiquidButton variant="secondary" onClick={() => onNavigate('dashboard')}>
           稍后补充
         </LiquidButton>
-        {/* ✅ 保存按钮接 RHF：handleSubmit 先校验再 onSubmit；提交中禁用 */}
+        {/* ✅ 任务 1：按钮文案根据状态变化 */}
         <LiquidButton onClick={form.handleSubmit(onSubmit)} disabled={form.formState.isSubmitting}>
-          保存并继续
+          {onboardingCompleted ? '保存修改' : '保存并继续'}
           <ArrowRight size={16} />
         </LiquidButton>
       </div>
+
+      {/* ✅ 任务 2：老用户模式显示重做问卷按钮 */}
+      {onboardingCompleted && (
+        <div style={{ padding: '20px 32px', borderTop: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,245,248,0.5)' }}>
+          <div style={{ fontSize: 13, color: 'var(--text-purple)', opacity: 0.75, marginBottom: 12 }}>
+            想更新关系画像？可以重新填写问卷
+          </div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <LiquidButton
+              variant="secondary"
+              onClick={() => onNavigate('male-questionnaire')}
+              style={{ flex: 1 }}
+            >
+              重新填写男生问卷
+            </LiquidButton>
+            <LiquidButton
+              variant="secondary"
+              onClick={() => onNavigate('female-questionnaire')}
+              style={{ flex: 1 }}
+            >
+              重新填写女生问卷
+            </LiquidButton>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

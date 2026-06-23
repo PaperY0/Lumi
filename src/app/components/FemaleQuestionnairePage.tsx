@@ -7,7 +7,7 @@ import type { PageName } from './GlassUI';
 // ✅ 接入题库
 import { femaleQuestions, femaleDimensionMeta, inferStage, type FemaleDimension } from '@/data/femaleQuestions';
 import { questionnaireRepository } from '@/lib/db';
-import { useUserStore, useUiStore } from '@/stores';
+import { useUserStore, useUiStore, useSettingsStore } from '@/stores';
 import type { FemaleQuestionAnswer, FemaleQuestionnaireResult } from '@/types/questionnaire';
 
 interface Props { onNavigate: (page: PageName) => void; }
@@ -95,24 +95,38 @@ export function FemaleQuestionnairePage({ onNavigate }: Props) {
 
   // ✅ 提交逻辑：落库
   const handleFinish = async () => {
-    console.log('[FemaleQuestionnaire] handleFinish 被调用');
+    console.log('📥 [FemaleQuestionnaire] handleFinish 被调用');
 
     const ui = useUiStore.getState();
     const user = useUserStore.getState().currentUser;
-    const girl = useUserStore.getState().currentGirl;
 
-    console.log('[FemaleQuestionnaire] 当前用户:', user);
-    console.log('[FemaleQuestionnaire] 当前女生:', girl);
+    console.log('📥 [FemaleQuestionnaire] 当前用户:', user);
 
     if (!user) {
-      console.warn('[FemaleQuestionnaire] 没有用户信息，中断提交');
+      console.error('❌ [FemaleQuestionnaire] 没有用户信息，中断提交');
       ui.showToast('请先完成资料建档', 'error');
       return;
     }
 
     try {
-      console.log('[FemaleQuestionnaire] 开始保存问卷结果...');
+      console.log('📥 [FemaleQuestionnaire] 开始保存问卷结果...');
       ui.showLoading('保存问卷结果...');
+
+      // ✅ 修复：从数据库获取 girl，确保 girlId 正确
+      console.log('📥 [FemaleQuestionnaire] 查询 girlProfiles，userId:', user.id);
+      const { girlProfileRepository } = await import('@/lib/db');
+      const girls = await girlProfileRepository.getByUserId(user.id);
+      console.log('📤 [FemaleQuestionnaire] girls 数组长度:', girls.length);
+
+      const girl = girls[0];
+      if (!girl) {
+        console.error('❌ [FemaleQuestionnaire] 未找到 girlProfile，无法保存女生问卷');
+        ui.showToast('请先在资料建档页添加女生资料', 'error');
+        onNavigate('profile');
+        return;
+      }
+
+      console.log('✅ [FemaleQuestionnaire] 使用 girlId:', girl.id);
 
       // 把现有用户答题状态转成 answers
       const userPicks = questions.map((q, i) => {
@@ -137,7 +151,7 @@ export function FemaleQuestionnairePage({ onNavigate }: Props) {
 
       const result: Partial<FemaleQuestionnaireResult> = {
         userId: user.id,
-        girlId: girl?.id ?? '',
+        girlId: girl.id, // ✅ 修复：使用真实 girl.id，不再是空字符串
         answers: answerRecords,
         personalityTags,
         possibleStage,
@@ -152,9 +166,18 @@ export function FemaleQuestionnairePage({ onNavigate }: Props) {
       await questionnaireRepository.saveFemaleResult(result);
 
       console.log('[FemaleQuestionnaire] 保存成功，显示 toast');
-      ui.showToast('女生问卷已完成', 'success');
 
-      console.log('[FemaleQuestionnaire] 准备跳转到 relationship-portrait');
+      // ✅ 任务 4：根据 onboardingCompleted 决定跳转
+      const onboardingCompleted = useSettingsStore.getState().onboardingCompleted;
+
+      if (onboardingCompleted) {
+        ui.showToast('女生问卷已更新', 'success');
+        console.log('🔀 [FemaleQuestionnaire] 老用户重做问卷完成，跳转 relationship-portrait');
+      } else {
+        ui.showToast('女生问卷已完成', 'success');
+        console.log('[FemaleQuestionnaire] 准备跳转到 relationship-portrait');
+      }
+
       onNavigate('relationship-portrait');
 
       console.log('[FemaleQuestionnaire] 跳转调用完成');

@@ -24,6 +24,7 @@ import type {
   SimulationSession,
   SimulationMessage,
   ImportantDate,
+  RelationshipPortrait,
 } from '@/types';
 
 /**
@@ -54,13 +55,15 @@ export class LumiDB extends Dexie {
   simulationMessages!: Table<SimulationMessage, string>;
   /** 女生关联的重要日期（生日/纪念日等） */
   importantDates!: Table<ImportantDate, string>;
+  /** 关系画像（AI 生成） */
+  relationshipPortraits!: Table<RelationshipPortrait, string>;
   /** 应用级键值配置 */
   appSettings!: Table<AppSetting, string>;
 
   constructor() {
     super('LumiDB');
 
-    this.version(1).stores({
+    this.version(2).stores({
       // 男生本人资料：按 createdAt 可取"最新一条"
       userProfiles: 'id, createdAt',
       // 女生资料：按 userId 查某男生名下所有女生
@@ -83,6 +86,8 @@ export class LumiDB extends Dexie {
       simulationMessages: 'id, sessionId, sentAt',
       // 重要日期：按 girlId 查询，按 date 排序
       importantDates: 'id, girlId, date',
+      // 关系画像：按 userId / girlId 查询，按 createdAt 取最新
+      relationshipPortraits: 'id, userId, girlId, createdAt',
       // 应用配置：以 key 作为主键
       appSettings: 'key',
     });

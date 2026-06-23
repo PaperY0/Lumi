@@ -1,9 +1,46 @@
 import type { AIAnalysisReport } from './analysis';
+import type { UserProfile, GirlProfile } from './profile';
+import type { MaleQuestionnaireResult, FemaleQuestionnaireResult } from './questionnaire';
 
 /**
  * 回复助手支持的回复风格：真诚 / 幽默 / 关心。
  */
 export type ReplyStyle = 'sincere' | 'humor' | 'caring';
+
+/**
+ * 关系画像生成请求
+ */
+export interface PortraitRequest {
+  userProfile?: UserProfile;
+  girlProfile?: GirlProfile;
+  userQuestionnaire?: MaleQuestionnaireResult;
+  girlQuestionnaire?: FemaleQuestionnaireResult;
+  chatHistory?: Array<{ role: string; content: string; timestamp?: string }>;
+}
+
+/**
+ * 关系画像生成响应
+ */
+export interface PortraitResponse {
+  /** 男生沟通类型标签 */
+  maleTypeTags: string[];
+  /** 男生短板 */
+  maleWeaknesses: string[];
+  /** 给男生的建议 */
+  maleSuggestions: string[];
+  /** 女生性格标签 */
+  femalePersonalityTags: string[];
+  /** 当前可能的关系阶段 */
+  possibleStage: string;
+  /** 互动热度 */
+  interactionHeat: 'cold' | 'cool' | 'warm' | 'hot';
+  /** 积极信号 */
+  positiveSignals: string[];
+  /** 谨慎信号 */
+  cautionSignals: string[];
+  /** 整体建议 */
+  suggestions: string[];
+}
 
 /**
  * 请求 AI 分析会话的入参。

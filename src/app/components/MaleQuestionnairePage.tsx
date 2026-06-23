@@ -8,7 +8,7 @@ import type { PageName } from './GlassUI';
 // ✅ 接入题库
 import { maleQuestions, maleDimensionMeta, type MaleDimension } from '@/data/maleQuestions';
 import { questionnaireRepository } from '@/lib/db';
-import { useUserStore, useUiStore } from '@/stores';
+import { useUserStore, useUiStore, useSettingsStore } from '@/stores';
 import type { MaleQuestionAnswer, MaleQuestionnaireResult } from '@/types/questionnaire';
 
 interface Props { onNavigate: (page: PageName) => void; }
@@ -117,12 +117,20 @@ export function MaleQuestionnairePage({ onNavigate }: Props) {
       await questionnaireRepository.saveMaleResult(result);
 
       console.log('[MaleQuestionnaire] 保存成功，显示 toast');
-      ui.showToast('男生问卷已完成', 'success');
 
-      console.log('[MaleQuestionnaire] 准备跳转到 female-questionnaire');
+      // ✅ 任务 4：根据 onboardingCompleted 决定跳转
+      const onboardingCompleted = useSettingsStore.getState().onboardingCompleted;
 
-      // ✅ 跳转到女生问卷
-      onNavigate('female-questionnaire');
+      if (onboardingCompleted) {
+        ui.showToast('男生问卷已更新', 'success');
+        console.log('🔀 [MaleQuestionnaire] 老用户重做问卷完成，跳转 relationship-portrait');
+        onNavigate('relationship-portrait');
+      } else {
+        ui.showToast('男生问卷已完成', 'success');
+        console.log('[MaleQuestionnaire] 准备跳转到 female-questionnaire');
+        // ✅ 跳转到女生问卷
+        onNavigate('female-questionnaire');
+      }
 
       console.log('[MaleQuestionnaire] 跳转调用完成');
 

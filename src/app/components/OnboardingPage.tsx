@@ -306,7 +306,10 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
           <div style={{ ...anim(740), display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <button
               className="btn-primary"
-              onClick={onComplete}
+              onClick={() => {
+                console.log('✅ [OnboardingPage] 用户点击开始，跳转 profile');
+                onComplete();
+              }}
               disabled={!agreed}
               style={{
                 borderRadius: 999, padding: '15px 36px', fontSize: 15,
@@ -319,7 +322,10 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
             </button>
             <button
               className="btn-secondary"
-              onClick={onComplete}
+              onClick={() => {
+                console.log('✅ [OnboardingPage] 用户点击示例，跳转 profile');
+                onComplete();
+              }}
               style={{
                 borderRadius: 999, padding: '15px 28px', fontSize: 15,
                 display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 500,

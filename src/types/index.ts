@@ -7,3 +7,4 @@ export * from './settings';
 export * from './reply';
 export * from './simulation';
 export * from './importantDate';
+export * from './portrait';

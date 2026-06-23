@@ -10,9 +10,21 @@ import { db } from '../database';
 export const userProfileRepository = {
   /** 新建或更新一条男生资料：缺 id 自动生成，自动维护 createdAt / updatedAt */
   async save(profile: Partial<UserProfile>): Promise<UserProfile> {
+    console.log('📥 [userProfileRepo.save] 收到入参:', {
+      id: profile.id,
+      nickname: profile.nickname,
+      ageRange: profile.ageRange,
+    });
+
     const now = new Date().toISOString();
     // 已有 id 视为更新，先把旧记录读出来以保留 createdAt
     const existing = profile.id ? await db.userProfiles.get(profile.id) : undefined;
+
+    if (existing) {
+      console.log('  - 检测到已存在记录，执行更新操作，existing.id:', existing.id);
+    } else {
+      console.log('  - 未找到已存在记录，将生成新 id');
+    }
 
     const entity: UserProfile = {
       ...(existing ?? {}),
@@ -22,7 +34,9 @@ export const userProfileRepository = {
       updatedAt: now,
     } as UserProfile;
 
+    console.log('📤 [userProfileRepo.save] 准备写入 user.id:', entity.id);
     await db.userProfiles.put(entity);
+    console.log('✅ [userProfileRepo.save] 已写入 userProfiles 表');
     return entity;
   },
 

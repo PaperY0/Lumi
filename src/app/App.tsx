@@ -42,32 +42,83 @@ function BackgroundOrbs() {
 export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [currentPage, setCurrentPage] = useState<PageName>('dashboard');
+  const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(true); // ✅ Onboarding 守卫：检查状态
 
   const navigate = (page: PageName) => setCurrentPage(page);
 
-  // ✅ Onboarding 守卫：挂载时检查是否需要强制引导
+  // ✅ Onboarding 守卫：挂载时检查引导状态和数据完整性
   useEffect(() => {
-    (async () => {
+    async function checkOnboarding() {
+      console.log('🧭 [OnboardingGuard] 开始检查新手引导状态');
+
       const settings = useSettingsStore.getState();
-      if (settings.onboardingCompleted) return; // 老用户放行
+      console.log('📥 [OnboardingGuard] onboardingCompleted:', settings.onboardingCompleted);
 
-      // 加载已有数据判断是不是存量用户
+      // 加载用户数据
       await useUserStore.getState().loadCurrentUser();
-      const user = useUserStore.getState().currentUser;
 
-      if (user) {
-        const maleResult = await questionnaireRepository.getLatestMale(user.id);
-        const femaleResult = await questionnaireRepository.getLatestFemale(user.id);
-        // 资料 + 男生问卷 + 女生问卷都有 → 视为已完成引导
-        if (maleResult && femaleResult) {
-          settings.setOnboardingCompleted(true);
-          return;
-        }
+      const user = useUserStore.getState().currentUser;
+      const girl = useUserStore.getState().currentGirl;
+
+      console.log('📥 [OnboardingGuard] user:', user ? { id: user.id, nickname: user.nickname } : null);
+      console.log('📥 [OnboardingGuard] girl:', girl ? { id: girl.id, nickname: girl.nickname, userId: girl.userId } : null);
+
+      // ✅ 关键修复：LocalStorage 说完成，但 IndexedDB 没 user，说明状态不一致
+      if (settings.onboardingCompleted && !user) {
+        console.warn('⚠️ [OnboardingGuard] onboardingCompleted=true 但 user 不存在，重置引导状态');
+        settings.setOnboardingCompleted(false);
+        console.log('🔀 [OnboardingGuard] 未找到 user，跳转欢迎页');
+        setShowOnboarding(true); // ✅ 显示欢迎页
+        return;
       }
 
-      // 真新用户或未走完 → 强制跳到 ProfileSetup
-      setCurrentPage('profile');
-    })();
+      // 已完成引导且 user 存在，允许进入首页或当前页面
+      if (settings.onboardingCompleted && user) {
+        console.log('✅ [OnboardingGuard] 已完成引导，放行');
+        setShowOnboarding(false);
+        return;
+      }
+
+      // onboardingCompleted=false：按缺失步骤跳转
+      if (!user) {
+        console.log('🔀 [OnboardingGuard] 未找到 user，跳转欢迎页');
+        setShowOnboarding(true); // ✅ 显示欢迎页
+        return;
+      }
+
+      if (!girl) {
+        console.log('🔀 [OnboardingGuard] 未找到 girl，跳转 profile');
+        setCurrentPage('profile');
+        setShowOnboarding(false);
+        return;
+      }
+
+      const maleQ = await questionnaireRepository.getLatestMale(user.id);
+      console.log('📥 [OnboardingGuard] maleQ:', maleQ ? maleQ.id : null);
+
+      if (!maleQ) {
+        console.log('🔀 [OnboardingGuard] 未完成男生问卷，跳转 male-questionnaire');
+        setCurrentPage('male-questionnaire');
+        setShowOnboarding(false);
+        return;
+      }
+
+      const femaleQ = await questionnaireRepository.getLatestFemale(user.id);
+      console.log('📥 [OnboardingGuard] femaleQ:', femaleQ ? { id: femaleQ.id, girlId: femaleQ.girlId } : null);
+
+      if (!femaleQ || !femaleQ.girlId) {
+        console.log('🔀 [OnboardingGuard] 未完成女生问卷或 girlId 缺失，跳转 female-questionnaire');
+        setCurrentPage('female-questionnaire');
+        setShowOnboarding(false);
+        return;
+      }
+
+      console.log('🔀 [OnboardingGuard] 资料和问卷都存在，但引导未完成，跳转 relationship-portrait');
+      setCurrentPage('relationship-portrait');
+      setShowOnboarding(false);
+    }
+
+    checkOnboarding().finally(() => setIsCheckingOnboarding(false));
   }, []);
 
   const bgStyle: React.CSSProperties = {
@@ -78,13 +129,32 @@ export default function App() {
     overflow: 'hidden',
   };
 
+  // ✅ Onboarding 守卫：检查期间显示 loading
+  if (isCheckingOnboarding) {
+    return (
+      <div style={bgStyle}>
+        <BackgroundOrbs />
+        <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 32, marginBottom: 16 }}>🔍</div>
+            <p style={{ margin: 0, fontSize: 16, color: 'var(--text-rose)', fontWeight: 500 }}>正在检查引导状态...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Onboarding - full page, no sidebar
   if (showOnboarding) {
     return (
       <div style={bgStyle}>
         <BackgroundOrbs />
         <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}>
-          <OnboardingPage onComplete={() => setShowOnboarding(false)} />
+          <OnboardingPage onComplete={() => {
+            console.log('🔀 [App] 欢迎页完成，跳转 profile');
+            setShowOnboarding(false);
+            setCurrentPage('profile');
+          }} />
         </div>
       </div>
     );
