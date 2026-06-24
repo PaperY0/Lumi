@@ -1,88 +1,148 @@
-import { useState, useEffect } from 'react';
-import { Shield, Trash2, Brain, Lock, Heart, AlertCircle, Smartphone, Search, Trash, Ban } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import {
+  Shield, Trash2, Brain, Lock, Heart, AlertCircle, Smartphone, Search, Trash, Ban,
+  Database, Download, RefreshCw, BookOpen, RotateCcw, CheckCircle, XCircle,
+} from 'lucide-react';
 import { GlassCard, LiquidButton, WarningNotice } from './GlassUI';
 import { IconBadge, type IconToken } from './IconBadge';
 import { BlurText } from './BlurText';
 import { BRAND_NAME, BRAND_SUBTITLE, BRAND_VERSION } from '../brand';
 import type { PageName } from './GlassUI';
-// ✅ 导入数据库和 stores
-import { db } from '@/lib/db';
-import { useUserStore, useChatImportStore, useUiStore, useSettingsStore } from '@/stores';
+import { useUiStore, useSettingsStore } from '@/stores';
+import { formatDateTime } from '@/utils/date';
+import {
+  getLocalDataSummary,
+  exportLocalData,
+  clearAllLocalData,
+  clearLoveGuideReadState,
+  resetOnboardingFlag,
+  type LocalDataSummary,
+} from '@/utils/localDataManager';
 
 interface Props {
   onNavigate: (page: PageName) => void;
 }
 
+/** 格式化文件名时间戳：20260624-1951 */
+function formatFileTime(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
+}
+
 export function SettingsPage({ onNavigate }: Props) {
+  // ── 状态 ──
+  const [summary, setSummary] = useState<LocalDataSummary | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
-  const [mockMode, setMockMode] = useState(true);
-  const [confirmBeforeAnalysis, setConfirmBeforeAnalysis] = useState(true);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
-  const [deleted, setDeleted] = useState<string[]>([]);
+  // ── 清空二次确认 ──
+  const [confirmStep, setConfirmStep] = useState<0 | 1 | 2>(0);
 
-  // ✅ 二次确认对话框状态
-  const [confirmClearAllOpen, setConfirmClearAllOpen] = useState(false);
+  const ui = useUiStore.getState();
 
-  // ✅ 清空所有本地数据
-  const handleClearAll = async () => {
-    console.log('[SettingsPage] 开始清空所有本地数据');
+  const clearMessages = useCallback(() => {
+    setError(null);
+    setSuccessMessage(null);
+  }, []);
 
+  /** 加载数据概览 */
+  const loadSummary = useCallback(async () => {
+    clearMessages();
+    setLoading(true);
     try {
-      // 1. 清空 IndexedDB
-      await db.clearAllData();
-      console.log('[SettingsPage] IndexedDB 已清空');
-
-      // 2. 重置所有 Zustand stores
-      useUserStore.getState().reset();
-      useChatImportStore.getState().reset();
-      useUiStore.getState().reset();
-      useSettingsStore.getState().reset();
-      console.log('[SettingsPage] Zustand stores 已重置');
-
-      // 3. 清空 localStorage（兜底）
-      localStorage.clear();
-      console.log('[SettingsPage] localStorage 已清空');
-
-      // 4. 显示成功提示
-      useUiStore.getState().showToast('数据已清空', 'success');
-
-      // 5. 关闭确认框
-      setConfirmClearAllOpen(false);
-
-      // 6. 跳转到资料建档页，让用户重新开始
-      console.log('[SettingsPage] 跳转到资料建档页');
-      onNavigate('profile');
+      const data = await getLocalDataSummary();
+      setSummary(data);
     } catch (e) {
-      console.error('[SettingsPage] 清空失败:', e);
-      useUiStore.getState().showToast('清空失败，请重试', 'error');
+      console.error('❌ [SettingsPage] 加载概览失败:', e);
+      setError('本地数据读取失败，请稍后重试');
+    } finally {
+      setLoading(false);
+    }
+  }, [clearMessages]);
+
+  useEffect(() => {
+    loadSummary();
+  }, [loadSummary]);
+
+  /** 导出 JSON */
+  const handleExport = async () => {
+    clearMessages();
+    setExporting(true);
+    try {
+      const data = await exportLocalData();
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `lumi-local-data-${formatFileTime(new Date())}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setSuccessMessage('已导出本地数据');
+    } catch (e) {
+      console.error('❌ [SettingsPage] 导出失败:', e);
+      setError('导出失败，请稍后重试');
+    } finally {
+      setExporting(false);
     }
   };
 
-  const handleDelete = (type: string) => {
-    setDeleted(prev => [...prev, type]);
-    setShowDeleteConfirm(null);
+  /** 清空全部本地数据 */
+  const handleClearAll = async () => {
+    clearMessages();
+    setClearing(true);
+    try {
+      await clearAllLocalData();
+      useSettingsStore.getState().reset();
+      useUiStore.getState().showToast('数据已清空', 'success');
+      setConfirmStep(0);
+      // 重新加载页面，回到新用户状态
+      window.location.reload();
+    } catch (e) {
+      console.error('❌ [SettingsPage] 清空失败:', e);
+      setError('清空失败，请稍后重试');
+      setClearing(false);
+    }
   };
 
-  const Toggle = ({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) => (
-    <div
-      onClick={() => onChange(!value)}
-      style={{
-        width: 48, height: 28, borderRadius: 999, cursor: 'pointer',
-        background: value ? 'linear-gradient(135deg,#E8748A,#C5956C)' : 'rgba(200,180,190,0.3)',
-        position: 'relative', transition: 'background 0.25s ease',
-        border: '1px solid rgba(255,255,255,0.4)',
-        flexShrink: 0,
-      }}
-    >
-      <div style={{
-        position: 'absolute', top: 3, left: value ? 22 : 3,
-        width: 20, height: 20, borderRadius: 999,
-        background: 'white',
-        boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-        transition: 'left 0.25s ease',
-      }} />
-    </div>
-  );
+  /** 重置新手引导标记 */
+  const handleResetOnboarding = () => {
+    clearMessages();
+    if (!window.confirm('确定要重置新手引导标记吗？\n\n注意：由于 App 会自动识别完整旧用户数据，刷新后可能会再次自动恢复为已完成状态。若要完整测试新用户流程，请使用"清空全部本地数据"。')) return;
+    setResetting(true);
+    try {
+      resetOnboardingFlag();
+      useSettingsStore.getState().setOnboardingCompleted(false);
+      setSuccessMessage('已重置新手引导标记');
+      loadSummary();
+    } catch (e) {
+      console.error('❌ [SettingsPage] 重置失败:', e);
+      setError('重置失败，请稍后重试');
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  /** 清除恋爱法典已读状态 */
+  const handleClearGuideRead = () => {
+    clearMessages();
+    try {
+      clearLoveGuideReadState();
+      setSuccessMessage('已清除恋爱法典阅读状态');
+      loadSummary();
+    } catch (e) {
+      console.error('❌ [SettingsPage] 清除失败:', e);
+      setError('清除失败，请稍后重试');
+    }
+  };
+
+  // ── 子组件 ──
 
   const Section = ({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) => (
     <div style={{ marginBottom: 24 }}>
@@ -96,197 +156,245 @@ export function SettingsPage({ onNavigate }: Props) {
     </div>
   );
 
-  const SettingRow = ({ label, desc, right }: { label: string; desc?: string; right: React.ReactNode }) => (
-    <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
-      <div>
-        <div style={{ fontSize: 14, color: 'var(--text-rose)', fontWeight: 500 }}>{label}</div>
-        {desc && <div style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.65, marginTop: 2, lineHeight: 1.5 }}>{desc}</div>}
-      </div>
-      {right}
+  const DataRow = ({ label, value }: { label: string; value: number | string }) => (
+    <div style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <span style={{ fontSize: 13, color: 'var(--text-purple)', opacity: 0.8 }}>{label}</span>
+      <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-rose)' }}>{value}</span>
     </div>
   );
 
-  const dataItems = [
-    { id: 'chat', label: '清空聊天记录', desc: '删除所有已导入的聊天内容' },
-    { id: 'report', label: '清空分析报告', desc: '删除所有 AI 生成的分析结果' },
-  ];
+  // ── 渲染 ──
 
   return (
     <div style={{ padding: '32px', maxWidth: 700, margin: '0 auto' }} className="page-enter">
+
+      {/* 页面标题 */}
       <div style={{ marginBottom: 28 }}>
-        <h1 className="gradient-text" style={{ margin: 0, fontSize: 28, letterSpacing: '-0.03em' }}><BlurText text="设置与隐私" startDelay={60} className="gradient-text" style={{ fontWeight: 700, display: 'inline' }} /></h1>
+        <h1 className="gradient-text" style={{ margin: 0, fontSize: 28, letterSpacing: '-0.03em' }}>
+          <BlurText text="设置" startDelay={60} className="gradient-text" style={{ fontWeight: 700, display: 'inline' }} />
+        </h1>
         <p style={{ margin: '6px 0 0', fontSize: 14, color: 'var(--text-purple)', opacity: 0.75 }}>
-          你的数据，你来掌控。
+          管理本地数据、隐私说明和使用偏好。
         </p>
       </div>
 
-      {/* Local Data Management */}
-      <Section icon={<Trash2 size={14} color="#C5956C" />} title="本地数据管理">
-        {dataItems.map((item, i) => (
-          <div key={item.id}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
-              <div>
-                <div style={{ fontSize: 14, color: deleted.includes(item.id) ? '#999' : 'var(--text-rose)', fontWeight: 500, display: 'flex', gap: 6, alignItems: 'center' }}>
-                  {item.label}
-                  {deleted.includes(item.id) && <span style={{ fontSize: 11, color: '#4CAF82' }}>已清空</span>}
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.65, marginTop: 2 }}>{item.desc}</div>
-              </div>
-              {showDeleteConfirm === item.id ? (
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => setShowDeleteConfirm(null)} style={{ padding: '6px 14px', borderRadius: 999, fontSize: 12, cursor: 'pointer', background: 'rgba(255,245,248,0.7)', border: '1px solid rgba(200,150,180,0.25)', color: 'var(--text-purple)' }}>
-                    取消
-                  </button>
-                  <button onClick={() => handleDelete(item.id)} style={{ padding: '6px 14px', borderRadius: 999, fontSize: 12, cursor: 'pointer', background: '#C96A6A', border: 'none', color: 'white', fontWeight: 500 }}>
-                    确认清空
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowDeleteConfirm(item.id)}
-                  disabled={deleted.includes(item.id)}
-                  style={{
-                    padding: '7px 16px', borderRadius: 999, fontSize: 12, cursor: 'pointer',
-                    border: '1px solid rgba(200,120,120,0.3)',
-                    background: 'rgba(255,235,235,0.4)',
-                    color: deleted.includes(item.id) ? '#aaa' : '#C96A6A',
-                    fontWeight: 500,
-                  }}
-                >
-                  清空
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-      </Section>
-
-      {/* ✅ 危险操作区域 */}
-      <Section icon={<AlertCircle size={14} color="#C96A6A" />} title="危险操作">
-        <div style={{ padding: '20px' }}>
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#C96A6A', marginBottom: 6 }}>清空所有本地数据</div>
-            <div style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.75, lineHeight: 1.6, marginBottom: 16 }}>
-              这将永久删除你的资料、问卷结果、聊天记录、模拟对话等所有本地数据，且无法恢复。
-            </div>
-            <LiquidButton
-              variant="secondary"
-              onClick={() => setConfirmClearAllOpen(true)}
-              style={{
-                background: 'rgba(255,235,235,0.5)',
-                border: '1px solid rgba(200,100,100,0.3)',
-                color: '#C96A6A',
-              }}
-            >
-              <Trash2 size={16} />
-              清空所有本地数据
-            </LiquidButton>
-          </div>
+      {/* ── 消息提示 ── */}
+      {successMessage && (
+        <div style={{ marginBottom: 20, padding: '12px 16px', borderRadius: 16, background: 'rgba(76,175,130,0.1)', border: '1px solid rgba(76,175,130,0.25)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <CheckCircle size={16} color="#4CAF82" />
+          <span style={{ fontSize: 13, color: '#4CAF82', fontWeight: 500 }}>{successMessage}</span>
         </div>
-      </Section>
-
-      {/* ✅ 二次确认对话框 */}
-      {confirmClearAllOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0,0,0,0.4)',
-            backdropFilter: 'blur(4px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-          }}
-          onClick={() => setConfirmClearAllOpen(false)}
-        >
-          <div
-            style={{
-              maxWidth: 420,
-              margin: '20px',
-            }}
-            onClick={(e: React.MouseEvent) => e.stopPropagation()}
-          >
-            <GlassCard>
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 18, fontWeight: 600, color: '#C96A6A', marginBottom: 8 }}>
-                确认清空所有数据？
-              </div>
-              <div style={{ fontSize: 14, color: 'var(--text-purple)', lineHeight: 1.7 }}>
-                这将永久删除你的资料、问卷结果、聊天记录、模拟对话等<strong>所有本地数据</strong>，且无法恢复。
-              </div>
-            </div>
-            <WarningNotice text="此操作不可撤销，请确保你已备份重要信息。" />
-            <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
-              <LiquidButton
-                variant="secondary"
-                onClick={() => setConfirmClearAllOpen(false)}
-                style={{ flex: 1, justifyContent: 'center' }}
-              >
-                取消
-              </LiquidButton>
-              <LiquidButton
-                onClick={handleClearAll}
-                style={{
-                  flex: 1,
-                  justifyContent: 'center',
-                  background: 'linear-gradient(135deg, #C96A6A, #B05555)',
-                }}
-              >
-                确认清空
-              </LiquidButton>
-            </div>
-            </GlassCard>
-          </div>
+      )}
+      {error && (
+        <div style={{ marginBottom: 20, padding: '12px 16px', borderRadius: 16, background: 'rgba(201,106,106,0.1)', border: '1px solid rgba(201,106,106,0.25)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <XCircle size={16} color="#C96A6A" />
+          <span style={{ fontSize: 13, color: '#C96A6A', fontWeight: 500 }}>{error}</span>
         </div>
       )}
 
-      {/* AI Settings */}
-      <Section icon={<Brain size={14} color="#D4A5C9" />} title="AI 设置">
-        <SettingRow
-          label="前端 Mock 偏好"
-          desc="仅作为前端测试偏好，不代表服务端真实运行模式"
-          right={<Toggle value={mockMode} onChange={(v) => { setMockMode(v); console.log('⚙️ [SettingsPage] 前端 Mock 偏好切换:', v); }} />}
-        />
-        <SettingRow
-          label="AI 分析前确认"
-          desc="每次发送数据给 AI 前弹出确认提示"
-          right={<Toggle value={confirmBeforeAnalysis} onChange={setConfirmBeforeAnalysis} />}
-        />
-        <div style={{ padding: '14px 20px' }}>
-          <div style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.6, lineHeight: 1.7 }}>
-            前端 Mock 开关：{mockMode ? '开启' : '关闭'}（仅前端偏好）<br />
-            后端运行模式：以服务端启动日志为准。若后端显示"运行模式：AI"，则当前会调用真实 AI；若显示"Mock 模式"，则使用本地模拟数据。
+      {/* ═══════════════════════════════════════════════════════════════════
+          1. 本地数据概览
+         ═══════════════════════════════════════════════════════════════════ */}
+      <Section icon={<Database size={14} color="#C5956C" />} title="本地数据概览">
+        {loading ? (
+          <div style={{ padding: '24px 20px', textAlign: 'center', fontSize: 13, color: 'var(--text-purple)', opacity: 0.7 }}>
+            正在读取本地数据...
           </div>
-        </div>
+        ) : summary ? (
+          <>
+            <DataRow label="我的资料" value={summary.userProfileCount} />
+            <DataRow label="她的资料" value={summary.girlProfileCount} />
+            <DataRow label="男生问卷" value={summary.maleQuestionnaireCount} />
+            <DataRow label="女生问卷" value={summary.femaleQuestionnaireCount} />
+            <DataRow label="关系画像" value={summary.relationshipPortraitCount} />
+            <DataRow label="聊天消息" value={summary.chatMessageCount} />
+            <DataRow label="AI 分析报告" value={summary.analysisReportCount} />
+            <DataRow label="回复建议记录" value={summary.replyHistoryCount} />
+            <DataRow label="模拟练习记录" value={summary.simulateHistoryCount} />
+            <DataRow label="本地缓存项" value={summary.localStorageKeyCount} />
+            <div style={{ padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 13, color: 'var(--text-purple)', opacity: 0.8 }}>最近更新时间</span>
+              <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-rose)' }}>
+                {summary.lastUpdatedAt ? formatDateTime(summary.lastUpdatedAt) : '暂无'}
+              </span>
+            </div>
+            <div style={{ padding: '12px 20px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
+              <LiquidButton variant="secondary" onClick={loadSummary} disabled={loading} style={{ width: '100%', justifyContent: 'center' }}>
+                <RefreshCw size={14} />
+                刷新数据概览
+              </LiquidButton>
+            </div>
+          </>
+        ) : (
+          <div style={{ padding: '24px 20px', textAlign: 'center', fontSize: 13, color: 'var(--text-purple)', opacity: 0.7 }}>
+            暂无数据
+          </div>
+        )}
       </Section>
 
-      {/* Privacy Statement */}
+      {/* ═══════════════════════════════════════════════════════════════════
+          2. 隐私说明
+         ═══════════════════════════════════════════════════════════════════ */}
       <Section icon={<Lock size={14} color="#E8748A" />} title="隐私说明">
         <div style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <p style={{ margin: '0 0 14px', fontSize: 13, color: 'var(--text-rose)', lineHeight: 1.7 }}>
+            {BRAND_NAME}优先把你的资料、问卷、分析记录和练习历史保存在当前浏览器本地。除非你主动调用 AI 分析、帮我回复或模拟对话，否则这些本地记录不会发送到服务端。
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {[
-              { Icon: Smartphone, title: '聊天记录优先保存在本地', desc: '除非你主动上传，否则聊天内容不会离开你的设备。' },
-              { Icon: Search, title: 'AI 分析仅发送必要上下文', desc: '我们只发送分析必要的摘要信息，而不是完整聊天记录。' },
-              { Icon: Trash, title: '用户可以随时删除数据', desc: '使用上方"本地数据管理"随时清空所有信息。' },
-              { Icon: Ban, title: '不出售、不分享用户数据', desc: '你的个人信息和关系数据绝不会用于商业目的。' },
+              { Icon: Smartphone, text: '清空浏览器数据可能会删除这些记录' },
+              { Icon: Search, text: '换浏览器或换设备不会自动同步' },
+              { Icon: Ban, text: '请不要填写未经对方允许的敏感隐私' },
             ].map((item) => (
-              <div key={item.title} style={{ display: 'flex', gap: 12, padding: '12px', background: 'rgba(255,245,248,0.5)', borderRadius: 14, alignItems: 'center' }}>
-                <IconBadge icon={item.Icon} size={36} tone="gold" />
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-rose)', marginBottom: 3 }}>{item.title}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.75, lineHeight: 1.5 }}>{item.desc}</div>
-                </div>
+              <div key={item.text} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '10px 12px', background: 'rgba(255,245,248,0.5)', borderRadius: 12 }}>
+                <IconBadge icon={item.Icon} size={30} tone="gold" />
+                <span style={{ fontSize: 12, color: 'var(--text-purple)', lineHeight: 1.5 }}>{item.text}</span>
               </div>
             ))}
           </div>
         </div>
       </Section>
 
-      {/* Health Communication Principles */}
+      {/* ═══════════════════════════════════════════════════════════════════
+          3. 数据导出
+         ═══════════════════════════════════════════════════════════════════ */}
+      <Section icon={<Download size={14} color="#C5956C" />} title="导出本地数据">
+        <div style={{ padding: '20px' }}>
+          <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text-purple)', lineHeight: 1.7 }}>
+            你可以把当前浏览器里的 {BRAND_NAME} 本地数据导出为 JSON 文件，方便备份或排查问题。导出仅在本地完成，不会上传到任何服务器。
+          </p>
+          <LiquidButton
+            variant="secondary"
+            onClick={handleExport}
+            disabled={exporting}
+            style={{ width: '100%', justifyContent: 'center' }}
+          >
+            <Download size={14} />
+            {exporting ? '导出中...' : '导出 JSON'}
+          </LiquidButton>
+        </div>
+      </Section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          4. 清空本地数据
+         ═══════════════════════════════════════════════════════════════════ */}
+      <Section icon={<AlertCircle size={14} color="#C96A6A" />} title="清空本地数据">
+        <div style={{ padding: '20px' }}>
+          <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text-purple)', lineHeight: 1.7 }}>
+            这会删除当前浏览器中保存的资料、问卷、画像、聊天记录、分析报告、回复历史和模拟练习历史。删除后不可恢复。
+          </p>
+          {confirmStep === 0 && (
+            <LiquidButton
+              variant="secondary"
+              onClick={() => setConfirmStep(1)}
+              disabled={clearing}
+              style={{ width: '100%', justifyContent: 'center', background: 'rgba(255,235,235,0.5)', border: '1px solid rgba(200,100,100,0.3)', color: '#C96A6A' }}
+            >
+              <Trash2 size={14} />
+              清空全部本地数据
+            </LiquidButton>
+          )}
+          {confirmStep === 1 && (
+            <div style={{ padding: '16px', borderRadius: 16, background: 'rgba(201,106,106,0.08)', border: '1px solid rgba(201,106,106,0.2)' }}>
+              <p style={{ margin: '0 0 12px', fontSize: 13, color: '#C96A6A', fontWeight: 600 }}>
+                ⚠️ 第一次确认
+              </p>
+              <p style={{ margin: '0 0 14px', fontSize: 12, color: 'var(--text-purple)', lineHeight: 1.6 }}>
+                确定要清空 {BRAND_NAME} 的全部本地数据吗？此操作不可恢复。
+              </p>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <LiquidButton variant="secondary" onClick={() => setConfirmStep(0)} style={{ flex: 1, justifyContent: 'center' }}>
+                  取消
+                </LiquidButton>
+                <LiquidButton onClick={() => setConfirmStep(2)} style={{ flex: 1, justifyContent: 'center', background: 'linear-gradient(135deg, #C96A6A, #B05555)' }}>
+                  继续
+                </LiquidButton>
+              </div>
+            </div>
+          )}
+          {confirmStep === 2 && (
+            <div style={{ padding: '16px', borderRadius: 16, background: 'rgba(201,106,106,0.12)', border: '1px solid rgba(201,106,106,0.3)' }}>
+              <p style={{ margin: '0 0 12px', fontSize: 13, color: '#C96A6A', fontWeight: 600 }}>
+                ⚠️ 最终确认
+              </p>
+              <p style={{ margin: '0 0 14px', fontSize: 12, color: 'var(--text-purple)', lineHeight: 1.6 }}>
+                清空后会回到新用户状态，所有本地记录都会删除，且无法恢复。
+              </p>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <LiquidButton variant="secondary" onClick={() => setConfirmStep(0)} style={{ flex: 1, justifyContent: 'center' }}>
+                  取消
+                </LiquidButton>
+                <LiquidButton onClick={handleClearAll} disabled={clearing} style={{ flex: 1, justifyContent: 'center', background: 'linear-gradient(135deg, #C96A6A, #B05555)' }}>
+                  {clearing ? '清空中...' : '确认清空'}
+                </LiquidButton>
+              </div>
+            </div>
+          )}
+        </div>
+      </Section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          5. 新手引导测试
+         ═══════════════════════════════════════════════════════════════════ */}
+      <Section icon={<RotateCcw size={14} color="#D4A5C9" />} title="重置新手引导标记">
+        <div style={{ padding: '20px' }}>
+          <p style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--text-purple)', lineHeight: 1.7 }}>
+            仅重置 onboardingCompleted 标记，不删除资料和问卷。
+          </p>
+          <p style={{ margin: '0 0 16px', fontSize: 12, color: 'var(--text-purple)', opacity: 0.65, lineHeight: 1.6 }}>
+            由于 App 会自动识别完整旧用户数据，刷新后可能会再次自动恢复为已完成状态。若要完整测试新用户流程，请使用上方"清空全部本地数据"。
+          </p>
+          <LiquidButton
+            variant="secondary"
+            onClick={handleResetOnboarding}
+            disabled={resetting}
+            style={{ width: '100%', justifyContent: 'center' }}
+          >
+            <RotateCcw size={14} />
+            {resetting ? '重置中...' : '重置引导标记'}
+          </LiquidButton>
+        </div>
+      </Section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          6. 恋爱法典已读状态
+         ═══════════════════════════════════════════════════════════════════ */}
+      <Section icon={<BookOpen size={14} color="#C5956C" />} title="清除恋爱法典阅读状态">
+        <div style={{ padding: '20px' }}>
+          <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text-purple)', lineHeight: 1.7 }}>
+            只清除文章已读标记，不影响资料、问卷、分析和练习历史。
+          </p>
+          <LiquidButton
+            variant="secondary"
+            onClick={handleClearGuideRead}
+            style={{ width: '100%', justifyContent: 'center' }}
+          >
+            <BookOpen size={14} />
+            清除已读状态
+          </LiquidButton>
+        </div>
+      </Section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          7. AI 设置（保留原有）
+         ═══════════════════════════════════════════════════════════════════ */}
+      <Section icon={<Brain size={14} color="#D4A5C9" />} title="AI 设置">
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.3)' }}>
+          <div style={{ fontSize: 14, color: 'var(--text-rose)', fontWeight: 500 }}>前端 Mock 偏好</div>
+          <div style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.65, marginTop: 2, lineHeight: 1.5 }}>
+            仅作为前端测试偏好，不代表服务端真实运行模式。后端运行模式以服务端启动日志为准。
+          </div>
+        </div>
+        <div style={{ padding: '14px 20px' }}>
+          <div style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.6, lineHeight: 1.7 }}>
+            若后端显示"运行模式：AI"，则当前会调用真实 AI；若显示"Mock 模式"，则使用本地模拟数据。
+          </div>
+        </div>
+      </Section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          8. 健康沟通原则（保留原有）
+         ═══════════════════════════════════════════════════════════════════ */}
       <Section icon={<Heart size={14} color="#E8748A" />} title="健康沟通原则">
         <div style={{ padding: '20px' }}>
           <p style={{ margin: '0 0 16px', fontSize: 14, color: 'var(--text-rose)', lineHeight: 1.65 }}>
