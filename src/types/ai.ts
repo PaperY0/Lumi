@@ -140,32 +140,109 @@ export interface ReplyResponse {
 }
 
 /**
+ * 模拟对话场景类型。
+ */
+export type SimulateScenario =
+  | '日常聊天'
+  | '邀约吃饭'
+  | '表达好感'
+  | '道歉'
+  | '对方冷淡'
+  | '争吵后修复';
+
+/**
+ * 模拟对话难度。
+ */
+export type SimulateDifficulty = '轻松' | '普通' | '有挑战';
+
+/**
+ * 模拟对话中的单条消息。
+ */
+export interface SimulateMessage {
+  /** 主键，uuid */
+  id: string;
+  /** 角色：user 表示男生，girl 表示 AI 扮演的女生，system 表示系统消息 */
+  role: 'user' | 'girl' | 'system';
+  /** 消息内容 */
+  content: string;
+  /** 创建时间，ISO 8601 字符串 */
+  createdAt: string;
+}
+
+/**
+ * 模拟对话的反馈。
+ */
+export interface SimulateFeedback {
+  /** 评分（可选），0-100 */
+  score?: number;
+  /** 表达优点 */
+  strengths: string[];
+  /** 潜在风险 */
+  risks: string[];
+  /** 改进建议 */
+  suggestion: string;
+}
+
+/**
  * 请求 AI 进行情景模拟对话的入参。
  */
 export interface SimulateRequest {
-  /** 男生用户资料 id */
-  userProfileId: string;
-  /** 女生资料 id */
-  girlProfileId: string;
-  /** 模拟场景描述 */
-  scene: string;
-  /** 难度：简单 / 困难 */
-  difficulty: 'easy' | 'hard';
-  /** 历史对话记录 */
-  history: {
-    /** 角色：user 表示男生本人，ai 表示扮演女生的 AI */
-    role: 'user' | 'ai';
-    /** 该轮对话的文本 */
-    text: string;
-  }[];
+  /** 男生用户资料 */
+  userProfile: UserProfile;
+  /** 女生资料 */
+  girlProfile: GirlProfile;
+  /** 男生问卷结果（可选） */
+  maleQuestionnaire?: MaleQuestionnaireResult | null;
+  /** 女生问卷结果（可选） */
+  femaleQuestionnaire?: FemaleQuestionnaireResult | null;
+  /** 最近的聊天记录（可选） */
+  recentMessages?: ChatMessage[];
+  /** 模拟场景 */
+  scenario: SimulateScenario | string;
+  /** 难度 */
+  difficulty: SimulateDifficulty | string;
+  /** 对话历史 */
+  conversation: SimulateMessage[];
+  /** 用户本轮回复（可选，第一次进入时可为空让 AI 先开场） */
+  userReply?: string;
 }
 
 /**
  * AI 情景模拟对话的返回结果。
  */
 export interface SimulateResponse {
-  /** AI（扮演女生）的回复 */
-  aiReply: string;
-  /** 针对男生上一句表现的反馈（可选） */
-  feedback?: string;
+  /** 报告 id */
+  id: string;
+  /** 生成时间，ISO 8601 字符串 */
+  createdAt: string;
+  /** AI 扮演的女生回复 */
+  girlReply: string;
+  /** 对用户上一轮表达的反馈 */
+  feedback: SimulateFeedback;
+  /** 下一步建议（可选） */
+  nextSuggestion?: string;
+  /** 是否结束对话（可选） */
+  isFinished?: boolean;
+}
+
+/**
+ * 模拟对话练习的本地历史记录。
+ */
+export interface SimulateHistoryRecord {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  userId: string;
+  girlId: string;
+  scenario: string;
+  difficulty: string;
+  conversation: SimulateMessage[];
+  feedback: SimulateFeedback | null;
+  messageCount: number;
+  userMessageCount: number;
+  girlMessageCount: number;
+  finalScore?: number;
+  summary: string;
+  lastUserReply?: string;
+  lastGirlReply?: string;
 }

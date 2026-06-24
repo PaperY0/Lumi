@@ -135,7 +135,11 @@ export const aiClient = {
   /**
    * 模拟对话
    */
-  async simulateChat(input: SimulateRequest): Promise<SimulateResponse> {
-    return postJson<SimulateResponse>('/api/simulate', input);
+  async simulate(input: SimulateRequest): Promise<SimulateResponse> {
+    console.log('📡 [aiClient.simulate] 开始请求 /api/simulate');
+    console.log('📤 [aiClient.simulate] 请求 body:', JSON.stringify(input, null, 2));
+    const result = await postJson<SimulateResponse>('/api/simulate', input);
+    console.log('✅ [aiClient.simulate] 模拟对话返回完成');
+    return result;
   },
 };

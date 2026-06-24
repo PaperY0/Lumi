@@ -25,6 +25,7 @@ import type {
   SimulationMessage,
   ImportantDate,
   RelationshipPortrait,
+  SimulateHistoryRecord,
 } from '@/types';
 
 /**
@@ -59,6 +60,8 @@ export class LumiDB extends Dexie {
   relationshipPortraits!: Table<RelationshipPortrait, string>;
   /** 应用级键值配置 */
   appSettings!: Table<AppSetting, string>;
+  /** 模拟对话练习历史 */
+  simulateHistory!: Table<SimulateHistoryRecord, string>;
 
   constructor() {
     super('LumiDB');
@@ -90,6 +93,11 @@ export class LumiDB extends Dexie {
       relationshipPortraits: 'id, userId, girlId, createdAt',
       // 应用配置：以 key 作为主键
       appSettings: 'key',
+    });
+
+    // v3：新增模拟对话练习历史表
+    this.version(3).stores({
+      simulateHistory: 'id, createdAt, updatedAt, userId, girlId, scenario, difficulty',
     });
   }
 
