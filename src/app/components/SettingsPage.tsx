@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Shield, Trash2, Brain, Lock, Heart, AlertCircle, Smartphone, Search, Trash, Ban } from 'lucide-react';
 import { GlassCard, LiquidButton, WarningNotice } from './GlassUI';
 import { IconBadge, type IconToken } from './IconBadge';
@@ -14,6 +14,8 @@ interface Props {
 }
 
 export function SettingsPage({ onNavigate }: Props) {
+  console.log('📄 [SettingsPage] 页面加载');
+
   const [mockMode, setMockMode] = useState(true);
   const [confirmBeforeAnalysis, setConfirmBeforeAnalysis] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
@@ -246,9 +248,9 @@ export function SettingsPage({ onNavigate }: Props) {
       {/* AI Settings */}
       <Section icon={<Brain size={14} color="#D4A5C9" />} title="AI 设置">
         <SettingRow
-          label="Mock 模式"
-          desc="启用后使用本地模拟回复，不调用真实 AI 接口（适合测试）"
-          right={<Toggle value={mockMode} onChange={setMockMode} />}
+          label="前端 Mock 偏好"
+          desc="仅作为前端测试偏好，不代表服务端真实运行模式"
+          right={<Toggle value={mockMode} onChange={(v) => { setMockMode(v); console.log('⚙️ [SettingsPage] 前端 Mock 偏好切换:', v); }} />}
         />
         <SettingRow
           label="AI 分析前确认"
@@ -256,8 +258,9 @@ export function SettingsPage({ onNavigate }: Props) {
           right={<Toggle value={confirmBeforeAnalysis} onChange={setConfirmBeforeAnalysis} />}
         />
         <div style={{ padding: '14px 20px' }}>
-          <div style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.6 }}>
-            当前模式：{mockMode ? '🧪 Mock 模式（本地模拟）' : '🤖 AI 实时分析'}
+          <div style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.6, lineHeight: 1.7 }}>
+            前端 Mock 开关：{mockMode ? '开启' : '关闭'}（仅前端偏好）<br />
+            后端运行模式：以服务端启动日志为准。若后端显示"运行模式：AI"，则当前会调用真实 AI；若显示"Mock 模式"，则使用本地模拟数据。
           </div>
         </div>
       </Section>

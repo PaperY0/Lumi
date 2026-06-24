@@ -1,6 +1,7 @@
 import type { AIAnalysisReport } from './analysis';
 import type { UserProfile, GirlProfile } from './profile';
 import type { MaleQuestionnaireResult, FemaleQuestionnaireResult } from './questionnaire';
+import type { ChatMessage } from './chat';
 
 /**
  * 回复助手支持的回复风格：真诚 / 幽默 / 关心。
@@ -89,36 +90,53 @@ export interface AnalyzeChatRequest {
 export type AnalyzeResponse = AIAnalysisReport;
 
 /**
+ * 单条推荐回复选项。
+ */
+export interface ReplyOption {
+  /** 回复风格，如"自然真诚型""轻松幽默型""稳重关心型" */
+  style: string;
+  /** 推荐的回复文本 */
+  text: string;
+}
+
+/**
  * 请求 AI 生成回复建议的入参。
  */
 export interface ReplyRequest {
-  /** 男生用户资料 id */
-  userProfileId: string;
-  /** 女生资料 id */
-  girlProfileId: string;
-  /** 对方最新发来的消息内容 */
-  otherMessage: string;
-  /** 额外上下文（可选） */
-  context?: string;
+  /** 男生用户资料 */
+  userProfile: UserProfile;
+  /** 女生资料 */
+  girlProfile: GirlProfile;
+  /** 男生问卷结果（可选） */
+  maleQuestionnaire?: MaleQuestionnaireResult | null;
+  /** 女生问卷结果（可选） */
+  femaleQuestionnaire?: FemaleQuestionnaireResult | null;
+  /** 最近的聊天记录（可选） */
+  recentMessages?: ChatMessage[];
+  /** 对方最新发来的消息内容（必填） */
+  userMessage: string;
+  /** 用户意图，如"我想约她吃饭"（可选） */
+  userIntent?: string;
+  /** 当前场景，如"邀约""道歉""日常聊天"（可选） */
+  scene?: string;
 }
 
 /**
  * AI 回复建议的返回结果。
  */
 export interface ReplyResponse {
+  /** 报告 id */
+  id: string;
+  /** 生成时间，ISO 8601 字符串 */
+  createdAt: string;
   /** 一句话直给的简明结论 */
   simpleAnswer: string;
-  /** 不同风格的推荐回复及其解释 */
-  recommendedReplies: {
-    /** 回复风格 */
-    style: ReplyStyle;
-    /** 推荐的回复文本 */
-    text: string;
-    /** 该回复的解释/思路说明 */
-    explanation: string;
-  }[];
+  /** 不同风格的推荐回复 */
+  recommendedReplies: ReplyOption[];
   /** 应避免的回复 */
   avoidReplies: string[];
+  /** 详细分析 */
+  analysis: string;
 }
 
 /**

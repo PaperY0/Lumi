@@ -36,23 +36,19 @@ export const AnalyzeResponseSchema = z.object({
   nextStep: z.string(),
 });
 
-// 回复建议响应结构
+// 回复建议响应结构 — 匹配前端 ReplyResponse
 export const ReplyResponseSchema = z.object({
+  id: z.string().default(() => `reply-${Date.now()}`),
+  createdAt: z.string().default(() => new Date().toISOString()),
   simpleAnswer: z.string(),
   recommendedReplies: z.array(
     z.object({
       style: z.string(),
       text: z.string(),
-      pros: z.string(),
-      cons: z.string(),
     })
   ),
-  avoidReplies: z.array(
-    z.object({
-      text: z.string(),
-      reason: z.string(),
-    })
-  ),
+  avoidReplies: z.array(z.string()),
+  analysis: z.string().default(''),
 });
 
 // 模拟回复响应结构

@@ -125,7 +125,11 @@ export const aiClient = {
    * 生成回复建议
    */
   async generateReply(input: ReplyRequest): Promise<ReplyResponse> {
-    return postJson<ReplyResponse>('/api/reply', input);
+    console.log('📡 [aiClient.generateReply] 开始请求 /api/reply');
+    console.log('📤 [aiClient.generateReply] 请求 body:', JSON.stringify(input, null, 2));
+    const result = await postJson<ReplyResponse>('/api/reply', input);
+    console.log('✅ [aiClient.generateReply] 回复生成完成');
+    return result;
   },
 
   /**

@@ -9,3 +9,4 @@ export { chatRepository } from './chatRepo';
 export { analysisRepository } from './analysisRepo';
 export { settingsRepository } from './settingsRepo';
 export { portraitRepository } from './portraitRepo';
+export { replyRepository } from './replyRepo';
