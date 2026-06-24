@@ -74,6 +74,21 @@ export const chatRepository = {
     });
   },
 
+  /** 按 userId + girlId 取最新一条会话 */
+  async getLatestSession(userId: string, girlId: string): Promise<ChatSession | null> {
+    console.log('[chatRepo] getLatestSession 查询', { userId, girlId });
+    const sessions = await db.chatSessions
+      .where('userId')
+      .equals(userId)
+      .toArray();
+    const matched = sessions
+      .filter(s => s.girlId === girlId)
+      .sort((a, b) => new Date(b.importedAt).getTime() - new Date(a.importedAt).getTime());
+    const latest = matched[0] ?? null;
+    console.log('[chatRepo] getLatestSession 结果:', latest ? { id: latest.id, messageCount: latest.messageCount } : null);
+    return latest;
+  },
+
   /** 清空会话与消息两张表 */
   async clearAll(): Promise<void> {
     await db.chatSessions.clear();

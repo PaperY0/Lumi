@@ -8,6 +8,7 @@ import type {
   PortraitRequest,
   PortraitResponse,
   AnalyzeRequest,
+  AnalyzeChatRequest,
   AnalyzeResponse,
   ReplyRequest,
   ReplyResponse,
@@ -51,11 +52,20 @@ async function postJson<T>(path: string, body: any): Promise<T> {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      const errorBody = await response.json().catch(() => ({}));
+      const responseText = await response.text().catch(() => '');
+      let parsedError: any = {};
+      try { parsedError = JSON.parse(responseText); } catch {}
+      console.error('❌ [aiClient] 请求失败:', {
+        url: `${AI_API_BASE}${path}`,
+        status: response.status,
+        responseText,
+        parsedError,
+        details: parsedError.details,
+      });
       throw new AIRequestError(
         response.status,
-        errorBody.error || `请求失败 (${response.status})`,
-        errorBody
+        parsedError.error || parsedError.message || `请求失败 (${response.status})`,
+        parsedError
       );
     }
 
@@ -91,10 +101,24 @@ export const aiClient = {
   },
 
   /**
-   * 分析聊天会话
+   * 分析聊天会话（旧版本，传 ID）
    */
   async analyzeChat(input: AnalyzeRequest): Promise<AnalyzeResponse> {
-    return postJson<AnalyzeResponse>('/api/analyze', input);
+    console.log('📡 [aiClient.analyzeChat] 开始请求 /api/analyze');
+    const result = await postJson<AnalyzeResponse>('/api/analyze', input);
+    console.log('✅ [aiClient.analyzeChat] 分析完成');
+    return result;
+  },
+
+  /**
+   * 分析聊天会话（新版本，传完整上下文）
+   */
+  async analyzeChatFull(input: AnalyzeChatRequest): Promise<AnalyzeResponse> {
+    console.log('📡 [aiClient.analyzeChatFull] 开始请求 /api/analyze');
+    console.log('📤 [aiClient.analyzeChatFull] 请求 body:', JSON.stringify(input, null, 2));
+    const result = await postJson<AnalyzeResponse>('/api/analyze', input);
+    console.log('✅ [aiClient.analyzeChatFull] 分析完成');
+    return result;
   },
 
   /**

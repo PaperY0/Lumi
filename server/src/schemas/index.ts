@@ -18,14 +18,22 @@ export const PortraitResponseSchema = z.object({
   suggestions: z.array(z.string()),
 });
 
-// 聊天分析响应结构
+// 聊天分析响应结构 — 匹配前端 AIAnalysisReport
 export const AnalyzeResponseSchema = z.object({
-  emotionalTone: z.string(),
-  coreNeed: z.string(),
-  subtext: z.string().optional(),
-  replyDirection: z.string(),
-  reasoning: z.string(),
-  attentionPoints: z.array(z.string()),
+  simpleAnswer: z.string(),
+  relationshipStage: z.string(),
+  interactionHeat: z.enum(['cold', 'warm', 'hot']),
+  girlEmotion: z.string(),
+  positiveSignals: z.array(z.string()),
+  riskSignals: z.array(z.string()),
+  boyIssues: z.array(z.string()),
+  girlPerspective: z.string(),
+  recommendedReplies: z.array(z.object({
+    style: z.string(),
+    text: z.string(),
+  })),
+  avoidReplies: z.array(z.string()),
+  nextStep: z.string(),
 });
 
 // 回复建议响应结构

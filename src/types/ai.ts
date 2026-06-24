@@ -43,7 +43,7 @@ export interface PortraitResponse {
 }
 
 /**
- * 请求 AI 分析会话的入参。
+ * 请求 AI 分析会话的入参（旧版本，保留兼容）。
  */
 export interface AnalyzeRequest {
   /** 男生用户资料 id */
@@ -53,6 +53,33 @@ export interface AnalyzeRequest {
   /** 待分析的会话 id */
   sessionId: string;
   /** 男生想额外补充的具体问题（可选） */
+  userQuestion?: string;
+}
+
+/**
+ * 请求 AI 分析会话的入参（新版本，发送完整上下文）。
+ */
+export interface AnalyzeChatRequest {
+  userProfile: UserProfile;
+  girlProfile: GirlProfile;
+  maleQuestionnaire?: MaleQuestionnaireResult;
+  femaleQuestionnaire?: FemaleQuestionnaireResult;
+  chatSession?: {
+    id: string;
+    userId: string;
+    title: string;
+    startTime: string;
+    endTime?: string;
+    messageCount: number;
+    createdAt: string;
+  };
+  messages: Array<{
+    id: string;
+    sessionId: string;
+    sender: 'user' | 'other';
+    content: string;
+    timestamp: string;
+  }>;
   userQuestion?: string;
 }
 

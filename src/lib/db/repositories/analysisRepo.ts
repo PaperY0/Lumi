@@ -18,6 +18,7 @@ export const analysisRepository = {
     } as AIAnalysisReport;
 
     await db.analysisReports.put(entity);
+    console.log('✅ [analysisRepository.save] 分析报告已保存:', entity.id);
     return entity;
   },
 

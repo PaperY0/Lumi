@@ -40,16 +40,42 @@ export function mockPortrait() {
 
 export function mockAnalyze() {
   return {
-    emotionalTone: 'neutral-positive',
-    coreNeed: '希望得到理解和陪伴',
-    subtext: '对方可能在暗示希望你关心她的状态',
-    replyDirection: 'empathy-first',
-    reasoning: '对方用"有点累"这样的表达，通常是在寻求情感支持而非具体建议。应该先共情她的感受，再自然引导话题。',
-    attentionPoints: [
-      '避免立即给建议（如"那你早点休息"）',
-      '可以询问原因但不要追问',
-      '保持轻松语气，不要让对方感到压力'
-    ]
+    simpleAnswer: '从当前聊天来看，她对你有一定的沟通意愿，但关系仍处于观察期。建议保持自然轻松的互动节奏，不要急于推进。',
+    relationshipStage: '暧昧观察期',
+    interactionHeat: 'warm',
+    girlEmotion: '整体情绪平稳，有一定分享意愿，但保持了一定的情感距离',
+    positiveSignals: [
+      '愿意回复你的消息，互动较为及时',
+      '会主动分享一些生活细节',
+      '偶尔会用表情包增加聊天趣味'
+    ],
+    riskSignals: [
+      '很少主动发起话题或邀约',
+      '回复深度有限，不太愿意展开私密话题',
+      '互动频率不够稳定，有时回复较慢'
+    ],
+    boyIssues: [
+      '可能过于关注回复速度，容易把回复慢解读为冷淡',
+      '有时提问过多，给对方一定压力',
+      '表达关心时方式偏直接，可以更自然一些'
+    ],
+    girlPerspective: '她可能觉得你是一个不错的人，但还在观察阶段。她愿意保持联系说明有好感基础，但还没到可以放心推进的程度。她希望被理解而不是被分析。',
+    recommendedReplies: [
+      {
+        style: '自然真诚型',
+        text: '最近怎么样呀？我今天看到一个有意思的事情想跟你分享~'
+      },
+      {
+        style: '轻松幽默型',
+        text: '今天的天气适合出去走走，你有没有什么推荐的地方？'
+      }
+    ],
+    avoidReplies: [
+      '你为什么不回我消息？',
+      '你是不是不想理我了？',
+      '我对你这么好你怎么这样？'
+    ],
+    nextStep: '保持当前的互动频率，多聊一些轻松的话题，等关系更近一步后再尝试低压力的线下邀约。'
   };
 }
 
