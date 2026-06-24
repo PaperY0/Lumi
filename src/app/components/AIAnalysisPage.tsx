@@ -1,26 +1,57 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ArrowRight, Sparkles, RefreshCw, Lightbulb, Ban, AlertCircle } from 'lucide-react';
 import { GlassCard, LiquidButton, HeatMeter, StageBadge, AIInsightCard, WarningNotice, GlassInput } from './GlassUI';
 import { CountUp } from './CountUp';
 import { BlurText } from './BlurText';
 import type { PageName } from './GlassUI';
 import { useAnalyzeChat } from '@/hooks/useAnalyzeChat';
+import { useAnalysisRequestStore } from '@/stores/analysisRequestStore';
 
 interface Props { onNavigate: (page: PageName) => void; }
 
 export function AIAnalysisPage({ onNavigate }: Props) {
   const [userQuestion, setUserQuestion] = useState('');
+  const [currentFocusQuestion, setCurrentFocusQuestion] = useState<string | null>(null);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const { data, loading, error, analyze, loadCached } = useAnalyzeChat();
 
-  // 页面挂载时加载缓存
+  const { pendingSessionId, pendingFocusQuestion, clearPending } = useAnalysisRequestStore();
+  const autoAnalyzeStartedRef = useRef(false);
+
+  // 页面挂载时：检查待分析请求或加载缓存
   useEffect(() => {
-    loadCached();
-  }, [loadCached]);
+    if (pendingSessionId && !autoAnalyzeStartedRef.current) {
+      // 有待分析的聊天记录，自动触发分析
+      autoAnalyzeStartedRef.current = true;
+      const fq = pendingFocusQuestion;
+      const sid = pendingSessionId;
+      setCurrentFocusQuestion(fq);
+      setCurrentSessionId(sid);
+      clearPending();
+
+      console.log('🎯 [AIAnalysisPage] 检测到待分析聊天记录', {
+        sessionId: sid,
+        hasFocusQuestion: Boolean(fq),
+      });
+      console.log('🚀 [AIAnalysisPage] 自动开始分析导入的聊天记录');
+
+      analyze({
+        sessionId: sid,
+        userQuestion: fq || undefined,
+      });
+    } else {
+      // 没有待分析请求，加载缓存报告
+      loadCached();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAnalyze = () => {
     if (loading) return;
     console.log('🖱️ [AIAnalysisPage] 用户点击开始分析');
-    analyze({ userQuestion: userQuestion || undefined });
+    analyze({
+      sessionId: currentSessionId || undefined,
+      userQuestion: currentFocusQuestion || userQuestion || undefined,
+    });
   };
 
   // 判断是否为聊天记录不足的错误
@@ -43,6 +74,18 @@ export function AIAnalysisPage({ onNavigate }: Props) {
           从聊天记录里提取关系信号、互动节奏和下一步建议
         </p>
       </div>
+
+      {/* 本次关注点 */}
+      {currentFocusQuestion && (
+        <GlassCard style={{ marginBottom: 20, background: 'rgba(139, 92, 246, 0.05)', border: '1px solid rgba(139, 92, 246, 0.15)' }}>
+          <div style={{ fontSize: 12, color: '#8B5CF6', fontWeight: 600, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            🎯 本次关注点
+          </div>
+          <div style={{ fontSize: 14, color: 'var(--text-rose)', lineHeight: 1.6 }}>
+            {currentFocusQuestion}
+          </div>
+        </GlassCard>
+      )}
 
       {/* 输入框 */}
       {!data && !loading && (
@@ -73,7 +116,12 @@ export function AIAnalysisPage({ onNavigate }: Props) {
               <div style={{ fontSize: 14, fontWeight: 600, color: isChatInsufficient ? '#C99A6A' : '#C96A6A', marginBottom: 6 }}>
                 {isChatInsufficient ? '聊天记录不足，暂时不能分析' : '出了一点小问题'}
               </div>
-              <p style={{ margin: 0, fontSize: 13, color: 'var(--text-purple)', lineHeight: 1.6 }}>{error}</p>
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--text-purple)', lineHeight: 1.6 }}>
+                {currentSessionId && !data
+                  ? `聊天记录已导入，但 AI 分析暂时失败：${error}`
+                  : error
+                }
+              </p>
               {isChatInsufficient ? (
                 <LiquidButton onClick={() => onNavigate('chat-import')} style={{ marginTop: 12 }}>
                   去导入聊天记录 <ArrowRight size={14} />
