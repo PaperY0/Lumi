@@ -187,7 +187,10 @@ export function MaleQuestionnairePage({ onNavigate }: Props) {
             重新作答
           </LiquidButton>
           <LiquidButton onClick={handleFinish} style={{ flex: 1, justifyContent: 'center' }}>
-            继续：她的观察问卷 <ArrowRight size={16} />
+            {useSettingsStore.getState().onboardingCompleted
+              ? '保存问卷结果'
+              : <>继续：她的观察问卷 <ArrowRight size={16} /></>
+            }
           </LiquidButton>
         </div>
       </div>

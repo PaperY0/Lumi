@@ -5,22 +5,11 @@ import { AnimatedCard } from './AnimatedCard';
 import { CountUp } from './CountUp';
 import { BlurText } from './BlurText';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import { formatDateTime } from '@/utils/date';
 import type { PageName } from './GlassUI';
 
 interface DashboardPageProps {
   onNavigate: (page: PageName) => void;
-}
-
-function formatDateTime(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
 }
 
 export function DashboardPage({ onNavigate }: DashboardPageProps) {
@@ -43,7 +32,8 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
   if (loading) {
     return (
       <div style={{ padding: '32px 36px 48px', maxWidth: 960, margin: '0 auto', textAlign: 'center' }}>
-        <p style={{ fontSize: 14, color: 'var(--graphite-rose)', opacity: 0.7 }}>加载中...</p>
+        <div style={{ width: 40, height: 40, border: '3px solid rgba(200,96,122,0.15)', borderTopColor: 'var(--soft-rose)', borderRadius: 999, animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
+        <p style={{ fontSize: 14, color: 'var(--graphite-rose)', opacity: 0.7 }}>正在整理你的恋爱数据...</p>
       </div>
     );
   }
@@ -51,11 +41,14 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
   if (error) {
     return (
       <div style={{ padding: '32px 36px 48px', maxWidth: 960, margin: '0 auto' }}>
-        <div style={{ borderRadius: 16, padding: '16px 20px', background: 'rgba(240,184,160,0.1)', border: '1px solid rgba(191,142,110,0.2)', display: 'flex', gap: 12, alignItems: 'center' }}>
-          <AlertCircle size={18} color="#BF8E6E" />
-          <span style={{ fontSize: 13, color: '#5E4A60' }}>{error}</span>
+        <div style={{ borderRadius: 20, padding: '20px 24px', background: 'rgba(255,235,235,0.5)', border: '1px solid rgba(200,150,150,0.3)', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+          <AlertCircle size={20} color="#C96A6A" style={{ flexShrink: 0, marginTop: 1 }} />
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#C96A6A', marginBottom: 4 }}>出了一点小问题</div>
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--text-purple)', lineHeight: 1.6 }}>刚刚没有处理成功，可以稍后再试一次。</p>
+          </div>
         </div>
-        <button onClick={reload} style={{ marginTop: 16, padding: '10px 20px', borderRadius: 12, background: 'linear-gradient(135deg, #D4607A, #BF8E6E)', color: 'white', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>重试</button>
+        <button onClick={reload} style={{ marginTop: 16, padding: '10px 20px', borderRadius: 999, background: 'linear-gradient(135deg, #D4607A, #BF8E6E)', color: 'white', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>重试</button>
       </div>
     );
   }
@@ -196,7 +189,8 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
               </div>
             ) : (
               <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.3)' }}>
-                <div style={{ fontSize: 13, color: '#7B5C6E', opacity: 0.5 }}>暂无 AI 分析记录</div>
+                <div style={{ fontSize: 13, color: '#7B5C6E', opacity: 0.5 }}>还没有 AI 分析记录</div>
+                <div style={{ fontSize: 11, color: '#7B5C6E', opacity: 0.35, marginTop: 2 }}>导入聊天记录后，点击 AI 分析开始</div>
               </div>
             )}
             {/* Latest Reply */}
@@ -211,7 +205,8 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
               </div>
             ) : (
               <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.3)' }}>
-                <div style={{ fontSize: 13, color: '#7B5C6E', opacity: 0.5 }}>暂无回复建议记录</div>
+                <div style={{ fontSize: 13, color: '#7B5C6E', opacity: 0.5 }}>还没有回复建议记录</div>
+                <div style={{ fontSize: 11, color: '#7B5C6E', opacity: 0.35, marginTop: 2 }}>不知道怎么回时，让 Lumi 给你参考</div>
               </div>
             )}
             {/* Latest Simulate */}
@@ -229,7 +224,8 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
               </div>
             ) : (
               <div style={{ padding: '14px 20px' }}>
-                <div style={{ fontSize: 13, color: '#7B5C6E', opacity: 0.5 }}>暂无模拟练习记录</div>
+                <div style={{ fontSize: 13, color: '#7B5C6E', opacity: 0.5 }}>还没有模拟练习记录</div>
+                <div style={{ fontSize: 11, color: '#7B5C6E', opacity: 0.35, marginTop: 2 }}>完成一次练习并保存后显示</div>
               </div>
             )}
             <div style={{ padding: '12px 20px' }}>

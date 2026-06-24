@@ -49,6 +49,29 @@ export default function App() {
   // ✅ Onboarding 守卫：挂载时检查引导状态和数据完整性
   useEffect(() => {
     async function checkOnboarding() {
+      // ── 🧪 启动诊断：收集所有关键状态 ──
+      let _hasSettingsStorage = false;
+      try { _hasSettingsStorage = !!localStorage.getItem('lumi-settings'); } catch {}
+      let _maleQ: any = undefined;
+      let _femaleQ: any = undefined;
+
+      /** 在每个分支出口处统一打印诊断日志 */
+      const logDiag = (resolvedMode: string, nextPage: string) => {
+        const s = useSettingsStore.getState();
+        const u = useUserStore.getState();
+        console.log('🧪 [StartupDiagnosis]', {
+          onboardingCompleted: s.onboardingCompleted,
+          hasSettingsStorage: _hasSettingsStorage,
+          hasUser: !!u.currentUser,
+          hasGirl: !!u.currentGirl,
+          hasMaleQuestionnaire: _maleQ !== undefined ? !!_maleQ : '(not checked)',
+          hasFemaleQuestionnaire: _femaleQ !== undefined ? !!_femaleQ : '(not checked)',
+          resolvedMode,
+          nextPage,
+          currentPage: currentPage,            // 初始默认值 'dashboard'
+        });
+      };
+
       console.log('🧭 [OnboardingGuard] 开始检查新手引导状态');
 
       const settings = useSettingsStore.getState();
@@ -66,6 +89,7 @@ export default function App() {
       // ✅ 关键修复：LocalStorage 说完成，但 IndexedDB 没 user，说明状态不一致
       if (settings.onboardingCompleted && !user) {
         console.warn('⚠️ [OnboardingGuard] onboardingCompleted=true 但 user 不存在，重置引导状态');
+        logDiag('onboarding+reset', 'onboarding (user missing, will reset)');
         settings.setOnboardingCompleted(false);
         console.log('🔀 [OnboardingGuard] 未找到 user，跳转欢迎页');
         setShowOnboarding(true); // ✅ 显示欢迎页
@@ -75,6 +99,7 @@ export default function App() {
       // 已完成引导且 user 存在，允许进入首页或当前页面
       if (settings.onboardingCompleted && user) {
         console.log('✅ [OnboardingGuard] 已完成引导，放行');
+        logDiag('edit', 'dashboard (pass through)');
         setShowOnboarding(false);
         return;
       }
@@ -82,40 +107,52 @@ export default function App() {
       // onboardingCompleted=false：按缺失步骤跳转
       if (!user) {
         console.log('🔀 [OnboardingGuard] 未找到 user，跳转欢迎页');
+        logDiag('onboarding', 'onboarding (no user)');
         setShowOnboarding(true); // ✅ 显示欢迎页
         return;
       }
 
       if (!girl) {
         console.log('🔀 [OnboardingGuard] 未找到 girl，跳转 profile');
+        logDiag('onboarding', 'profile (no girl)');
         setCurrentPage('profile');
         setShowOnboarding(false);
         return;
       }
 
-      const maleQ = await questionnaireRepository.getLatestMale(user.id);
-      console.log('📥 [OnboardingGuard] maleQ:', maleQ ? maleQ.id : null);
+      _maleQ = await questionnaireRepository.getLatestMale(user.id);
+      console.log('📥 [OnboardingGuard] maleQ:', _maleQ ? _maleQ.id : null);
 
-      if (!maleQ) {
+      if (!_maleQ) {
         console.log('🔀 [OnboardingGuard] 未完成男生问卷，跳转 male-questionnaire');
+        logDiag('onboarding', 'male-questionnaire (no maleQ)');
         setCurrentPage('male-questionnaire');
         setShowOnboarding(false);
         return;
       }
 
-      const femaleQ = await questionnaireRepository.getLatestFemale(user.id);
-      console.log('📥 [OnboardingGuard] femaleQ:', femaleQ ? { id: femaleQ.id, girlId: femaleQ.girlId } : null);
+      _femaleQ = await questionnaireRepository.getLatestFemale(user.id);
+      console.log('📥 [OnboardingGuard] femaleQ:', _femaleQ ? { id: _femaleQ.id, girlId: _femaleQ.girlId } : null);
 
-      if (!femaleQ || !femaleQ.girlId) {
+      if (!_femaleQ || !_femaleQ.girlId) {
         console.log('🔀 [OnboardingGuard] 未完成女生问卷或 girlId 缺失，跳转 female-questionnaire');
+        logDiag('onboarding', 'female-questionnaire (no femaleQ or girlId)');
         setCurrentPage('female-questionnaire');
         setShowOnboarding(false);
         return;
       }
 
-      console.log('🔀 [OnboardingGuard] 资料和问卷都存在，但引导未完成，跳转 relationship-portrait');
-      setCurrentPage('relationship-portrait');
+      // ✅ 完整旧用户兼容：所有数据都存在，说明是老用户
+      // 无论 onboardingCompleted 是否为 true（localStorage 可能丢失），直接修复并放行
+      if (!useSettingsStore.getState().onboardingCompleted) {
+        useSettingsStore.getState().setOnboardingCompleted(true);
+        console.log('🛠️ [OnboardingGuard] 检测到完整旧用户数据，已自动修复 onboardingCompleted=true');
+      } else {
+        console.log('✅ [OnboardingGuard] 完整旧用户，onboardingCompleted 已为 true');
+      }
+      logDiag('edit', 'dashboard (complete old user)');
       setShowOnboarding(false);
+      // currentPage 默认就是 'dashboard'，无需额外设置
     }
 
     checkOnboarding().finally(() => setIsCheckingOnboarding(false));

@@ -9,8 +9,6 @@ import { useAnalyzeChat } from '@/hooks/useAnalyzeChat';
 interface Props { onNavigate: (page: PageName) => void; }
 
 export function AIAnalysisPage({ onNavigate }: Props) {
-  console.log('📄 [AIAnalysisPage] 页面加载');
-
   const [userQuestion, setUserQuestion] = useState('');
   const { data, loading, error, analyze, loadCached } = useAnalyzeChat();
 
@@ -42,7 +40,7 @@ export function AIAnalysisPage({ onNavigate }: Props) {
       <div style={{ marginBottom: 28 }}>
         <BlurText text="AI 聊天分析" startDelay={60} className="gradient-text" style={{ fontSize: 28, letterSpacing: '-0.03em', fontWeight: 700, display: 'block' }} />
         <p style={{ margin: '6px 0 0', fontSize: 14, color: 'var(--text-purple)', opacity: 0.75 }}>
-          基于资料、问卷和聊天记录，帮你判断当前互动状态。
+          从聊天记录里提取关系信号、互动节奏和下一步建议
         </p>
       </div>
 
@@ -73,7 +71,7 @@ export function AIAnalysisPage({ onNavigate }: Props) {
             <AlertCircle size={20} color={isChatInsufficient ? '#C99A6A' : '#C96A6A'} style={{ flexShrink: 0, marginTop: 2 }} />
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: isChatInsufficient ? '#C99A6A' : '#C96A6A', marginBottom: 6 }}>
-                {isChatInsufficient ? '聊天记录不足，暂时不能分析' : '分析失败'}
+                {isChatInsufficient ? '聊天记录不足，暂时不能分析' : '出了一点小问题'}
               </div>
               <p style={{ margin: 0, fontSize: 13, color: 'var(--text-purple)', lineHeight: 1.6 }}>{error}</p>
               {isChatInsufficient ? (
@@ -94,8 +92,8 @@ export function AIAnalysisPage({ onNavigate }: Props) {
       {loading && (
         <GlassCard style={{ marginBottom: 20, textAlign: 'center', padding: '40px 20px' }}>
           <div style={{ fontSize: 32, marginBottom: 16 }}>🤖</div>
-          <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--pink-primary)' }}>AI 正在分析聊天记录...</p>
-          <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--text-purple)', opacity: 0.7 }}>这可能需要几秒钟</p>
+          <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--pink-primary)' }}>正在分析聊天内容...</p>
+          <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--text-purple)', opacity: 0.7 }}>正在结合你们的资料和聊天记录生成分析</p>
         </GlassCard>
       )}
 

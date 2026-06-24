@@ -14,7 +14,6 @@ interface Props {
 }
 
 export function SettingsPage({ onNavigate }: Props) {
-  console.log('📄 [SettingsPage] 页面加载');
 
   const [mockMode, setMockMode] = useState(true);
   const [confirmBeforeAnalysis, setConfirmBeforeAnalysis] = useState(true);

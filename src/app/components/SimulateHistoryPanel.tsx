@@ -2,16 +2,8 @@ import { useEffect, useState } from 'react';
 import { Trash2, Eye, X, MessageSquare, AlertCircle, Zap, ShieldCheck, Lightbulb } from 'lucide-react';
 import { useSimulateHistory } from '@/hooks/useSimulateHistory';
 import { userProfileRepository, girlProfileRepository } from '@/lib/db';
+import { formatDateTime } from '@/utils/date';
 import type { SimulateHistoryRecord } from '@/types';
-
-function formatDateTime(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat('zh-CN', {
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit',
-  }).format(date);
-}
 
 export function SimulateHistoryPanel() {
   const {
@@ -67,7 +59,10 @@ export function SimulateHistoryPanel() {
       <div className="glass-card" style={{ borderRadius: 24, padding: '24px', background: 'rgba(255,235,235,0.5)', border: '1px solid rgba(200,150,150,0.3)' }}>
         <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
           <AlertCircle size={20} color="#C96A6A" style={{ flexShrink: 0, marginTop: 2 }} />
-          <p style={{ margin: 0, fontSize: 13, color: '#C96A6A', lineHeight: 1.6 }}>{error}</p>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#C96A6A', marginBottom: 4 }}>出了一点小问题</div>
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--text-purple)', lineHeight: 1.6 }}>刚刚没有处理成功，可以稍后再试一次。</p>
+          </div>
         </div>
       </div>
     );

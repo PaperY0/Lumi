@@ -662,12 +662,15 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
           <Info size={14} color="var(--text-purple)" style={{ opacity: 0.6 }} />
           <span style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.65 }}>填写越完整，AI 分析越准确</span>
         </div>
-        <LiquidButton variant="secondary" onClick={() => onNavigate('dashboard')}>
-          稍后补充
-        </LiquidButton>
+        {/* onboarding 模式才显示"稍后补充" */}
+        {!onboardingCompleted && (
+          <LiquidButton variant="secondary" onClick={() => onNavigate('dashboard')}>
+            稍后补充
+          </LiquidButton>
+        )}
         {/* ✅ 任务 1：按钮文案根据状态变化 */}
         <LiquidButton onClick={form.handleSubmit(onSubmit)} disabled={form.formState.isSubmitting}>
-          {onboardingCompleted ? '保存修改' : '保存并继续'}
+          {onboardingCompleted ? '保存资料' : '保存并继续'}
           <ArrowRight size={16} />
         </LiquidButton>
       </div>

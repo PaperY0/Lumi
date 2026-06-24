@@ -19,8 +19,6 @@ const scenarios = [
 const difficultyOptions = ['轻松', '普通', '有挑战'];
 
 export function SimulationPage({ onNavigate }: Props) {
-  console.log('📄 [SimulationPage] 页面加载');
-
   const {
     conversation,
     feedback,
@@ -81,7 +79,7 @@ export function SimulationPage({ onNavigate }: Props) {
           <div style={{ marginBottom: 20 }}>
             <BlurText text="模拟对话练习" startDelay={60} style={{ fontSize: 24, fontWeight: 700, color: 'var(--deep-plum)', letterSpacing: '-0.03em', display: 'block' }} />
             <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--graphite-rose)', opacity: 0.75 }}>
-              AI 模拟女生口吻陪你练习，每次对话都有即时反馈
+              AI 模拟女生回应，帮你在真实聊天前先练一遍
             </p>
           </div>
 
@@ -214,7 +212,7 @@ export function SimulationPage({ onNavigate }: Props) {
               <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                 <AlertCircle size={20} color="#C96A6A" style={{ flexShrink: 0, marginTop: 2 }} />
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#C96A6A', marginBottom: 6 }}>出错了</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#C96A6A', marginBottom: 6 }}>出了一点小问题</div>
                   <p style={{ margin: 0, fontSize: 13, color: 'var(--graphite-rose)', lineHeight: 1.6 }}>{error}</p>
                 </div>
               </div>

@@ -47,8 +47,6 @@ function pillStyle(active: boolean): React.CSSProperties {
 }
 
 export function ReplyAssistPage({ onNavigate }: Props) {
-  console.log('📄 [ReplyAssistPage] 页面加载');
-
   const { data, loading, error, generate } = useGenerateReply();
 
   const [userMessage, setUserMessage] = useState('');
@@ -89,7 +87,7 @@ export function ReplyAssistPage({ onNavigate }: Props) {
       <div style={{ marginBottom: 28 }}>
         <BlurText text="帮我回复" startDelay={60} style={{ fontSize: 26, fontWeight: 700, color: '#4A2E38', letterSpacing: '-0.04em', display: 'block' }} />
         <p style={{ margin: '5px 0 0', fontSize: 14, color: '#7B5C6E', opacity: 0.75 }}>
-          输入她发的消息，AI 理解含义并生成 3 种回复建议
+          不知道怎么回时，先生成几个自然、不冒犯的表达参考
         </p>
       </div>
 
