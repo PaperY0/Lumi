@@ -51,11 +51,19 @@ export const ReplyResponseSchema = z.object({
   analysis: z.string().default(''),
 });
 
-// 模拟回复响应结构
+// 模拟回复响应结构 — 匹配前端 SimulateResponse
 export const SimulateResponseSchema = z.object({
-  aiReply: z.string(),
-  feedback: z.string(),
-  nextStepSuggestion: z.string().optional(),
+  id: z.string().default(() => `sim-${Date.now()}`),
+  createdAt: z.string().default(() => new Date().toISOString()),
+  girlReply: z.string(),
+  feedback: z.object({
+    score: z.number().optional(),
+    strengths: z.array(z.string()).default([]),
+    risks: z.array(z.string()).default([]),
+    suggestion: z.string().default(''),
+  }).default({ strengths: [], risks: [], suggestion: '' }),
+  nextSuggestion: z.string().optional(),
+  isFinished: z.boolean().optional(),
 });
 
 // 导出类型定义（供 TypeScript 使用）

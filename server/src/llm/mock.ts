@@ -109,8 +109,16 @@ export function mockReply() {
 
 export function mockSimulate() {
   return {
-    aiReply: '还好啦，就是今天事情有点多。你呢，今天怎么样？',
-    feedback: '回应自然友好，成功把话题转向你，说明她对你也有兴趣。可以简单分享一下自己的状态，然后继续深入她的话题。',
-    nextStepSuggestion: '简单回应自己的状态后，可以说"我今天还不错～你说的事情多，是工作上的吗？"来延续话题'
+    id: `sim-${Date.now()}`,
+    createdAt: new Date().toISOString(),
+    girlReply: '还好啦，就是今天事情有点多。你呢，今天怎么样？',
+    feedback: {
+      score: 70,
+      strengths: ['回应自然友好', '成功把话题转向对方'],
+      risks: ['没有深入了解她的事情多是什么'],
+      suggestion: '可以简单分享一下自己的状态，然后继续深入她的话题。',
+    },
+    nextSuggestion: '可以说"我今天还不错～你说的事情多，是工作上的吗？"来延续话题',
+    isFinished: false,
   };
 }

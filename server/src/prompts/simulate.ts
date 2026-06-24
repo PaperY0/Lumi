@@ -6,10 +6,15 @@
 import type { LLMMessage } from '../llm/client.js';
 
 export interface SimulateInput {
-  userMessage: string;
-  context?: Array<{ role: string; content: string }>;
+  userProfile?: Record<string, any>;
   girlProfile?: Record<string, any>;
-  girlQuestionnaire?: Record<string, any>;
+  maleQuestionnaire?: Record<string, any> | null;
+  femaleQuestionnaire?: Record<string, any> | null;
+  recentMessages?: Array<Record<string, any>>;
+  scenario: string;
+  difficulty: string;
+  conversation?: Array<Record<string, any>>;
+  userReply?: string;
 }
 
 export function buildSimulatePrompt(input: SimulateInput): LLMMessage[] {
@@ -19,34 +24,75 @@ export function buildSimulatePrompt(input: SimulateInput): LLMMessage[] {
 1. 基于女生的性格和聊天风格，模拟真实、自然的回复
 2. 不夸大也不过于悲观，保持中立和现实
 3. 给出建设性的反馈，帮助用户理解这个回复意味着什么
-4. 提供下一步的建议（可选）
-
-请根据用户准备发送的消息，模拟女生可能的回复，并给出反馈。
+4. 提供下一步的建议
 
 **必须返回严格的 JSON 格式，字段使用 camelCase 命名**，结构如下：
 {
-  "aiReply": "模拟的女生回复",
-  "feedback": "对这个回复的分析和反馈",
-  "nextStepSuggestion": "下一步建议（可选）"
+  "id": "sim-${Date.now()}",
+  "createdAt": "${new Date().toISOString()}",
+  "girlReply": "模拟的女生回复",
+  "feedback": {
+    "score": 75,
+    "strengths": ["表达优点1", "表达优点2"],
+    "risks": ["潜在风险1"],
+    "suggestion": "改进建议"
+  },
+  "nextSuggestion": "下一步建议（可选）",
+  "isFinished": false
 }`;
 
-  let userContent = `## 用户准备发送的消息
-"${input.userMessage}"`;
+  let userContent = '';
 
-  if (input.context && input.context.length > 0) {
-    userContent += `\n\n## 上下文（最近的聊天记录）\n`;
-    userContent += input.context.slice(-10).map(msg => `[${msg.role}] ${msg.content}`).join('\n');
+  // 添加用户资料
+  if (input.userProfile) {
+    userContent += `## 男生资料\n${JSON.stringify(input.userProfile, null, 2)}\n\n`;
   }
 
+  // 添加女生资料
   if (input.girlProfile) {
-    userContent += `\n\n## 女生资料\n${JSON.stringify(input.girlProfile, null, 2)}`;
+    userContent += `## 女生资料\n${JSON.stringify(input.girlProfile, null, 2)}\n\n`;
   }
 
-  if (input.girlQuestionnaire) {
-    userContent += `\n\n## 女生问卷答案\n${JSON.stringify(input.girlQuestionnaire, null, 2)}`;
+  // 添加问卷结果
+  if (input.maleQuestionnaire) {
+    userContent += `## 男生问卷结果\n${JSON.stringify(input.maleQuestionnaire, null, 2)}\n\n`;
   }
 
-  userContent += `\n\n请基于女生的性格和聊天风格，模拟她可能的回复，并给出反馈建议。`;
+  if (input.femaleQuestionnaire) {
+    userContent += `## 女生观察问卷结果\n${JSON.stringify(input.femaleQuestionnaire, null, 2)}\n\n`;
+  }
+
+  // 添加最近聊天记录
+  if (input.recentMessages && input.recentMessages.length > 0) {
+    userContent += `## 最近聊天记录\n`;
+    for (const msg of input.recentMessages.slice(-10)) {
+      const role = msg.sender === 'user' ? '男生' : '女生';
+      userContent += `[${role}] ${msg.content}\n`;
+    }
+    userContent += '\n';
+  }
+
+  // 添加场景和难度
+  userContent += `## 模拟场景\n${input.scenario}\n\n`;
+  userContent += `## 难度\n${input.difficulty}\n\n`;
+
+  // 添加对话历史
+  if (input.conversation && input.conversation.length > 0) {
+    userContent += `## 对话历史\n`;
+    for (const msg of input.conversation) {
+      const role = msg.role === 'user' ? '男生' : msg.role === 'girl' ? '女生' : '系统';
+      userContent += `[${role}] ${msg.content}\n`;
+    }
+    userContent += '\n';
+  }
+
+  // 添加用户本轮回复
+  if (input.userReply) {
+    userContent += `## 男生本轮发言\n"${input.userReply}"\n\n`;
+    userContent += `请模拟女生的回复，并对男生的表达给出反馈。`;
+  } else {
+    userContent += `请模拟女生在这个场景下的开场白，开始对话。`;
+  }
 
   return [
     { role: 'system', content: systemPrompt },
