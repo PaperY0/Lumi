@@ -437,9 +437,7 @@ body {
     grid-template-columns: 1fr !important;
   }
   .profile-actionbar {
-    left: 0 !important;
-    bottom: 64px !important; /* sit above the mobile bottom tab bar */
-    padding-bottom: calc(16px + env(safe-area-inset-bottom)) !important;
+    padding: 16px 20px !important;
   }
 }
 

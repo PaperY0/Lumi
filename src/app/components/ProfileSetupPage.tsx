@@ -5,6 +5,7 @@ import { ArrowRight, Info } from 'lucide-react';
 import { GlassCard, LiquidButton, GlassInput, GlassTextarea, ProgressStepper, PillTagSelector } from './GlassUI';
 import type { PageName } from './GlassUI';
 import { BRAND_NAME } from '../brand';
+import { HistoryCenterPanel } from './HistoryCenterPanel';
 // ✅ 表单校验 + 类型
 import { userProfileSchema, type ProfileFormValues } from '@/lib/validation/profileSchema';
 // ✅ 数据库 repository（真正落库）
@@ -364,7 +365,7 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
   const errors = form.formState.errors;
 
   return (
-    <div style={{ padding: '32px 32px 120px', maxWidth: 960, margin: '0 auto' }} className="page-enter">
+    <div style={{ padding: '32px 32px 40px', maxWidth: 960, margin: '0 auto' }} className="page-enter">
       {/* Stepper */}
       <GlassCard hover={false} style={{ marginBottom: 32 }} padding="20px 24px">
         <ProgressStepper steps={steps} current={0} />
@@ -641,43 +642,9 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
         </div>
       </div>{/* end grid */}
 
-      {/* Bottom actions */}
-      <div
-        className="profile-actionbar"
-        style={{
-          position: 'fixed', bottom: 0, left: 240, right: 0,
-          padding: '16px 32px',
-          background: 'rgba(255,245,248,0.85)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          borderTop: '1px solid rgba(255,255,255,0.4)',
-          display: 'flex',
-          gap: 12,
-          justifyContent: 'flex-end',
-          alignItems: 'center',
-          zIndex: 50,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
-          <Info size={14} color="var(--text-purple)" style={{ opacity: 0.6 }} />
-          <span style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.65 }}>填写越完整，AI 分析越准确</span>
-        </div>
-        {/* onboarding 模式才显示"稍后补充" */}
-        {!onboardingCompleted && (
-          <LiquidButton variant="secondary" onClick={() => onNavigate('dashboard')}>
-            稍后补充
-          </LiquidButton>
-        )}
-        {/* ✅ 任务 1：按钮文案根据状态变化 */}
-        <LiquidButton onClick={form.handleSubmit(onSubmit)} disabled={form.formState.isSubmitting}>
-          {onboardingCompleted ? '保存资料' : '保存并继续'}
-          <ArrowRight size={16} />
-        </LiquidButton>
-      </div>
-
-      {/* ✅ 任务 2：老用户模式显示重做问卷按钮 */}
+      {/* ✅ 老用户模式：重做问卷按钮 */}
       {onboardingCompleted && (
-        <div style={{ padding: '20px 32px', borderTop: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,245,248,0.5)' }}>
+        <div style={{ marginTop: 24, padding: '20px 32px', borderTop: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,245,248,0.5)' }}>
           <div style={{ fontSize: 13, color: 'var(--text-purple)', opacity: 0.75, marginBottom: 12 }}>
             想更新关系画像？可以重新填写问卷
           </div>
@@ -697,6 +664,47 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
               重新填写女生问卷
             </LiquidButton>
           </div>
+        </div>
+      )}
+
+      {/* 保存资料操作区 */}
+      <div
+        className="profile-actionbar"
+        style={{
+          marginTop: 24,
+          padding: '20px 32px',
+          background: 'rgba(255,245,248,0.85)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderTop: '1px solid rgba(255,255,255,0.4)',
+          borderRadius: 20,
+          display: 'flex',
+          gap: 12,
+          justifyContent: 'flex-end',
+          alignItems: 'center',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
+          <Info size={14} color="var(--text-purple)" style={{ opacity: 0.6 }} />
+          <span style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.65 }}>填写越完整，AI 分析越准确</span>
+        </div>
+        {/* onboarding 模式才显示"稍后补充" */}
+        {!onboardingCompleted && (
+          <LiquidButton variant="secondary" onClick={() => onNavigate('dashboard')}>
+            稍后补充
+          </LiquidButton>
+        )}
+        {/* 按钮文案根据状态变化 */}
+        <LiquidButton onClick={form.handleSubmit(onSubmit)} disabled={form.formState.isSubmitting}>
+          {onboardingCompleted ? '保存资料' : '保存并继续'}
+          <ArrowRight size={16} />
+        </LiquidButton>
+      </div>
+
+      {/* 历史中心 */}
+      {onboardingCompleted && (
+        <div style={{ marginTop: 28, padding: '0 32px 40px' }}>
+          <HistoryCenterPanel onNavigate={onNavigate} />
         </div>
       )}
     </div>
