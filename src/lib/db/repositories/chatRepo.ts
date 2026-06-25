@@ -89,6 +89,22 @@ export const chatRepository = {
     return latest;
   },
 
+  /** 列出所有会话，按 importedAt 倒序 */
+  async listAllSessions(): Promise<ChatSession[]> {
+    const list = await db.chatSessions.toArray();
+    return list.sort((a, b) => b.importedAt.localeCompare(a.importedAt));
+  },
+
+  /** 列出某女生的所有会话，按 importedAt 倒序 */
+  async listSessionsByGirlId(girlId: string): Promise<ChatSession[]> {
+    console.log('📚 [chatRepository.listSessionsByGirlId] 查询聊天记录历史:', girlId);
+    const list = await db.chatSessions.toArray();
+    const filtered = list
+      .filter((s) => s.girlId === girlId)
+      .sort((a, b) => b.importedAt.localeCompare(a.importedAt));
+    return filtered;
+  },
+
   /** 清空会话与消息两张表 */
   async clearAll(): Promise<void> {
     await db.chatSessions.clear();

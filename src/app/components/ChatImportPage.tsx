@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { ArrowRight, ChevronDown, ChevronUp, HelpCircle, AlertCircle } from 'lucide-react';
 import { GlassCard, LiquidButton } from './GlassUI';
 import { BlurText } from './BlurText';
@@ -7,6 +7,7 @@ import { parseChatText, type ChatImportParseResult } from '@/lib/chatImportParse
 import { chatRepository } from '@/lib/db/repositories/chatRepo';
 import { useUserStore, useUiStore } from '@/stores';
 import { useAnalysisRequestStore } from '@/stores/analysisRequestStore';
+import { ChatRecordHistoryPanel } from './ChatRecordHistoryPanel';
 
 interface Props {
   onNavigate: (page: PageName) => void;
@@ -25,6 +26,7 @@ export function ChatImportPage({ onNavigate }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [successCount, setSuccessCount] = useState(0);
   const [helpExpanded, setHelpExpanded] = useState(true);
+  const [activeView, setActiveView] = useState<'import' | 'history'>('import');
 
   // 发送人映射状态
   const [userSenderName, setUserSenderName] = useState<string | null>(null);
@@ -633,122 +635,168 @@ export function ChatImportPage({ onNavigate }: Props) {
         </p>
       </div>
 
-      {/* 导入帮助面板 */}
-      {renderHelpPanel()}
+      {/* Tab 切换 */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+        <button
+          onClick={() => setActiveView('import')}
+          style={{
+            padding: '8px 20px',
+            borderRadius: 10,
+            border: activeView === 'import' ? '2px solid var(--pink-primary)' : '1px solid rgba(255,255,255,0.3)',
+            background: activeView === 'import' ? 'rgba(232, 116, 138, 0.1)' : 'rgba(255,255,255,0.2)',
+            color: activeView === 'import' ? 'var(--pink-primary)' : 'var(--text-purple)',
+            fontSize: 14,
+            fontWeight: activeView === 'import' ? 600 : 400,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          导入聊天
+        </button>
+        <button
+          onClick={() => setActiveView('history')}
+          style={{
+            padding: '8px 20px',
+            borderRadius: 10,
+            border: activeView === 'history' ? '2px solid var(--pink-primary)' : '1px solid rgba(255,255,255,0.3)',
+            background: activeView === 'history' ? 'rgba(232, 116, 138, 0.1)' : 'rgba(255,255,255,0.2)',
+            color: activeView === 'history' ? 'var(--pink-primary)' : 'var(--text-purple)',
+            fontSize: 14,
+            fontWeight: activeView === 'history' ? 600 : 400,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          聊天记录
+        </button>
+      </div>
 
-      {/* 格式示例 */}
-      {renderFormatExamples()}
-
-      {/* 错误 */}
-      {renderError()}
-
-      {/* 成功 */}
-      {renderSuccessCard()}
-
-      {/* 输入区域 */}
-      {!parseResult && !imported && (
-        <GlassCard style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-rose)', marginBottom: 12 }}>
-            粘贴聊天内容
-          </div>
-          <textarea
-            className="glass-input"
-            placeholder={`请粘贴聊天记录，例如：\n你：今天还顺利吗？\n她：还可以，就是有点累\n你：那早点休息，别太辛苦～`}
-            value={rawText}
-            onChange={(e) => {
-              setRawText(e.target.value);
-              setImported(false);
-            }}
-            style={{
-              width: '100%',
-              minHeight: 240,
-              borderRadius: 18,
-              padding: '14px 16px',
-              fontSize: 14,
-              color: 'var(--text-rose)',
-              resize: 'vertical',
-            }}
-          />
-          <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.6 }}>
-              建议至少 20 条消息以获得更准确的分析
-            </span>
-            <span style={{ fontSize: 12, color: rawText.length > 50 ? 'var(--pink-primary)' : 'var(--text-purple)', opacity: 0.6 }}>
-              {rawText.length} 字符
-            </span>
-          </div>
-          <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-            <LiquidButton onClick={handleParse} disabled={!rawText.trim()}>
-              解析聊天记录 <ArrowRight size={16} />
-            </LiquidButton>
-          </div>
-        </GlassCard>
-      )}
-
-      {/* 解析结果 */}
-      {parseResult && !imported && (
+      {/* 导入聊天视图 */}
+      {activeView === 'import' && (
         <>
-          {renderStatsCard()}
-          {renderWarnings()}
-          {renderSenderSelection()}
-          {renderPreview()}
+          {/* 导入帮助面板 */}
+          {renderHelpPanel()}
 
-          {/* 分析侧重点 */}
-          <GlassCard style={{ marginBottom: 20, background: 'rgba(139, 92, 246, 0.04)', border: '1px solid rgba(139, 92, 246, 0.15)' }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-rose)', marginBottom: 8 }}>
-              💡 分析侧重点（可选）
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.7, marginBottom: 12, lineHeight: 1.6 }}>
-              如果你这次特别想确认某个问题，可以写在这里。AI 会在完整聊天记录分析基础上重点回应它，不填也可以正常分析。
-            </div>
-            <textarea
-              className="glass-input"
-              placeholder={`例如：她是不是真的生我气了？\n她是不是对我没兴趣？\n我刚才那句话是不是太急了？`}
-              value={focusQuestion}
-              onChange={(e) => setFocusQuestion(e.target.value)}
-              style={{
-                width: '100%',
-                minHeight: 80,
-                borderRadius: 14,
-                padding: '12px 14px',
-                fontSize: 13,
-                color: 'var(--text-rose)',
-                resize: 'vertical',
-              }}
-            />
-          </GlassCard>
+          {/* 格式示例 */}
+          {renderFormatExamples()}
 
-          {/* 操作按钮 */}
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'space-between', marginTop: 20, flexWrap: 'wrap' }}>
-            <LiquidButton variant="secondary" onClick={handleClear} disabled={importing}>
-              清空
-            </LiquidButton>
-            <div style={{ display: 'flex', gap: 12 }}>
-              <LiquidButton
-                variant="secondary"
-                onClick={handleSaveOnly}
-                disabled={importing || !canSave}
-              >
-                {importing ? '正在保存...' : '仅保存聊天记录'}
-              </LiquidButton>
-              <LiquidButton
-                onClick={handleImportAndAnalyze}
-                disabled={importing || !canSave}
-              >
-                {importing ? '正在保存并准备分析...' : `确认导入并分析 ${validMessages.length} 条`} <ArrowRight size={16} />
+          {/* 错误 */}
+          {renderError()}
+
+          {/* 成功 */}
+          {renderSuccessCard()}
+
+          {/* 输入区域 */}
+          {!parseResult && !imported && (
+            <GlassCard style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-rose)', marginBottom: 12 }}>
+                粘贴聊天内容
+              </div>
+              <textarea
+                className="glass-input"
+                placeholder={`请粘贴聊天记录，例如：\n你：今天还顺利吗？\n她：还可以，就是有点累\n你：那早点休息，别太辛苦～`}
+                value={rawText}
+                onChange={(e) => {
+                  setRawText(e.target.value);
+                  setImported(false);
+                }}
+                style={{
+                  width: '100%',
+                  minHeight: 240,
+                  borderRadius: 18,
+                  padding: '14px 16px',
+                  fontSize: 14,
+                  color: 'var(--text-rose)',
+                  resize: 'vertical',
+                }}
+              />
+              <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.6 }}>
+                  建议至少 20 条消息以获得更准确的分析
+                </span>
+                <span style={{ fontSize: 12, color: rawText.length > 50 ? 'var(--pink-primary)' : 'var(--text-purple)', opacity: 0.6 }}>
+                  {rawText.length} 字符
+                </span>
+              </div>
+              <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+                <LiquidButton onClick={handleParse} disabled={!rawText.trim()}>
+                  解析聊天记录 <ArrowRight size={16} />
+                </LiquidButton>
+              </div>
+            </GlassCard>
+          )}
+
+          {/* 解析结果 */}
+          {parseResult && !imported && (
+            <>
+              {renderStatsCard()}
+              {renderWarnings()}
+              {renderSenderSelection()}
+              {renderPreview()}
+
+              {/* 分析侧重点 */}
+              <GlassCard style={{ marginBottom: 20, background: 'rgba(139, 92, 246, 0.04)', border: '1px solid rgba(139, 92, 246, 0.15)' }}>
+                <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-rose)', marginBottom: 8 }}>
+                  💡 分析侧重点（可选）
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.7, marginBottom: 12, lineHeight: 1.6 }}>
+                  如果你这次特别想确认某个问题，可以写在这里。AI 会在完整聊天记录分析基础上重点回应它，不填也可以正常分析。
+                </div>
+                <textarea
+                  className="glass-input"
+                  placeholder={`例如：她是不是真的生我气了？\n她是不是对我没兴趣？\n我刚才那句话是不是太急了？`}
+                  value={focusQuestion}
+                  onChange={(e) => setFocusQuestion(e.target.value)}
+                  style={{
+                    width: '100%',
+                    minHeight: 80,
+                    borderRadius: 14,
+                    padding: '12px 14px',
+                    fontSize: 13,
+                    color: 'var(--text-rose)',
+                    resize: 'vertical',
+                  }}
+                />
+              </GlassCard>
+
+              {/* 操作按钮 */}
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'space-between', marginTop: 20, flexWrap: 'wrap' }}>
+                <LiquidButton variant="secondary" onClick={handleClear} disabled={importing}>
+                  清空
+                </LiquidButton>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <LiquidButton
+                    variant="secondary"
+                    onClick={handleSaveOnly}
+                    disabled={importing || !canSave}
+                  >
+                    {importing ? '正在保存...' : '仅保存聊天记录'}
+                  </LiquidButton>
+                  <LiquidButton
+                    onClick={handleImportAndAnalyze}
+                    disabled={importing || !canSave}
+                  >
+                    {importing ? '正在保存并准备分析...' : `确认导入并分析 ${validMessages.length} 条`} <ArrowRight size={16} />
+                  </LiquidButton>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* 底部导航 */}
+          {!parseResult && !imported && (
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 20 }}>
+              <LiquidButton variant="secondary" onClick={() => onNavigate('relationship-portrait')}>
+                返回画像
               </LiquidButton>
             </div>
-          </div>
+          )}
         </>
       )}
 
-      {/* 底部导航 */}
-      {!parseResult && !imported && (
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 20 }}>
-          <LiquidButton variant="secondary" onClick={() => onNavigate('relationship-portrait')}>
-            返回画像
-          </LiquidButton>
-        </div>
+      {/* 聊天记录历史视图 */}
+      {activeView === 'history' && (
+        <ChatRecordHistoryPanel onNavigate={onNavigate} />
       )}
     </div>
   );
