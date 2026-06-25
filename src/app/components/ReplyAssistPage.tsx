@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Sparkles, ArrowRight, MessageSquare, AlertCircle, Ban, BookOpen, Copy } from 'lucide-react';
+import { Sparkles, ArrowRight, MessageSquare, AlertCircle, Ban, BookOpen, Copy, FileText, History } from 'lucide-react';
 import { GlassCard, GlassTextarea, WarningNotice } from './GlassUI';
 import { BlurText } from './BlurText';
 import type { PageName } from './GlassUI';
 import { useGenerateReply } from '@/hooks/useGenerateReply';
+import { ReplyHistoryPanel } from './ReplyHistoryPanel';
 
 interface Props { onNavigate: (page: PageName) => void; }
 
@@ -46,9 +47,12 @@ function pillStyle(active: boolean): React.CSSProperties {
   };
 }
 
+type ActiveView = 'compose' | 'history';
+
 export function ReplyAssistPage({ onNavigate }: Props) {
   const { data, loading, error, generate } = useGenerateReply();
 
+  const [activeView, setActiveView] = useState<ActiveView>('compose');
   const [userMessage, setUserMessage] = useState('');
   const [selectedScene, setSelectedScene] = useState<string>('日常聊天');
   const [selectedIntent, setSelectedIntent] = useState<string>('继续聊天');
@@ -84,13 +88,52 @@ export function ReplyAssistPage({ onNavigate }: Props) {
   return (
     <div style={{ padding: '28px 32px 48px', maxWidth: 1140, margin: '0 auto', width: '100%', overflowX: 'hidden', boxSizing: 'border-box' }}>
       {/* Header */}
-      <div style={{ marginBottom: 28 }}>
+      <div style={{ marginBottom: 20 }}>
         <BlurText text="帮我回复" startDelay={60} style={{ fontSize: 26, fontWeight: 700, color: '#4A2E38', letterSpacing: '-0.04em', display: 'block' }} />
         <p style={{ margin: '5px 0 0', fontSize: 14, color: '#7B5C6E', opacity: 0.75 }}>
           不知道怎么回时，先生成几个自然、不冒犯的表达参考
         </p>
       </div>
 
+      {/* Tab 切换 */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
+        <button
+          onClick={() => setActiveView('compose')}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '9px 20px', borderRadius: 999, fontSize: 13, fontWeight: 600,
+            cursor: 'pointer', transition: 'all 0.2s ease',
+            border: activeView === 'compose' ? 'none' : '1px solid rgba(212,96,122,0.22)',
+            background: activeView === 'compose' ? 'linear-gradient(135deg,#D4607A,#C5956C)' : 'rgba(255,248,252,0.55)',
+            color: activeView === 'compose' ? 'white' : '#7B5C6E',
+            boxShadow: activeView === 'compose' ? '0 4px 14px rgba(212,96,122,0.35), 0 1px 3px rgba(212,96,122,0.2)' : '0 1px 3px rgba(0,0,0,0.04)',
+          }}
+        >
+          <FileText size={14} />生成回复
+        </button>
+        <button
+          onClick={() => setActiveView('history')}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '9px 20px', borderRadius: 999, fontSize: 13, fontWeight: 600,
+            cursor: 'pointer', transition: 'all 0.2s ease',
+            border: activeView === 'history' ? 'none' : '1px solid rgba(212,96,122,0.22)',
+            background: activeView === 'history' ? 'linear-gradient(135deg,#D4607A,#C5956C)' : 'rgba(255,248,252,0.55)',
+            color: activeView === 'history' ? 'white' : '#7B5C6E',
+            boxShadow: activeView === 'history' ? '0 4px 14px rgba(212,96,122,0.35), 0 1px 3px rgba(212,96,122,0.2)' : '0 1px 3px rgba(0,0,0,0.04)',
+          }}
+        >
+          <History size={14} />历史记录
+        </button>
+      </div>
+
+      {/* 历史记录视图 */}
+      {activeView === 'history' && (
+        <ReplyHistoryPanel />
+      )}
+
+      {/* 生成回复视图 */}
+      {activeView === 'compose' && (
       <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: 24, alignItems: 'start', minWidth: 0 }}>
         {/* ── Left Panel: Input ─────────────────────────────────────────── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
@@ -332,6 +375,7 @@ export function ReplyAssistPage({ onNavigate }: Props) {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }

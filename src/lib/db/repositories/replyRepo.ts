@@ -48,6 +48,34 @@ export const replyRepository = {
     return list.reverse();
   },
 
+  /** 列出所有回复历史，按 createdAt 倒序 */
+  async listAll(): Promise<ReplyHistory[]> {
+    const list = await db.replyHistory.toArray();
+    return list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  },
+
+  /** 列出某女生关联的所有回复历史，按 createdAt 倒序（无 girlId 索引，内存过滤） */
+  async listByGirlId(girlId: string): Promise<ReplyHistory[]> {
+    console.log('📚 [replyRepository.listByGirlId] 查询回复历史:', girlId);
+    const list = await db.replyHistory.toArray();
+    const filtered = list
+      .filter((r) => r.girlId === girlId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    return filtered;
+  },
+
+  /** 根据 id 取单条回复历史 */
+  async getById(id: string): Promise<ReplyHistory | undefined> {
+    return db.replyHistory.get(id);
+  },
+
+  /** 删除单条回复历史 */
+  async remove(id: string): Promise<void> {
+    console.log('🗑️ [replyRepository.remove] 删除回复历史:', id);
+    await db.replyHistory.delete(id);
+    console.log('✅ [replyRepository.remove] 删除成功:', id);
+  },
+
   /** 清空所有回复历史 */
   async clearAll(): Promise<void> {
     await db.replyHistory.clear();
