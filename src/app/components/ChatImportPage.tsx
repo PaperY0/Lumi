@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ArrowRight, ChevronDown, ChevronUp, HelpCircle, AlertCircle } from 'lucide-react';
 import { GlassCard, LiquidButton } from './GlassUI';
 import { BlurText } from './BlurText';
@@ -13,9 +13,8 @@ interface Props {
 }
 
 export function ChatImportPage({ onNavigate }: Props) {
-  const { currentUser, currentGirl, loadCurrentUser } = useUserStore();
+  const { currentUser, currentGirl } = useUserStore();
   const { showToast } = useUiStore();
-
   const { setPending } = useAnalysisRequestStore();
 
   const [rawText, setRawText] = useState('');
@@ -26,6 +25,52 @@ export function ChatImportPage({ onNavigate }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [successCount, setSuccessCount] = useState(0);
   const [helpExpanded, setHelpExpanded] = useState(true);
+
+  // 发送人映射状态
+  const [userSenderName, setUserSenderName] = useState<string | null>(null);
+  const [girlSenderName, setGirlSenderName] = useState<string | null>(null);
+
+  // 从 parseResult 提取 sender candidates
+  const senderCandidates = useMemo(() => {
+    if (!parseResult) return [];
+    return Array.from(
+      new Set(
+        parseResult.messages
+          .map((m) => m.senderName?.trim())
+          .filter((name): name is string => Boolean(name))
+      )
+    );
+  }, [parseResult]);
+
+  // 应用映射后的消息
+  const mappedMessages = useMemo(() => {
+    if (!parseResult) return [];
+    return parseResult.messages.map((message) => ({
+      ...message,
+      role:
+        message.senderName === userSenderName
+          ? 'user' as const
+          : message.senderName === girlSenderName
+            ? 'girl' as const
+            : 'unknown' as const,
+    }));
+  }, [parseResult, userSenderName, girlSenderName]);
+
+  // 有效消息（已映射且有内容）
+  const validMessages = useMemo(() => {
+    return mappedMessages.filter(
+      (m) => m.content.trim() && (m.role === 'user' || m.role === 'girl')
+    );
+  }, [mappedMessages]);
+
+  // 统计
+  const userMessageCount = validMessages.filter((m) => m.role === 'user').length;
+  const girlMessageCount = validMessages.filter((m) => m.role === 'girl').length;
+  const unknownMessageCount = mappedMessages.filter((m) => m.role === 'unknown').length;
+
+  // 冲突检测
+  const hasConflict = userSenderName && girlSenderName && userSenderName === girlSenderName;
+  const canSave = validMessages.length > 0 && userSenderName && girlSenderName && !hasConflict;
 
   // ── 解析 ──────────────────────────────────────────────
   const handleParse = () => {
@@ -45,8 +90,18 @@ export function ChatImportPage({ onNavigate }: Props) {
       girlName: currentGirl?.nickname,
     });
 
+    // 提取 sender candidates
+    const candidates = Array.from(
+      new Set(
+        result.messages
+          .map((m) => m.senderName?.trim())
+          .filter((name): name is string => Boolean(name))
+      )
+    );
+
     console.log('✅ [ChatImportPage] 解析完成', {
       messageCount: result.messages.length,
+      senderCandidates: candidates,
       skippedCount: result.skippedLines.length,
       detectedFormat: result.detectedFormat,
     });
@@ -57,16 +112,26 @@ export function ChatImportPage({ onNavigate }: Props) {
     }
 
     setParseResult(result);
+
+    // 设置默认发送人（第一个为"我"，第二个为"她"）
+    setUserSenderName(candidates[0] ?? null);
+    setGirlSenderName(candidates[1] ?? null);
     setImported(false);
   };
 
   // ── 保存聊天记录（内部共用） ──────────────────────────
   const saveChatSession = async () => {
-    if (!parseResult || parseResult.messages.length === 0) {
+    if (!parseResult || validMessages.length === 0) {
       throw new Error('没有可导入的聊天消息');
     }
     if (!currentUser?.id) {
       throw new Error('请先完成资料建档后再导入聊天记录');
+    }
+    if (!userSenderName || !girlSenderName) {
+      throw new Error('请选择"我"和"她"分别对应的发送人');
+    }
+    if (hasConflict) {
+      throw new Error('不能把同一个发送人同时设为"我"和"她"');
     }
 
     const girlId = currentGirl?.id ?? 'default-girl';
@@ -75,7 +140,7 @@ export function ChatImportPage({ onNavigate }: Props) {
     const session = await chatRepository.createSessionWithMessages(
       currentUser.id,
       girlId,
-      parseResult.messages.map((m) => ({
+      validMessages.map((m) => ({
         sender: m.role === 'user' ? ('user' as const) : ('other' as const),
         content: m.content,
         sentAt: new Date(m.createdAt),
@@ -96,7 +161,11 @@ export function ChatImportPage({ onNavigate }: Props) {
     setError(null);
 
     console.log('💾 [ChatImportPage] 保存聊天记录', {
-      messageCount: parseResult?.messages.length ?? 0,
+      validMessageCount: validMessages.length,
+      userSenderName,
+      girlSenderName,
+      userMessageCount,
+      girlMessageCount,
       mode: 'save-only',
       hasFocusQuestion: Boolean(focusQuestion.trim()),
     });
@@ -106,13 +175,13 @@ export function ChatImportPage({ onNavigate }: Props) {
 
       console.log('✅ [ChatImportPage] 聊天记录保存成功', {
         sessionId: session.id,
-        messageCount: parseResult?.messages.length ?? 0,
+        validMessageCount: validMessages.length,
       });
 
-      setSuccessCount(parseResult?.messages.length ?? 0);
+      setSuccessCount(validMessages.length);
       setImported(true);
       setParseResult(null);
-      showToast(`成功导入 ${parseResult?.messages.length ?? 0} 条消息`, 'success');
+      showToast(`成功导入 ${validMessages.length} 条消息`, 'success');
     } catch (err) {
       console.error('❌ [ChatImportPage] 聊天记录保存失败:', err);
       setError(err instanceof Error ? err.message : '聊天记录保存失败，请稍后重试');
@@ -129,7 +198,11 @@ export function ChatImportPage({ onNavigate }: Props) {
     setError(null);
 
     console.log('💾 [ChatImportPage] 保存聊天记录', {
-      messageCount: parseResult?.messages.length ?? 0,
+      validMessageCount: validMessages.length,
+      userSenderName,
+      girlSenderName,
+      userMessageCount,
+      girlMessageCount,
       mode: 'save-and-analyze',
       hasFocusQuestion: Boolean(focusQuestion.trim()),
     });
@@ -139,16 +212,16 @@ export function ChatImportPage({ onNavigate }: Props) {
 
       console.log('✅ [ChatImportPage] 聊天记录保存成功', {
         sessionId: session.id,
-        messageCount: parseResult?.messages.length ?? 0,
+        validMessageCount: validMessages.length,
       });
 
       // 写入待分析请求，由 AIAnalysisPage 负责触发分析
       setPending(session.id, focusQuestion || undefined);
 
-      setSuccessCount(parseResult?.messages.length ?? 0);
+      setSuccessCount(validMessages.length);
       setImported(true);
       setParseResult(null);
-      showToast(`成功导入 ${parseResult?.messages.length ?? 0} 条消息，正在跳转分析...`, 'success');
+      showToast(`成功导入 ${validMessages.length} 条消息，正在跳转分析...`, 'success');
 
       // 跳转到 AI 分析页
       onNavigate('ai-analysis');
@@ -165,6 +238,8 @@ export function ChatImportPage({ onNavigate }: Props) {
     setRawText('');
     setParseResult(null);
     setFocusQuestion('');
+    setUserSenderName(null);
+    setGirlSenderName(null);
     setError(null);
     setImported(false);
     setSuccessCount(0);
@@ -264,7 +339,7 @@ export function ChatImportPage({ onNavigate }: Props) {
           <div style={{ fontSize: 32 }}>✅</div>
           <div>
             <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-rose)' }}>
-              共识别 {parseResult.messages.length} 条消息
+              共识别 {validMessages.length} 条有效消息
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.7 }}>
               格式：{parseResult.detectedFormat}
@@ -273,15 +348,31 @@ export function ChatImportPage({ onNavigate }: Props) {
         </div>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 13 }}>
-          <span style={{ color: 'var(--pink-primary)' }}>你 {parseResult.userMessageCount} 条</span>
-          <span style={{ color: '#8B5CF6' }}>她 {parseResult.girlMessageCount} 条</span>
-          {parseResult.unknownMessageCount > 0 && (
-            <span style={{ color: 'var(--text-purple)', opacity: 0.6 }}>未识别 {parseResult.unknownMessageCount} 条</span>
+          <span style={{ color: 'var(--pink-primary)' }}>你 {userMessageCount} 条</span>
+          <span style={{ color: '#8B5CF6' }}>她 {girlMessageCount} 条</span>
+          {unknownMessageCount > 0 && (
+            <span style={{ color: 'var(--text-purple)', opacity: 0.6 }}>未识别 {unknownMessageCount} 条</span>
           )}
           {parseResult.skippedLines.length > 0 && (
             <span style={{ color: 'var(--text-purple)', opacity: 0.6 }}>跳过 {parseResult.skippedLines.length} 行</span>
           )}
         </div>
+
+        {unknownMessageCount > 0 && (
+          <div style={{ marginTop: 12, padding: '8px 12px', background: 'rgba(245, 158, 11, 0.1)', borderRadius: 8, border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+            <span style={{ fontSize: 12, color: '#D97706' }}>
+              有 {unknownMessageCount} 条消息没有匹配到"我"或"她"，保存和分析时不会包含这些消息。
+            </span>
+          </div>
+        )}
+
+        {validMessages.length === 0 && (
+          <div style={{ marginTop: 12, padding: '8px 12px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: 8, border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+            <span style={{ fontSize: 12, color: '#EF4444' }}>
+              没有可导入的有效聊天消息，请检查发送人选择或聊天格式。
+            </span>
+          </div>
+        )}
       </GlassCard>
     );
   };
@@ -306,63 +397,117 @@ export function ChatImportPage({ onNavigate }: Props) {
     );
   };
 
-  // ── 渲染：选择"我" ────────────────────────────────────
-  const renderNameSelection = () => {
-    if (!parseResult) return null;
-    const allNames = [...new Set(parseResult.messages.map((m) => m.senderName))];
+  // ── 渲染：发送人确认 ────────────────────────────────────
+  const renderSenderSelection = () => {
+    if (!parseResult || senderCandidates.length === 0) return null;
+
     return (
       <GlassCard style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-rose)', marginBottom: 12 }}>
-          请选择哪个昵称是你自己
+        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-rose)', marginBottom: 8 }}>
+          确认发送人身份
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.7, marginBottom: 16, lineHeight: 1.6 }}>
+          我会先根据昵称自动猜测，但你可以手动调整。保存和分析时会以这里的选择为准。
         </div>
 
-        {allNames.length < 2 && (
-          <div style={{ padding: '12px', background: 'rgba(245, 158, 11, 0.1)', borderRadius: 12, marginBottom: 12, border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+        {senderCandidates.length < 2 && (
+          <div style={{ padding: '12px', background: 'rgba(245, 158, 11, 0.1)', borderRadius: 12, marginBottom: 16, border: '1px solid rgba(245, 158, 11, 0.3)' }}>
             <span style={{ fontSize: 13, color: '#D97706' }}>
-              消息中只检测到一个发送者，请检查格式是否正确
+              只识别到一个发送人，建议检查聊天格式或手动补充另一方昵称。
             </span>
           </div>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {allNames.map((name) => {
-            const isMe = parseResult.messages.find((m) => m.senderName === name)?.role === 'user';
-            const count = parseResult.messages.filter((m) => m.senderName === name).length;
-            return (
-              <label
-                key={name}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: '12px 16px',
-                  borderRadius: 12,
-                  border: isMe ? '2px solid var(--pink-primary)' : '1px solid rgba(255,255,255,0.3)',
-                  background: isMe ? 'rgba(232, 116, 138, 0.08)' : 'rgba(255,255,255,0.3)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <span style={{
-                  width: 20,
-                  height: 20,
-                  borderRadius: '50%',
-                  border: isMe ? '2px solid var(--pink-primary)' : '2px solid rgba(255,255,255,0.4)',
-                  background: isMe ? 'var(--pink-primary)' : 'transparent',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}>
-                  {isMe && <span style={{ color: '#fff', fontSize: 12 }}>✓</span>}
-                </span>
-                <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-rose)' }}>{name}</span>
-                <span style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.7, marginLeft: 'auto' }}>
-                  ({count} 条消息)
-                </span>
-              </label>
-            );
-          })}
+        {hasConflict && (
+          <div style={{ padding: '12px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: 12, marginBottom: 16, border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+            <span style={{ fontSize: 13, color: '#EF4444' }}>
+              不能把同一个发送人同时设为"我"和"她"
+            </span>
+          </div>
+        )}
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          {/* 我是谁 */}
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--pink-primary)', marginBottom: 10 }}>
+              👤 我是谁
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {senderCandidates.map((name) => {
+                const count = parseResult.messages.filter((m) => m.senderName === name).length;
+                return (
+                  <label
+                    key={`user-${name}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      padding: '10px 12px',
+                      borderRadius: 10,
+                      border: userSenderName === name ? '2px solid var(--pink-primary)' : '1px solid rgba(255,255,255,0.3)',
+                      background: userSenderName === name ? 'rgba(232, 116, 138, 0.08)' : 'rgba(255,255,255,0.3)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="userSender"
+                      value={name}
+                      checked={userSenderName === name}
+                      onChange={() => setUserSenderName(name)}
+                      style={{ width: 16, height: 16, accentColor: 'var(--pink-primary)' }}
+                    />
+                    <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-rose)' }}>{name}</span>
+                    <span style={{ fontSize: 11, color: 'var(--text-purple)', opacity: 0.6, marginLeft: 'auto' }}>
+                      {count}条
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 她是谁 */}
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#8B5CF6', marginBottom: 10 }}>
+              💁 她是谁
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {senderCandidates.map((name) => {
+                const count = parseResult.messages.filter((m) => m.senderName === name).length;
+                return (
+                  <label
+                    key={`girl-${name}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      padding: '10px 12px',
+                      borderRadius: 10,
+                      border: girlSenderName === name ? '2px solid #8B5CF6' : '1px solid rgba(255,255,255,0.3)',
+                      background: girlSenderName === name ? 'rgba(139, 92, 246, 0.08)' : 'rgba(255,255,255,0.3)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="girlSender"
+                      value={name}
+                      checked={girlSenderName === name}
+                      onChange={() => setGirlSenderName(name)}
+                      style={{ width: 16, height: 16, accentColor: '#8B5CF6' }}
+                    />
+                    <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-rose)' }}>{name}</span>
+                    <span style={{ fontSize: 11, color: 'var(--text-purple)', opacity: 0.6, marginLeft: 'auto' }}>
+                      {count}条
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </GlassCard>
     );
@@ -371,7 +516,7 @@ export function ChatImportPage({ onNavigate }: Props) {
   // ── 渲染：预览 ──────────────────────────────────────────
   const renderPreview = () => {
     if (!parseResult) return null;
-    const preview = parseResult.messages.slice(0, 20);
+    const preview = mappedMessages.slice(0, 20);
     return (
       <GlassCard style={{ marginBottom: 20 }}>
         <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-rose)', marginBottom: 12 }}>
@@ -400,7 +545,7 @@ export function ChatImportPage({ onNavigate }: Props) {
               <div key={msg.id} style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start' }}>
                 <div style={{ maxWidth: '70%' }}>
                   <div style={{ fontSize: 11, color: 'var(--text-purple)', opacity: 0.6, marginBottom: 4, textAlign: isMe ? 'right' : 'left' }}>
-                    {msg.senderName}{ts ? ` · ${ts}` : ''} {!isMe && !isUnknown && '(她)'}{isUnknown && '(未识别)'}
+                    {msg.senderName}{ts ? ` · ${ts}` : ''} {isMe && '(你)'} {!isMe && !isUnknown && '(她)'}{isUnknown && '(未识别)'}
                   </div>
                   <div
                     style={{
@@ -412,7 +557,9 @@ export function ChatImportPage({ onNavigate }: Props) {
                       color: 'var(--text-rose)',
                       lineHeight: 1.5,
                       whiteSpace: 'pre-wrap',
+                      overflowWrap: 'anywhere',
                       wordBreak: 'break-word',
+                      maxWidth: '100%',
                     }}
                   >
                     {msg.content}
@@ -422,9 +569,9 @@ export function ChatImportPage({ onNavigate }: Props) {
             );
           })}
         </div>
-        {parseResult.messages.length > 20 && (
+        {mappedMessages.length > 20 && (
           <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-purple)', opacity: 0.6, textAlign: 'center' }}>
-            仅预览前 20 条，导入时会保存全部 {parseResult.messages.length} 条
+            仅预览前 20 条，导入时会保存全部 {validMessages.length} 条有效消息
           </div>
         )}
       </GlassCard>
@@ -543,7 +690,7 @@ export function ChatImportPage({ onNavigate }: Props) {
         <>
           {renderStatsCard()}
           {renderWarnings()}
-          {renderNameSelection()}
+          {renderSenderSelection()}
           {renderPreview()}
 
           {/* 分析侧重点 */}
@@ -580,15 +727,15 @@ export function ChatImportPage({ onNavigate }: Props) {
               <LiquidButton
                 variant="secondary"
                 onClick={handleSaveOnly}
-                disabled={importing || parseResult.messages.length === 0}
+                disabled={importing || !canSave}
               >
                 {importing ? '正在保存...' : '仅保存聊天记录'}
               </LiquidButton>
               <LiquidButton
                 onClick={handleImportAndAnalyze}
-                disabled={importing || parseResult.messages.length === 0}
+                disabled={importing || !canSave}
               >
-                {importing ? '正在保存并准备分析...' : `确认导入并分析 ${parseResult.messages.length} 条`} <ArrowRight size={16} />
+                {importing ? '正在保存并准备分析...' : `确认导入并分析 ${validMessages.length} 条`} <ArrowRight size={16} />
               </LiquidButton>
             </div>
           </div>

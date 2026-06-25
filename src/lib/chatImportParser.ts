@@ -57,6 +57,49 @@ const SYSTEM_KEYWORDS = [
   '以下是打招呼',
 ];
 
+/**
+ * 判断一行是否应该跳过（不是有效聊天消息）
+ * 用于过滤图片、HTML、Markdown、base64、bbox、OCR、系统内容等
+ */
+function shouldSkipLine(line: string): boolean {
+  const trimmed = line.trim();
+
+  // 空行
+  if (!trimmed) return true;
+
+  // 纯图片/媒体占位
+  if (/^\[?(图片|表情|动画表情|视频|语音|语音消息|视频消息|文件|位置|名片|红包|转账)\]?$/.test(trimmed)) {
+    return true;
+  }
+
+  // 撤回消息
+  if (trimmed.includes('撤回了一条消息')) return true;
+
+  // 聊天记录标题或系统提示
+  if (/^(聊天记录|系统消息|以上是|以下是打招呼)/.test(trimmed)) return true;
+
+  // OCR / bbox
+  if (/^bbox\s*\d*/i.test(trimmed)) return true;
+
+  // HTML 图片标签
+  if (/<img[\s>]/i.test(trimmed)) return true;
+
+  // Markdown 图片
+  if (/!\[.*?\]\(.*?\)/.test(trimmed)) return true;
+
+  // base64 图片
+  if (/data:image\/[a-zA-Z]+;base64,/i.test(trimmed)) return true;
+
+  // 过长 base64 内容
+  if (trimmed.length > 2000 && /base64/i.test(trimmed)) return true;
+
+  // 纯时间行
+  if (/^\d{1,2}:\d{2}$/.test(trimmed)) return true;
+  if (/^\d{4}[/-]\d{1,2}[/-]\d{1,2}\s+\d{1,2}:\d{2}$/.test(trimmed)) return true;
+
+  return false;
+}
+
 function isSystemMessage(content: string): boolean {
   const trimmed = content.trim();
   return SYSTEM_KEYWORDS.some((k) => trimmed.includes(k)) || /^\[.+\]$/.test(trimmed);
@@ -165,7 +208,12 @@ function parseBracketTime(
 ): void {
   for (const rawLine of lines) {
     const line = rawLine.trim();
-    if (!line) continue;
+
+    // 使用 shouldSkipLine 过滤无效内容
+    if (shouldSkipLine(line)) {
+      if (line) result.skippedLines.push(line);
+      continue;
+    }
 
     const timeMatch = line.match(BRACKET_TIME_RE);
     if (!timeMatch) {
@@ -187,7 +235,7 @@ function parseBracketTime(
     const senderName = cleanContent(colonMatch[1]);
     const content = cleanContent(colonMatch[2]);
 
-    if (!content || isSystemMessage(content)) {
+    if (!content || isSystemMessage(content) || shouldSkipLine(content)) {
       result.skippedLines.push(line);
       continue;
     }
@@ -212,7 +260,12 @@ function parseDatetimePrefix(
 ): void {
   for (const rawLine of lines) {
     const line = rawLine.trim();
-    if (!line) continue;
+
+    // 使用 shouldSkipLine 过滤无效内容
+    if (shouldSkipLine(line)) {
+      if (line) result.skippedLines.push(line);
+      continue;
+    }
 
     const timeMatch = line.match(DATETIME_RE);
     if (!timeMatch) {
@@ -234,7 +287,7 @@ function parseDatetimePrefix(
     const senderName = cleanContent(colonMatch[1]);
     const content = cleanContent(colonMatch[2]);
 
-    if (!content || isSystemMessage(content)) {
+    if (!content || isSystemMessage(content) || shouldSkipLine(content)) {
       result.skippedLines.push(line);
       continue;
     }
@@ -259,7 +312,12 @@ function parseColon(
 ): void {
   for (const rawLine of lines) {
     const line = rawLine.trim();
-    if (!line) continue;
+
+    // 使用 shouldSkipLine 过滤无效内容
+    if (shouldSkipLine(line)) {
+      if (line) result.skippedLines.push(line);
+      continue;
+    }
 
     const match = line.match(COLON_RE);
     if (!match) {
@@ -270,7 +328,7 @@ function parseColon(
     const senderName = cleanContent(match[1]);
     const content = cleanContent(match[2]);
 
-    if (!content || isSystemMessage(content)) {
+    if (!content || isSystemMessage(content) || shouldSkipLine(content)) {
       result.skippedLines.push(line);
       continue;
     }
@@ -299,7 +357,10 @@ function parseWechatBlock(
   let i = 0;
   while (i < lines.length) {
     const line = lines[i].trim();
-    if (!line) {
+
+    // 使用 shouldSkipLine 过滤无效内容
+    if (shouldSkipLine(line)) {
+      if (line) result.skippedLines.push(line);
       i++;
       continue;
     }
@@ -319,12 +380,12 @@ function parseWechatBlock(
         if (next && !WECHAT_TIME_RE.test(next) && lines[j + 1]?.trim() && WECHAT_TIME_RE.test(lines[j + 1].trim())) {
           break;
         }
-        if (next) contentLines.push(next);
+        if (next && !shouldSkipLine(next)) contentLines.push(next);
         j++;
       }
 
       const content = cleanContent(contentLines.join('\n'));
-      if (content && !isSystemMessage(content)) {
+      if (content && !isSystemMessage(content) && !shouldSkipLine(content)) {
         result.messages.push({
           id: nextId(),
           role: resolveRole(line, opts),
@@ -344,7 +405,7 @@ function parseWechatBlock(
       if (colonMatch) {
         const senderName = cleanContent(colonMatch[1]);
         const content = cleanContent(colonMatch[2]);
-        if (content && !isSystemMessage(content) && senderName.length <= 30) {
+        if (content && !isSystemMessage(content) && !shouldSkipLine(content) && senderName.length <= 30) {
           result.messages.push({
             id: nextId(),
             role: resolveRole(senderName, opts),
