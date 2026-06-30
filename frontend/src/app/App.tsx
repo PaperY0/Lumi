@@ -12,6 +12,7 @@ import { ReplyAssistPage } from './components/ReplyAssistPage';
 import { SimulationPage } from './components/SimulationPage';
 import { LoveCodePage } from './components/LoveCodePage';
 import { SettingsPage } from './components/SettingsPage';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import type { PageName } from './components/GlassUI';
 import { useSettingsStore, useUserStore } from '@/stores';
 import { questionnaireRepository } from '@/lib/db';
@@ -255,7 +256,9 @@ export default function App() {
           }}
           key={currentPage}
         >
-          {renderPage()}
+          <ErrorBoundary onResetToHome={() => navigate('dashboard')}>
+            {renderPage()}
+          </ErrorBoundary>
         </main>
       </div>
 

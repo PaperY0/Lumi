@@ -42,8 +42,8 @@
     // 报错：switch 里 case 漏写 break 导致的穿透
     "noFallthroughCasesInSwitch": true,
     // 跳过对第三方库 .d.ts 的检查，加快编译
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "types": ["vitest/globals"]
   },
-  // 只对 src 目录做类型检查（验证时 `npx tsc --noEmit` 只看这里）
   "include": ["src"]
 }

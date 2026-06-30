@@ -4,6 +4,7 @@ import { GlassCard, LiquidButton } from './GlassUI';
 import { BlurText } from './BlurText';
 import type { PageName } from './GlassUI';
 import { parseChatText, type ChatImportParseResult } from '@/lib/chatImportParser';
+import { getSenderCandidates, mapMessagesWithSenderSelection, hasSenderConflict } from '@/lib/chatSenderMapping';
 import { chatRepository } from '@/lib/db/repositories/chatRepo';
 import { useUserStore, useUiStore } from '@/stores';
 import { useAnalysisRequestStore } from '@/stores/analysisRequestStore';
@@ -47,15 +48,7 @@ export function ChatImportPage({ onNavigate }: Props) {
   // 应用映射后的消息
   const mappedMessages = useMemo(() => {
     if (!parseResult) return [];
-    return parseResult.messages.map((message) => ({
-      ...message,
-      role:
-        message.senderName === userSenderName
-          ? 'user' as const
-          : message.senderName === girlSenderName
-            ? 'girl' as const
-            : 'unknown' as const,
-    }));
+    return mapMessagesWithSenderSelection(parseResult.messages, userSenderName, girlSenderName);
   }, [parseResult, userSenderName, girlSenderName]);
 
   // 有效消息（已映射且有内容）
@@ -71,7 +64,7 @@ export function ChatImportPage({ onNavigate }: Props) {
   const unknownMessageCount = mappedMessages.filter((m) => m.role === 'unknown').length;
 
   // 冲突检测
-  const hasConflict = userSenderName && girlSenderName && userSenderName === girlSenderName;
+  const hasConflict = hasSenderConflict(userSenderName, girlSenderName);
   const canSave = validMessages.length > 0 && userSenderName && girlSenderName && !hasConflict;
 
   // ── 解析 ──────────────────────────────────────────────
@@ -93,13 +86,7 @@ export function ChatImportPage({ onNavigate }: Props) {
     });
 
     // 提取 sender candidates
-    const candidates = Array.from(
-      new Set(
-        result.messages
-          .map((m) => m.senderName?.trim())
-          .filter((name): name is string => Boolean(name))
-      )
-    );
+    const candidates = getSenderCandidates(result.messages);
 
     console.log('✅ [ChatImportPage] 解析完成', {
       messageCount: result.messages.length,
