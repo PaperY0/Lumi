@@ -15,7 +15,15 @@ interface DashboardPageProps {
 export function DashboardPage({ onNavigate }: DashboardPageProps) {
   const [heroVisible, setHeroVisible] = useState(false);
   const { loading, error, data, reload } = useDashboardData();
-  const hour = new Date().getHours();
+  const stageDisplay: Record<string, string> = {
+  stranger: '陌生人',
+  observing: '观察中',
+  ambiguous: '暧昧中',
+  pursuing: '追求中',
+  dating: '已在一起',
+};
+
+const hour = new Date().getHours();
   const greeting = hour < 6 ? '夜深了' : hour < 12 ? '早上好' : hour < 18 ? '下午好' : '晚上好';
 
   useEffect(() => {
@@ -116,7 +124,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
               </div>
               {d.girlName ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span className="stage-badge stage-badge-active">观察中</span>
+                  <span className="stage-badge stage-badge-active">{d.girlStageLabel || (d.girlStage ? stageDisplay[d.girlStage] : '待确认')}</span>
                 </div>
               ) : (
                 <div style={{ fontSize: 13, color: '#7B5C6E', opacity: 0.6 }}>完善她的资料后显示</div>

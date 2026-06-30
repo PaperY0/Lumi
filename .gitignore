@@ -25,6 +25,6 @@ pnpm-debug.log*
 !.env.example
 
 # Server
-server/node_modules/
-server/dist/
-server/.env
+backend/node_modules/
+backend/dist/
+backend/.env

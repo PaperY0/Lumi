@@ -8,7 +8,6 @@ export type PageName =
   | 'female-questionnaire'
   | 'relationship-portrait'
   | 'chat-import'
-  | 'chat-preview'
   | 'ai-analysis'
   | 'reply-assist'
   | 'simulation'

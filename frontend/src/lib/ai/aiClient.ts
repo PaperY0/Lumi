@@ -114,8 +114,6 @@ export const aiClient = {
    * 分析聊天会话（新版本，传完整上下文）
    */
   async analyzeChatFull(input: AnalyzeChatRequest): Promise<AnalyzeResponse> {
-    console.log('📡 [aiClient.analyzeChatFull] 开始请求 /api/analyze');
-    console.log('📤 [aiClient.analyzeChatFull] 请求 body:', JSON.stringify(input, null, 2));
     const result = await postJson<AnalyzeResponse>('/api/analyze', input);
     console.log('✅ [aiClient.analyzeChatFull] 分析完成');
     return result;
@@ -125,8 +123,6 @@ export const aiClient = {
    * 生成回复建议
    */
   async generateReply(input: ReplyRequest): Promise<ReplyResponse> {
-    console.log('📡 [aiClient.generateReply] 开始请求 /api/reply');
-    console.log('📤 [aiClient.generateReply] 请求 body:', JSON.stringify(input, null, 2));
     const result = await postJson<ReplyResponse>('/api/reply', input);
     console.log('✅ [aiClient.generateReply] 回复生成完成');
     return result;
@@ -136,8 +132,6 @@ export const aiClient = {
    * 模拟对话
    */
   async simulate(input: SimulateRequest): Promise<SimulateResponse> {
-    console.log('📡 [aiClient.simulate] 开始请求 /api/simulate');
-    console.log('📤 [aiClient.simulate] 请求 body:', JSON.stringify(input, null, 2));
     const result = await postJson<SimulateResponse>('/api/simulate', input);
     console.log('✅ [aiClient.simulate] 模拟对话返回完成');
     return result;

@@ -136,7 +136,6 @@ export const chatRepository = {
     console.log('[chatRepo] 入参 userId:', userId);
     console.log('[chatRepo] 入参 girlId:', girlId);
     console.log('[chatRepo] 入参 messages 数量:', messages.length);
-    console.log('[chatRepo] 入参 messages 前 3 条:', messages.slice(0, 3));
 
     if (!userId) {
       const error = new Error('[chatRepo] userId 为空，无法创建聊天会话');
@@ -184,7 +183,6 @@ export const chatRepository = {
 
     console.log('[chatRepo] 准备写入 session:', session);
     console.log('[chatRepo] 准备写入 messages 数量:', messageEntities.length);
-    console.log('[chatRepo] messages 前 3 条:', messageEntities.slice(0, 3));
 
     try {
       // 事务内同时写入会话和消息
@@ -209,7 +207,6 @@ export const chatRepository = {
 
       console.log('[chatRepo] 写入后验证 session:', savedSession);
       console.log('[chatRepo] 写入后验证 messages 数量:', savedMessages.length);
-      console.log('[chatRepo] 写入后验证 messages 前 3 条:', savedMessages.slice(0, 3));
 
       if (!savedSession) {
         console.warn('[chatRepo] ⚠️ 警告：写入后没有查到 session');

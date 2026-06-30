@@ -12,6 +12,8 @@ import {
 export interface DashboardData {
   userName: string;
   girlName: string;
+  girlStage: string | undefined;
+  girlStageLabel: string | undefined;
   profileCompletion: number;
   analysisReportCount: number;
   replyHistoryCount: number;
@@ -104,6 +106,8 @@ export function useDashboardData() {
       const result: DashboardData = {
         userName: user?.nickname ?? '',
         girlName: girl?.nickname ?? '',
+        girlStage: girl?.currentStage,
+        girlStageLabel: girl?.currentStageLabel,
         profileCompletion: completion,
         analysisReportCount: analysisList.length,
         replyHistoryCount: replyList.length,

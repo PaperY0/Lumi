@@ -226,10 +226,10 @@ export function resetOnboardingFlag(): void {
       localStorage.setItem('lumi-settings', JSON.stringify(parsed));
     }
   } catch {
-    // 如果解析失败，直接写入最小结构
+    // 解析失败时保留原值，仅修改 onboardingCompleted
     localStorage.setItem('lumi-settings', JSON.stringify({
       state: { onboardingCompleted: false },
-      version: 0,
+      version: 2,
     }));
   }
 }

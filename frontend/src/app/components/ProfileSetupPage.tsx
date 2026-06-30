@@ -155,7 +155,7 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
           setHerName(girl.nickname || '');
           setKnowDuration(girl.knownDuration || '');
 
-          // currentStage → relation 反向映射
+          // currentStage → relation 反向映射（回显备选）
           const stageToRelation: Record<string, string> = {
             'stranger': '陌生人',
             'observing': '普通朋友',
@@ -163,16 +163,17 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
             'pursuing': '暧昧关系',
             'dating': '熟悉朋友',
           };
-          const relationLabel = stageToRelation[girl.currentStage] || '普通朋友';
+          // 优先使用保存时记录的 UI 标签，回退到映射
+          const relationLabel = girl.currentStageLabel || stageToRelation[girl.currentStage] || '普通朋友';
           setRelation([relationLabel]);
 
-          // interactionFrequency → freq 反向映射
+          // interactionFrequency → freq 反向映射（回显备选）
           const freqToLabel: Record<string, string> = {
             'high': '每天聊',
             'medium': '隔天聊',
             'low': '断断续续',
           };
-          const freqLabel = freqToLabel[girl.interactionFrequency] || '隔天聊';
+          const freqLabel = girl.interactionFrequencyLabel || freqToLabel[girl.interactionFrequency] || '隔天聊';
           setFreq([freqLabel]);
 
           // likes / interests
@@ -581,11 +582,6 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
                 options={relationOptions}
                 selected={relation}
                 onToggle={(v: string) => {
-                  console.log('📌 [ProfileSetupPage] 单选关系阶段:', {
-                    clicked: v,
-                    before: relation,
-                    after: [v],
-                  });
                   selectSingle(v, setRelation);
                 }}
               />
@@ -597,11 +593,6 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
                 options={freqOptions}
                 selected={freq}
                 onToggle={(v: string) => {
-                  console.log('📌 [ProfileSetupPage] 单选联系频率:', {
-                    clicked: v,
-                    before: freq,
-                    after: [v],
-                  });
                   selectSingle(v, setFreq);
                 }}
               />

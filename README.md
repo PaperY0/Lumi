@@ -1,11 +1,26 @@
+# Lumi
 
-  # 生成前端页面
+AI-powered relationship companion application.
 
-  This is a code bundle for 生成前端页面. The original project is available at https://www.figma.com/design/QSssdxheD8nGLjdOa6kqnv/%E7%94%9F%E6%88%90%E5%89%8D%E7%AB%AF%E9%A1%B5%E9%9D%A2.
+## Project Structure
 
-  ## Running the code
+```
+Lumi/
+├── frontend/    # React + Vite + Tailwind CSS frontend
+├── backend/     # Express API server with AI integration
+├── docs/        # Documentation, reports, and design specs
+└── dist/        # Build output
+```
 
-  Run `npm i` to install the dependencies.
+## Getting Started
 
-  Run `npm run dev` to start the development server.
-  
+```bash
+# Install all dependencies
+pnpm install
+
+# Start frontend dev server
+pnpm dev
+
+# Start backend server
+pnpm dev:server
+```
