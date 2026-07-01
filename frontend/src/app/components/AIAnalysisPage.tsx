@@ -125,7 +125,7 @@ export function AIAnalysisPage({ onNavigate }: Props) {
   ) : 0;
 
   return (
-    <div style={{ padding: '32px', maxWidth: 900, margin: '0 auto' }} className="page-enter">
+    <div style={{ padding: '32px', maxWidth: 1024, margin: '0 auto' }} className="page-enter">
       {/* 标题 */}
       <div style={{ marginBottom: 28 }}>
         <BlurText text="AI 聊天分析" startDelay={60} className="gradient-text" style={{ fontSize: 28, letterSpacing: '-0.03em', fontWeight: 700, display: 'block' }} />

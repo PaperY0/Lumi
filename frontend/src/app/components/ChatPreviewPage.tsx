@@ -172,7 +172,26 @@ function MinerUPreview({ store, currentUser, currentGirl, onNavigate }: any) {
     return { total: store.minerUMessages.length, A, B, unknown };
   }, [store.minerUMessages]);
 
-  const canSave = stats.A >= 1 && stats.B >= 1 && aIsMe !== null;
+  const messagesReady = stats.A >= 1 && stats.B >= 1;
+  const canSave = messagesReady && aIsMe !== null;
+
+  const validateBeforeSave = (): boolean => {
+    if (aIsMe === null) {
+      console.warn('⚠️ [ChatPreviewPage] 未选择 A/B 对应关系，阻止保存');
+      setSaveError('请先选择说话角色：A/B 分别是谁');
+      return false;
+    }
+    if (!messagesReady) {
+      setSaveError('至少需要 1 条 A 和 1 条 B 的消息才能保存');
+      return false;
+    }
+    if (!currentUser?.id) {
+      setSaveError('请先完成资料建档');
+      return false;
+    }
+    setSaveError(null);
+    return true;
+  };
 
   const doSave = async (): Promise<string> => {
     const messagesToSave = store.minerUMessages
@@ -200,12 +219,7 @@ function MinerUPreview({ store, currentUser, currentGirl, onNavigate }: any) {
 
   const handleSaveOnly = async () => {
     setSaveError(null);
-    if (!canSave) {
-      if (aIsMe === null) setSaveError('请先选择 A 和 B 分别对应"我"还是"她"');
-      else setSaveError('至少需要 1 条 A 和 1 条 B 的消息才能保存');
-      return;
-    }
-    if (!currentUser?.id) { setSaveError('请先完成资料建档'); return; }
+    if (!validateBeforeSave()) return;
 
     setSaving(true);
     try {
@@ -220,12 +234,7 @@ function MinerUPreview({ store, currentUser, currentGirl, onNavigate }: any) {
 
   const handleSaveAndAnalyze = async () => {
     setSaveError(null);
-    if (!canSave) {
-      if (aIsMe === null) setSaveError('请先选择 A 和 B 分别对应"我"还是"她"');
-      else setSaveError('至少需要 1 条 A 和 1 条 B 的消息才能保存');
-      return;
-    }
-    if (!currentUser?.id) { setSaveError('请先完成资料建档'); return; }
+    if (!validateBeforeSave()) return;
 
     setSaving(true);
     try {
@@ -293,8 +302,8 @@ function MinerUPreview({ store, currentUser, currentGirl, onNavigate }: any) {
             A 和 B 分别是谁？
           </div>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <MapBtn label="A 是我，B 是她" active={aIsMe === true} onClick={() => setAIsMe(true)} />
-            <MapBtn label="A 是她，B 是我" active={aIsMe === false} onClick={() => setAIsMe(false)} />
+            <MapBtn label="A 是我，B 是她" active={aIsMe === true} onClick={() => { setAIsMe(true); setSaveError(null); console.log('✅ [ChatPreviewPage] 已选择 A/B 对应关系: A是我B是她'); }} />
+            <MapBtn label="A 是她，B 是我" active={aIsMe === false} onClick={() => { setAIsMe(false); setSaveError(null); console.log('✅ [ChatPreviewPage] 已选择 A/B 对应关系: A是她B是我'); }} />
           </div>
         </div>
         {saveError && (
@@ -309,13 +318,13 @@ function MinerUPreview({ store, currentUser, currentGirl, onNavigate }: any) {
         )}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.7 }}>
-            {canSave ? '✅ 满足保存条件' : aIsMe === null ? '请先选择 A/B 对应关系' : '需要至少 1 条 A 和 1 条 B'}
+            {canSave ? '✅ 满足保存条件' : aIsMe === null ? '请先选择 A/B 对应关系' : messagesReady ? '' : '需要至少 1 条 A 和 1 条 B'}
           </span>
           <div style={{ display: 'flex', gap: 8 }}>
-            <LiquidButton variant="secondary" onClick={handleSaveOnly} disabled={!canSave || saving}>
+            <LiquidButton variant="secondary" onClick={handleSaveOnly} disabled={saving}>
               {saving ? '保存中...' : '保存'} <Save size={16} />
             </LiquidButton>
-            <LiquidButton onClick={handleSaveAndAnalyze} disabled={!canSave || saving}>
+            <LiquidButton onClick={handleSaveAndAnalyze} disabled={saving}>
               {saving ? '保存中...' : '保存并分析'} <Check size={16} />
             </LiquidButton>
           </div>
