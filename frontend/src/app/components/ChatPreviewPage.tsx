@@ -153,10 +153,11 @@ function MinerUPreview({ store, currentUser, currentGirl, onNavigate }: any) {
       .filter((m: any) => m.cleanedText.trim())
       .map((m: any) => {
         let sender: 'user' | 'other';
-        if (m.speakerRole === 'A') sender = aIsMe ? 'user' : 'other';
-        else if (m.speakerRole === 'B') sender = aIsMe ? 'other' : 'user';
+        const role = m.speakerRole ?? (m.role === 'A' ? 'A' : m.role === 'B' ? 'B' : 'unknown');
+        if (role === 'A') sender = aIsMe ? 'user' : 'other';
+        else if (role === 'B') sender = aIsMe ? 'other' : 'user';
         else sender = 'other'; // unknown → other 兜底
-        return { sender, content: m.cleanedText.trim(), sentAt: new Date(), senderName: m.speakerRole };
+        return { sender, content: m.cleanedText.trim(), sentAt: new Date(), senderName: role };
       });
 
     console.log('✅ [ChatPreviewPage] 用户确认后的消息:', messagesToSave);
@@ -313,7 +314,7 @@ function MessageList({ mode, store, editingId, editText, setEditText, onStartEdi
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
       {msgs.map((m: any, idx: number) => {
-        const role = mode === 'mineru' ? m.speakerRole : m.senderRole;
+        const role = mode === 'mineru' ? (m.speakerRole ?? (m.role ?? 'unknown')) : m.senderRole;
         const confidence = mode === 'mineru' ? (m.confidence ?? 1) : 1;
         const align = role === 'A' || role === 'me' ? 'flex-start' :
                       role === 'B' || role === 'her' ? 'flex-end' : 'center';

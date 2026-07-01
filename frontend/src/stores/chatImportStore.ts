@@ -7,7 +7,7 @@
 import { create } from 'zustand';
 import type { ChatMessage } from '@/types';
 import type { ChatImportResult, ChatMessageDraft, SenderRole } from '@/types/chatImport';
-import type { MinerUImportResult, MinerUParsedMessage, DraftSpeakerRole } from '@/types/minerUChatImport';
+import type { MinerUImportResult, MinerUParseResponse, MinerUParsedMessage, DraftSpeakerRole } from '@/types/minerUChatImport';
 
 /** 导入来源方式 */
 type SourceMethod = 'paste' | 'ocr' | 'file';
@@ -56,7 +56,7 @@ interface ChatImportState {
   minerUImportResult: MinerUImportResult | null;
   minerUMessages: MinerUParsedMessage[];
   /** 设置 MinerU 导入结果 */
-  setMinerUImportResult: (result: MinerUImportResult) => void;
+  setMinerUImportResult: (result: MinerUImportResult | MinerUParseResponse) => void;
   /** 修改某条 MinerU 消息的角色（A/B/unknown） */
   updateMinerUMessageRole: (id: string, role: DraftSpeakerRole) => void;
   /** 修改某条 MinerU 消息的文本 */
@@ -153,8 +153,22 @@ export const useChatImportStore = create<ChatImportState>((set) => ({
     set({ draftMessages: [], importResult: null }),
 
   // ── MinerU A/B 流 ──
-  setMinerUImportResult: (result) =>
-    set({ minerUImportResult: result, minerUMessages: result.messages }),
+  setMinerUImportResult: (result: MinerUImportResult | MinerUParseResponse) =>
+    set({
+      minerUImportResult: {
+        originalMarkdown: result.originalMarkdown,
+        cleanedRawText: (result as any).cleanedRawText ?? (result as MinerUParseResponse).rawText ?? '',
+        roleParsedText: (result as any).roleParsedText ?? (result as MinerUParseResponse).rawText ?? '',
+        messages: result.messages,
+        removedNoiseCount: result.removedNoiseCount ?? 0,
+        warnings: result.warnings || [],
+      } as MinerUImportResult,
+      minerUMessages: (result.messages as MinerUParsedMessage[]).map((m, i) => ({
+        ...m,
+        speakerRole: (m as any).speakerRole ?? (m.role ?? 'unknown') as DraftSpeakerRole,
+        id: m.id || `mineru-store-${Date.now()}-${i}`,
+      })),
+    }),
 
   updateMinerUMessageRole: (id, role) =>
     set((state) => ({

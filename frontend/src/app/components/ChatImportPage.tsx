@@ -7,6 +7,7 @@ import { parseChatText, type ChatImportParseResult } from '@/lib/chatImportParse
 import { getSenderCandidates, mapMessagesWithSenderSelection, hasSenderConflict } from '@/lib/chatSenderMapping';
 import { parseImportedChatText } from '@/lib/parsers/chatImportPipeline';
 import { parseMinerUChatMarkdown } from '@/lib/parsers/minerUImportPipeline';
+import { aiClient } from '@/lib/ai/aiClient';
 import type { ImageOcrResult } from '@/lib/chatImageOcr';
 import { readChatFiles, type ChatFileImportResult } from '@/lib/chatFileImporter';
 import { chatRepository } from '@/lib/db/repositories/chatRepo';
@@ -44,6 +45,7 @@ export function ChatImportPage({ onNavigate }: Props) {
   // 文件导入状态
   const [fileWarnings, setFileWarnings] = useState<string[]>([]);
   const [readingFiles, setReadingFiles] = useState(false);
+  const [minerULoading, setMinerULoading] = useState(false);
 
   // 发送人映射状态
   const [userSenderName, setUserSenderName] = useState<string | null>(null);
@@ -138,16 +140,29 @@ export function ChatImportPage({ onNavigate }: Props) {
   };
 
   // ── MinerU 解析 ──────────────────────────────────────
-  // 走 minerUImportPipeline：保留 originalMarkdown → 基础清洗 → A/B 初判 → 跳预览页
-  const handleMinerUParse = () => {
+  // 调用后端 /api/parse-mineru-chat → AI 清洗 + A/B 初筛 → 跳预览页
+  const handleMinerUParse = async () => {
     if (!rawText.trim()) {
       setError('请输入 MinerU Markdown 后再解析');
       return;
     }
     setError(null);
-    const result = parseMinerUChatMarkdown(rawText);
-    setMinerUImportResult(result);
-    onNavigate('chat-preview');
+    setMinerULoading(true);
+
+    console.log('📥 [ChatImportPage] 调用后端 MinerU 解析, 长度:', rawText.length);
+
+    try {
+      const result = await aiClient.parseMinerUChat({ originalMarkdown: rawText });
+      console.log('📤 [ChatImportPage] 后端返回:', { messages: result.messages?.length, warnings: result.warnings });
+
+      setMinerUImportResult(result);
+      onNavigate('chat-preview');
+    } catch (err: any) {
+      console.error('[ChatImportPage] MinerU 解析失败:', err);
+      setError(err.message || '云端识别失败，请检查后端服务是否启动，或稍后重试。');
+    } finally {
+      setMinerULoading(false);
+    }
   };
 
   // ── 保存聊天记录（内部共用） ──────────────────────────
@@ -837,8 +852,8 @@ export function ChatImportPage({ onNavigate }: Props) {
                 </span>
               </div>
               <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
-                <LiquidButton onClick={handleMinerUParse} disabled={!rawText.trim()} variant="secondary">
-                  🔬 MinerU 解析 <ArrowRight size={16} />
+                <LiquidButton onClick={handleMinerUParse} disabled={!rawText.trim() || minerULoading} variant="secondary">
+                  {minerULoading ? '⏳ 云端识别中...' : '🔬 MinerU 解析'} <ArrowRight size={16} />
                 </LiquidButton>
                 <LiquidButton onClick={handlePreviewClean} disabled={!rawText.trim()} variant="secondary">
                   预览(清洗) <ArrowRight size={16} />

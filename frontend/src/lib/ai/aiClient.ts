@@ -16,6 +16,8 @@ import type {
   SimulateResponse,
 } from '@/types';
 
+import type { MinerUParseRequest, MinerUParseResponse } from '@/types/minerUChatImport';
+
 /**
  * AI 请求错误类
  * 携带 HTTP 状态码和错误消息
@@ -134,6 +136,16 @@ export const aiClient = {
   async simulate(input: SimulateRequest): Promise<SimulateResponse> {
     const result = await postJson<SimulateResponse>('/api/simulate', input);
     console.log('✅ [aiClient.simulate] 模拟对话返回完成');
+    return result;
+  },
+
+  /**
+   * MinerU 聊天清洗 + A/B 初筛
+   */
+  async parseMinerUChat(input: MinerUParseRequest): Promise<MinerUParseResponse> {
+    console.log('📡 [aiClient.parseMinerUChat] 请求 /api/parse-mineru-chat');
+    const result = await postJson<MinerUParseResponse>('/api/parse-mineru-chat', input);
+    console.log('✅ [aiClient.parseMinerUChat] 返回 messages:', result.messages?.length ?? 0);
     return result;
   },
 };

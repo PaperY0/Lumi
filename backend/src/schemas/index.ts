@@ -71,3 +71,19 @@ export type PortraitResponse = z.infer<typeof PortraitResponseSchema>;
 export type AnalyzeResponse = z.infer<typeof AnalyzeResponseSchema>;
 export type ReplyResponse = z.infer<typeof ReplyResponseSchema>;
 export type SimulateResponse = z.infer<typeof SimulateResponseSchema>;
+export type MinerUParseResponse = z.infer<typeof MinerUParseResponseSchema>;
+
+// MinerU 聊天解析 — 校验 AI 返回的 JSON
+export const MinerUParsedMessageSchema = z.object({
+  rawText: z.string(),
+  cleanedText: z.string(),
+  role: z.enum(['A', 'B']),
+  confidence: z.number().optional(),
+  reason: z.string().optional(),
+});
+
+export const MinerUParseResponseSchema = z.object({
+  rawText: z.string(),
+  messages: z.array(MinerUParsedMessageSchema),
+  warnings: z.array(z.string()).default([]),
+});

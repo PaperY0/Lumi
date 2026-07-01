@@ -122,3 +122,54 @@ export function mockSimulate() {
     isFinished: false,
   };
 }
+
+export function mockMinerUChatParse(input: { originalMarkdown: string }) {
+  return {
+    originalMarkdown: input.originalMarkdown,
+    rawText:
+      'A: 求\nB: skill大全\nA: 私\nA: 蹲\nB: 嗯喽\n\n已完成云端高精度识别，请检查后点击解析。',
+    messages: [
+      {
+        id: 'mock-1',
+        rawText: '求',
+        cleanedText: '求',
+        role: 'A' as const,
+        confidence: 0.85,
+        reason: '前方出现头像占位符，推断为左侧 A',
+      },
+      {
+        id: 'mock-2',
+        rawText: 'skill大全',
+        cleanedText: 'skill大全',
+        role: 'B' as const,
+        confidence: 0.8,
+        reason: '后方出现头像占位符，推断为右侧 B',
+      },
+      {
+        id: 'mock-3',
+        rawText: '私',
+        cleanedText: '私',
+        role: 'A' as const,
+        confidence: 0.75,
+        reason: '前方出现头像占位符，推断为左侧 A',
+      },
+      {
+        id: 'mock-4',
+        rawText: '蹲',
+        cleanedText: '蹲',
+        role: 'A' as const,
+        confidence: 0.7,
+        reason: '前方无明确信号，推断为 A',
+      },
+      {
+        id: 'mock-5',
+        rawText: '嗯喽',
+        cleanedText: '嗯喽',
+        role: 'B' as const,
+        confidence: 0.8,
+        reason: '后方出现头像占位符，推断为右侧 B',
+      },
+    ],
+    warnings: [] as string[],
+  };
+}

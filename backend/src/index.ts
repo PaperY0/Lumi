@@ -11,6 +11,7 @@ import portraitRouter from './routes/portrait.js';
 import analyzeRouter from './routes/analyze.js';
 import replyRouter from './routes/reply.js';
 import simulateRouter from './routes/simulate.js';
+import minerUChatRouter from './routes/minerUChat.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -36,6 +37,7 @@ app.use('/api', portraitRouter);
 app.use('/api', analyzeRouter);
 app.use('/api', replyRouter);
 app.use('/api', simulateRouter);
+app.use('/api', minerUChatRouter);
 
 // 404 处理
 app.use((req, res) => {
@@ -64,5 +66,6 @@ ${mockMode ? '🔄 运行模式: MOCK (使用假数据)' : '🤖 运行模式: A
   POST /api/analyze   - 聊天消息分析
   POST /api/reply     - 回复建议生成
   POST /api/simulate  - 模拟对方回复
+  POST /api/parse-mineru-chat - MinerU 聊天清洗 + A/B 初筛
   `);
 });

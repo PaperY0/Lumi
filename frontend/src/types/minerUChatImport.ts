@@ -15,6 +15,26 @@
 /** 草稿阶段发言人角色：A / B / 未确定（A/B 谁是我谁是她由用户在保存时决定） */
 export type DraftSpeakerRole = 'A' | 'B' | 'unknown';
 
+/** A/B 角色（仅 A/B，不含 unknown） */
+export type ABRole = 'A' | 'B';
+
+/** 最终落库角色（me=我, her=她） */
+export type FinalSenderRole = 'me' | 'her';
+
+/** 前端 → 后端请求体 */
+export interface MinerUParseRequest {
+  originalMarkdown: string;
+}
+
+/** 后端 → 前端响应体 */
+export interface MinerUParseResponse {
+  originalMarkdown: string;
+  rawText: string;
+  messages: MinerUParsedMessage[];
+  warnings: string[];
+  removedNoiseCount?: number;
+}
+
 /** 基础清洗结果 */
 export interface MinerUCleanResult {
   /** 原始 Markdown，原样保留 */
@@ -37,6 +57,8 @@ export interface MinerUParsedMessage {
   cleanedText: string;
   /** 初判角色 A/B/unknown */
   speakerRole: DraftSpeakerRole;
+  /** 后端返回的角色 A/B */
+  role?: ABRole;
   /** 置信度 0~1，越接近 1 越可信 */
   confidence: number;
   /** 判断理由（便于调试和用户理解） */
@@ -47,14 +69,14 @@ export interface MinerUParsedMessage {
 export interface MinerUImportResult {
   /** 原始 Markdown，原样 */
   originalMarkdown: string;
-  /** 基础清洗后纯文本 */
+  /** 基础清洗后纯文本; 后端流 = rawText */
   cleanedRawText: string;
-  /** A/B 初判后的角色文本（A: xxx\nB: xxx\unknown: xxx），用于调试输出 */
+  /** A/B 初判后的角色文本; 后端流 = rawText */
   roleParsedText: string;
   /** 切分+初判后的消息 */
   messages: MinerUParsedMessage[];
   /** 删除的噪声行数 */
-  removedNoiseCount: number;
+  removedNoiseCount?: number;
   /** 警告信息 */
   warnings: string[];
 }
