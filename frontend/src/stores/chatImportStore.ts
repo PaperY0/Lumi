@@ -6,6 +6,7 @@
 
 import { create } from 'zustand';
 import type { ChatMessage } from '@/types';
+import type { ChatImportResult, ChatMessageDraft, SenderRole } from '@/types/chatImport';
 
 /** 导入来源方式 */
 type SourceMethod = 'paste' | 'ocr' | 'file';
@@ -19,6 +20,11 @@ interface ChatImportState {
   /** 导入时间（ISO 8601 字符串）；未导入时为 null */
   importedAt: string | null;
 
+  /** 导入增强：清洗 + 切分后的草稿消息（发言人待用户确认） */
+  draftMessages: ChatMessageDraft[];
+  /** 导入增强：流水线结果（含统计/warnings），供预览页顶部展示 */
+  importResult: ChatImportResult | null;
+
   /** 设置一批待确认消息，并记录来源方式与导入时间 */
   setPendingMessages: (messages: ChatMessage[], sourceMethod: SourceMethod) => void;
   /** 修正某一条消息（预览页编辑用） */
@@ -29,6 +35,20 @@ interface ChatImportState {
   clear: () => void;
   /** ✅ 重置为初始状态（别名，与其他 store 统一） */
   reset: () => void;
+
+  // ── 导入增强：草稿操作 ──
+  /** 设置草稿消息 + 流水线结果（ChatImportPage 解析后调用） */
+  setImportResult: (result: ChatImportResult) => void;
+  /** 修改某条草稿的发言人角色 */
+  updateMessageSender: (id: string, role: SenderRole) => void;
+  /** 修改某条草稿的文本 */
+  updateMessageText: (id: string, text: string) => void;
+  /** 删除某条草稿 */
+  deleteMessage: (id: string) => void;
+  /** 把某条草稿合并到上一条（content 追加，用 \n 连接） */
+  mergeWithPrevious: (id: string) => void;
+  /** 清空草稿层 */
+  clearImportResult: () => void;
 }
 
 /** ✅ 初始状态提取为常量 */
@@ -36,6 +56,8 @@ const initialState = {
   pendingMessages: [],
   sourceMethod: null,
   importedAt: null,
+  draftMessages: [],
+  importResult: null,
 };
 
 export const useChatImportStore = create<ChatImportState>((set) => ({
@@ -64,4 +86,49 @@ export const useChatImportStore = create<ChatImportState>((set) => ({
 
   // ✅ reset 方法（与 clear 功能相同）
   reset: () => set({ ...initialState }),
+
+  // ── 导入增强：草稿操作 ──
+  setImportResult: (result) =>
+    set({
+      importResult: result,
+      draftMessages: result.messages,
+    }),
+
+  updateMessageSender: (id, role) =>
+    set((state) => ({
+      draftMessages: state.draftMessages.map((m) =>
+        m.id === id ? { ...m, senderRole: role } : m,
+      ),
+    })),
+
+  updateMessageText: (id, text) =>
+    set((state) => ({
+      draftMessages: state.draftMessages.map((m) =>
+        m.id === id ? { ...m, cleanedText: text } : m,
+      ),
+    })),
+
+  deleteMessage: (id) =>
+    set((state) => ({
+      draftMessages: state.draftMessages.filter((m) => m.id !== id),
+    })),
+
+  mergeWithPrevious: (id) =>
+    set((state) => {
+      const idx = state.draftMessages.findIndex((m) => m.id === id);
+      if (idx <= 0) return state; // 没有上一条，不处理
+      const prev = state.draftMessages[idx - 1];
+      const cur = state.draftMessages[idx];
+      const merged: ChatMessageDraft = {
+        ...prev,
+        cleanedText: `${prev.cleanedText}\n${cur.cleanedText}`,
+        rawText: `${prev.rawText}\n${cur.rawText}`,
+      };
+      const next = [...state.draftMessages];
+      next.splice(idx - 1, 2, merged);
+      return { draftMessages: next };
+    }),
+
+  clearImportResult: () =>
+    set({ draftMessages: [], importResult: null }),
 }));

@@ -5,10 +5,12 @@ import { BlurText } from './BlurText';
 import type { PageName } from './GlassUI';
 import { parseChatText, type ChatImportParseResult } from '@/lib/chatImportParser';
 import { getSenderCandidates, mapMessagesWithSenderSelection, hasSenderConflict } from '@/lib/chatSenderMapping';
+import { parseImportedChatText } from '@/lib/parsers/chatImportPipeline';
 import type { ImageOcrResult } from '@/lib/chatImageOcr';
 import { readChatFiles, type ChatFileImportResult } from '@/lib/chatFileImporter';
 import { chatRepository } from '@/lib/db/repositories/chatRepo';
 import { useUserStore, useUiStore } from '@/stores';
+import { useChatImportStore } from '@/stores/chatImportStore';
 import { useAnalysisRequestStore } from '@/stores/analysisRequestStore';
 import { ChatRecordHistoryPanel } from './ChatRecordHistoryPanel';
 
@@ -20,6 +22,7 @@ export function ChatImportPage({ onNavigate }: Props) {
   const { currentUser, currentGirl } = useUserStore();
   const { showToast } = useUiStore();
   const { setPending } = useAnalysisRequestStore();
+  const { setImportResult } = useChatImportStore();
 
   const [rawText, setRawText] = useState('');
   const [parseResult, setParseResult] = useState<ChatImportParseResult | null>(null);
@@ -118,6 +121,19 @@ export function ChatImportPage({ onNavigate }: Props) {
     setUserSenderName(candidates[0] ?? null);
     setGirlSenderName(candidates[1] ?? null);
     setImported(false);
+  };
+
+  // ── 预览（清洗 + 切分流水线）──────────────────────────
+  // 走新的 chatImportPipeline：清洗 OCR/Markdown 噪声 → 切成草稿 → 跳预览页确认发言人
+  const handlePreviewClean = () => {
+    if (!rawText.trim()) {
+      setError('请输入聊天记录后再预览');
+      return;
+    }
+    setError(null);
+    const result = parseImportedChatText(rawText);
+    setImportResult(result);
+    onNavigate('chat-preview');
   };
 
   // ── 保存聊天记录（内部共用） ──────────────────────────
@@ -806,7 +822,10 @@ export function ChatImportPage({ onNavigate }: Props) {
                   {rawText.length} 字符
                 </span>
               </div>
-              <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+              <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
+                <LiquidButton onClick={handlePreviewClean} disabled={!rawText.trim()} variant="secondary">
+                  预览(清洗) <ArrowRight size={16} />
+                </LiquidButton>
                 <LiquidButton onClick={handleParse} disabled={!rawText.trim()}>
                   解析聊天记录 <ArrowRight size={16} />
                 </LiquidButton>

@@ -7,6 +7,7 @@ import { MaleQuestionnairePage } from './components/MaleQuestionnairePage';
 import { FemaleQuestionnairePage } from './components/FemaleQuestionnairePage';
 import { RelationshipPortraitPage } from './components/RelationshipPortraitPage';
 import { ChatImportPage } from './components/ChatImportPage';
+import { ChatPreviewPage } from './components/ChatPreviewPage';
 import { AIAnalysisPage } from './components/AIAnalysisPage';
 import { ReplyAssistPage } from './components/ReplyAssistPage';
 import { SimulationPage } from './components/SimulationPage';
@@ -211,6 +212,8 @@ export default function App() {
         return <RelationshipPortraitPage onNavigate={navigate} />;
       case 'chat-import':
         return <ChatImportPage onNavigate={navigate} />;
+      case 'chat-preview':
+        return <ChatPreviewPage onNavigate={navigate} />;
       case 'ai-analysis':
         return <AIAnalysisPage onNavigate={navigate} />;
       case 'reply-assist':
