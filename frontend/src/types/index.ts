@@ -9,3 +9,4 @@ export * from './simulation';
 export * from './importantDate';
 export * from './portrait';
 export * from './chatImport';
+export * from './minerUChatImport';

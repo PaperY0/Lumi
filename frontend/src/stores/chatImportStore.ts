@@ -7,6 +7,7 @@
 import { create } from 'zustand';
 import type { ChatMessage } from '@/types';
 import type { ChatImportResult, ChatMessageDraft, SenderRole } from '@/types/chatImport';
+import type { MinerUImportResult, MinerUParsedMessage, DraftSpeakerRole } from '@/types/minerUChatImport';
 
 /** 导入来源方式 */
 type SourceMethod = 'paste' | 'ocr' | 'file';
@@ -49,6 +50,23 @@ interface ChatImportState {
   mergeWithPrevious: (id: string) => void;
   /** 清空草稿层 */
   clearImportResult: () => void;
+
+  // ── MinerU A/B 流：草稿操作 ──
+  /** MinerU 导入结果 + 消息（A/B/unknown） */
+  minerUImportResult: MinerUImportResult | null;
+  minerUMessages: MinerUParsedMessage[];
+  /** 设置 MinerU 导入结果 */
+  setMinerUImportResult: (result: MinerUImportResult) => void;
+  /** 修改某条 MinerU 消息的角色（A/B/unknown） */
+  updateMinerUMessageRole: (id: string, role: DraftSpeakerRole) => void;
+  /** 修改某条 MinerU 消息的文本 */
+  updateMinerUMessageText: (id: string, text: string) => void;
+  /** 删除某条 MinerU 消息 */
+  deleteMinerUMessage: (id: string) => void;
+  /** 把某条 MinerU 消息合并到上一条 */
+  mergeMinerUWithPrevious: (id: string) => void;
+  /** 清空 MinerU 草稿层 */
+  clearMinerUImportResult: () => void;
 }
 
 /** ✅ 初始状态提取为常量 */
@@ -58,6 +76,8 @@ const initialState = {
   importedAt: null,
   draftMessages: [],
   importResult: null,
+  minerUImportResult: null,
+  minerUMessages: [],
 };
 
 export const useChatImportStore = create<ChatImportState>((set) => ({
@@ -131,4 +151,49 @@ export const useChatImportStore = create<ChatImportState>((set) => ({
 
   clearImportResult: () =>
     set({ draftMessages: [], importResult: null }),
+
+  // ── MinerU A/B 流 ──
+  setMinerUImportResult: (result) =>
+    set({ minerUImportResult: result, minerUMessages: result.messages }),
+
+  updateMinerUMessageRole: (id, role) =>
+    set((state) => ({
+      minerUMessages: state.minerUMessages.map((m) =>
+        m.id === id ? { ...m, speakerRole: role } : m,
+      ),
+    })),
+
+  updateMinerUMessageText: (id, text) =>
+    set((state) => ({
+      minerUMessages: state.minerUMessages.map((m) =>
+        m.id === id ? { ...m, cleanedText: text } : m,
+      ),
+    })),
+
+  deleteMinerUMessage: (id) =>
+    set((state) => ({
+      minerUMessages: state.minerUMessages.filter((m) => m.id !== id),
+    })),
+
+  mergeMinerUWithPrevious: (id) =>
+    set((state) => {
+      const idx = state.minerUMessages.findIndex((m) => m.id === id);
+      if (idx <= 0) return state;
+      const prev = state.minerUMessages[idx - 1];
+      const cur = state.minerUMessages[idx];
+      if (prev.speakerRole !== cur.speakerRole) {
+        console.warn(`[mergeMinerUWithPrevious] 角色冲突：prev=${prev.speakerRole} cur=${cur.speakerRole}，保留 prev 角色`);
+      }
+      const merged: MinerUParsedMessage = {
+        ...prev,
+        cleanedText: `${prev.cleanedText}\n${cur.cleanedText}`,
+        rawText: `${prev.rawText}\n${cur.rawText}`,
+      };
+      const next = [...state.minerUMessages];
+      next.splice(idx - 1, 2, merged);
+      return { minerUMessages: next };
+    }),
+
+  clearMinerUImportResult: () =>
+    set({ minerUImportResult: null, minerUMessages: [] }),
 }));

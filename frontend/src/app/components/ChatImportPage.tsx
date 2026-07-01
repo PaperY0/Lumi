@@ -6,6 +6,7 @@ import type { PageName } from './GlassUI';
 import { parseChatText, type ChatImportParseResult } from '@/lib/chatImportParser';
 import { getSenderCandidates, mapMessagesWithSenderSelection, hasSenderConflict } from '@/lib/chatSenderMapping';
 import { parseImportedChatText } from '@/lib/parsers/chatImportPipeline';
+import { parseMinerUChatMarkdown } from '@/lib/parsers/minerUImportPipeline';
 import type { ImageOcrResult } from '@/lib/chatImageOcr';
 import { readChatFiles, type ChatFileImportResult } from '@/lib/chatFileImporter';
 import { chatRepository } from '@/lib/db/repositories/chatRepo';
@@ -22,7 +23,7 @@ export function ChatImportPage({ onNavigate }: Props) {
   const { currentUser, currentGirl } = useUserStore();
   const { showToast } = useUiStore();
   const { setPending } = useAnalysisRequestStore();
-  const { setImportResult } = useChatImportStore();
+  const { setImportResult, setMinerUImportResult } = useChatImportStore();
 
   const [rawText, setRawText] = useState('');
   const [parseResult, setParseResult] = useState<ChatImportParseResult | null>(null);
@@ -133,6 +134,19 @@ export function ChatImportPage({ onNavigate }: Props) {
     setError(null);
     const result = parseImportedChatText(rawText);
     setImportResult(result);
+    onNavigate('chat-preview');
+  };
+
+  // ── MinerU 解析 ──────────────────────────────────────
+  // 走 minerUImportPipeline：保留 originalMarkdown → 基础清洗 → A/B 初判 → 跳预览页
+  const handleMinerUParse = () => {
+    if (!rawText.trim()) {
+      setError('请输入 MinerU Markdown 后再解析');
+      return;
+    }
+    setError(null);
+    const result = parseMinerUChatMarkdown(rawText);
+    setMinerUImportResult(result);
     onNavigate('chat-preview');
   };
 
@@ -823,6 +837,9 @@ export function ChatImportPage({ onNavigate }: Props) {
                 </span>
               </div>
               <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
+                <LiquidButton onClick={handleMinerUParse} disabled={!rawText.trim()} variant="secondary">
+                  🔬 MinerU 解析 <ArrowRight size={16} />
+                </LiquidButton>
                 <LiquidButton onClick={handlePreviewClean} disabled={!rawText.trim()} variant="secondary">
                   预览(清洗) <ArrowRight size={16} />
                 </LiquidButton>
