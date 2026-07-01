@@ -119,8 +119,9 @@ describe('chatImportParser', () => {
       const result = parseChatText(input);
 
       expect(result.messages).toHaveLength(1);
-      expect(result.messages[0].content).toBe('有效消息');
-      expect(result.skippedLines.length).toBeGreaterThanOrEqual(2);
+      // "又一行无效" 无发送人前缀，作为续行合并到上一条消息
+      expect(result.messages[0].content).toBe('有效消息\n又一行无效');
+      expect(result.skippedLines.length).toBeGreaterThanOrEqual(1);
     });
 
     it('全部无效行返回 warnings', () => {
@@ -129,6 +130,37 @@ describe('chatImportParser', () => {
 
       expect(result.messages).toHaveLength(0);
       expect(result.warnings.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('左侧/右侧 OCR 格式', () => {
+    it('解析 左侧：/ 右侧：冒号格式', () => {
+      const input = '左侧：hello\n右侧：hi';
+      const result = parseChatText(input);
+
+      expect(result.messages).toHaveLength(2);
+      expect(result.messages[0].senderName).toBe('左侧');
+      expect(result.messages[0].content).toBe('hello');
+      expect(result.messages[1].senderName).toBe('右侧');
+      expect(result.messages[1].content).toBe('hi');
+    });
+
+    it('senderCandidates 为 左侧 + 右侧', () => {
+      const input = '左侧：msg1\n右侧：msg2\n左侧：msg3';
+      const result = parseChatText(input);
+
+      const names = [...new Set(result.messages.map((m) => m.senderName))];
+      expect(names).toContain('左侧');
+      expect(names).toContain('右侧');
+    });
+
+    it('文件导入分隔行被跳过', () => {
+      const input = '--- 文件：chat.txt ---\nwh：hello\n--- 文件：log.json ---\nwsy：hi';
+      const result = parseChatText(input);
+
+      expect(result.messages).toHaveLength(2);
+      expect(result.messages[0].content).toBe('hello');
+      expect(result.messages[1].content).toBe('hi');
     });
   });
 });

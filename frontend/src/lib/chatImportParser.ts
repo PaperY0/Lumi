@@ -1,11 +1,42 @@
 /**
- * 聊天导入解析器 - 支持多种常见聊天记录格式
+ * 聊天导入解析器 — 统一中间格式
  *
- * 支持格式：
- * 1. colon       - 昵称：内容 或 昵称: 内容
- * 2. bracket-time - [2026/06/24 18:30] 昵称：内容
- * 3. datetime-prefix - 2026-06-24 18:30 昵称：内容
- * 4. wechat-block  - 昵称\n时间\n内容（微信复制三行格式）
+ * ============================================================================
+ * 标准中间格式（所有导入路径最终统一为此格式）
+ * ============================================================================
+ *
+ *   发送人标识：消息内容
+ *
+ * 发送人标识支持以下两种形式：
+ *
+ *   格式 A（昵称式）— 直接使用聊天中的昵称：
+ *     wh：今天还好吗？
+ *     Alice: Hello
+ *
+ *   格式 B（方向式，用于 OCR / 无昵称场景）— 使用方向标识代替昵称：
+ *     左侧：消息内容      左边：消息内容      我方：消息内容
+ *     右侧：消息内容      右边：消息内容      对方：消息内容
+ *
+ * 规则：
+ *   - 同时支持中文冒号"："和英文冒号":"。
+ *   - 一行没有发送人前缀时，视为上一条消息的续行追加（多行消息合并）。
+ *   - 空行跳过，不产生消息也不追加到续行。
+ *   - 时间戳行、系统提示、图片占位等噪音行被过滤。
+ *
+ * 输入源（均通过 parseChatText 统一解析为 ParsedChatMessage[]）：
+ *   1. 用户粘贴文本  → 格式 A 或格式 B
+ *   2. OCR 识别结果  → 格式 B（chatImageOcr.ts 输出 左侧：/右侧：）
+ *   3. 文件导入      → 格式 A（chatFileImporter.ts 输出 sender：content）
+ *
+ * 所有路径最终都通过本文件的 parseChatText 解析，输出统一的
+ * ParsedChatMessage[] 结构，供 ChatImportPage 和 senderMapping 使用。
+ * ============================================================================
+ *
+ * 原始格式检测（自动识别，无需用户选择）：
+ *   1. colon          - 昵称：内容 或 昵称: 内容
+ *   2. bracket-time   - [2026/06/24 18:30] 昵称：内容
+ *   3. datetime-prefix - 2026-06-24 18:30 昵称：内容
+ *   4. wechat-block   - 昵称\n时间\n内容（微信复制三行格式）
  *
  * 不调用 AI，不请求后端，纯本地解析。
  */
@@ -34,6 +65,11 @@ export interface ChatImportParseResult {
 const BRACKET_TIME_RE = /^\[(\d{4}\/\d{1,2}\/\d{1,2}\s+\d{1,2}:\d{2})\]\s*/;
 const DATETIME_RE = /^(\d{4}-\d{1,2}-\d{1,2}\s+\d{1,2}:\d{2})\s*/;
 const WECHAT_TIME_RE = /^(\d{4})年(\d{1,2})月(\d{1,2})日\s+(\d{1,2}):(\d{2})$/;
+
+/**
+ * 冒号分隔正则 — 匹配"发送人：内容"或"发送人: 内容"。
+ * 发送人标识可以是昵称（格式 A）或方向标识（格式 B：左侧/右侧/左边/右边/我方/对方）。
+ */
 const COLON_RE = /^([^：:]+)[：:]\s*(.+)$/;
 
 /** 系统消息关键词 */
@@ -97,6 +133,9 @@ function shouldSkipLine(line: string): boolean {
   if (/^\d{1,2}:\d{2}$/.test(trimmed)) return true;
   if (/^\d{4}[/-]\d{1,2}[/-]\d{1,2}\s+\d{1,2}:\d{2}$/.test(trimmed)) return true;
 
+  // 文件导入分隔行
+  if (/^--- 文件：.*---$/.test(trimmed)) return true;
+
   return false;
 }
 
@@ -121,7 +160,11 @@ function nextId(): string {
 /**
  * 解析聊天记录文本，支持多种格式。
  *
- * @param input 原始粘贴文本
+ * 所有输入最终都通过此函数统一为 ParsedChatMessage[]。
+ * 发送人标识支持格式 A（昵称式）和格式 B（方向式：左侧/右侧/左边/右边/我方/对方）。
+ * 无发送人前缀的行自动作为上一条消息的续行合并。
+ *
+ * @param input 原始文本
  * @param options.userName 用户昵称（用于匹配 role='user'）
  * @param options.girlName 女生昵称（用于匹配 role='girl'）
  */
@@ -199,6 +242,27 @@ export function parseChatText(
   return result;
 }
 
+// ── 续行合并 ──────────────────────────────────────────────
+
+/**
+ * 尝试将一行无发送人前缀的文本作为续行追加到上一条消息。
+ * 如果尚无可追加的消息，则记入 skippedLines。
+ * 返回 true 表示已处理（已追加或已跳过），调用方应 continue。
+ */
+function tryAppendContinuation(
+  line: string,
+  result: ChatImportParseResult,
+): boolean {
+  if (result.messages.length > 0) {
+    const last = result.messages[result.messages.length - 1];
+    last.content += '\n' + line;
+    last.rawLine += '\n' + line;
+    return true;
+  }
+  result.skippedLines.push(line);
+  return true;
+}
+
 // ── 格式解析 ──────────────────────────────────────────────
 
 function parseBracketTime(
@@ -209,15 +273,19 @@ function parseBracketTime(
   for (const rawLine of lines) {
     const line = rawLine.trim();
 
-    // 使用 shouldSkipLine 过滤无效内容
+    // 空行跳过
+    if (!line) continue;
+
+    // 系统/噪音行跳过
     if (shouldSkipLine(line)) {
-      if (line) result.skippedLines.push(line);
+      result.skippedLines.push(line);
       continue;
     }
 
     const timeMatch = line.match(BRACKET_TIME_RE);
     if (!timeMatch) {
-      result.skippedLines.push(line);
+      // 无时间前缀 → 续行
+      tryAppendContinuation(line, result);
       continue;
     }
 
@@ -261,15 +329,19 @@ function parseDatetimePrefix(
   for (const rawLine of lines) {
     const line = rawLine.trim();
 
-    // 使用 shouldSkipLine 过滤无效内容
+    // 空行跳过
+    if (!line) continue;
+
+    // 系统/噪音行跳过
     if (shouldSkipLine(line)) {
-      if (line) result.skippedLines.push(line);
+      result.skippedLines.push(line);
       continue;
     }
 
     const timeMatch = line.match(DATETIME_RE);
     if (!timeMatch) {
-      result.skippedLines.push(line);
+      // 无时间前缀 → 续行
+      tryAppendContinuation(line, result);
       continue;
     }
 
@@ -313,15 +385,19 @@ function parseColon(
   for (const rawLine of lines) {
     const line = rawLine.trim();
 
-    // 使用 shouldSkipLine 过滤无效内容
+    // 空行跳过
+    if (!line) continue;
+
+    // 系统/噪音行跳过
     if (shouldSkipLine(line)) {
-      if (line) result.skippedLines.push(line);
+      result.skippedLines.push(line);
       continue;
     }
 
     const match = line.match(COLON_RE);
     if (!match) {
-      result.skippedLines.push(line);
+      // 无发送人前缀 → 续行
+      tryAppendContinuation(line, result);
       continue;
     }
 

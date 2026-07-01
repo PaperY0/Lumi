@@ -21,10 +21,13 @@ pnpm-debug.log*
 
 # Env
 .env
-.env.*
-!.env.example
+.env.local
+server/.env
+server/.env.local
 
-# Server
+# Server (legacy "server/" path + current "backend/")
+server/node_modules/
+server/dist/
 backend/node_modules/
 backend/dist/
 backend/.env

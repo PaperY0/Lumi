@@ -5,6 +5,8 @@ import { BlurText } from './BlurText';
 import type { PageName } from './GlassUI';
 import { parseChatText, type ChatImportParseResult } from '@/lib/chatImportParser';
 import { getSenderCandidates, mapMessagesWithSenderSelection, hasSenderConflict } from '@/lib/chatSenderMapping';
+import type { ImageOcrResult } from '@/lib/chatImageOcr';
+import { readChatFiles, type ChatFileImportResult } from '@/lib/chatFileImporter';
 import { chatRepository } from '@/lib/db/repositories/chatRepo';
 import { useUserStore, useUiStore } from '@/stores';
 import { useAnalysisRequestStore } from '@/stores/analysisRequestStore';
@@ -28,6 +30,16 @@ export function ChatImportPage({ onNavigate }: Props) {
   const [successCount, setSuccessCount] = useState(0);
   const [helpExpanded, setHelpExpanded] = useState(true);
   const [activeView, setActiveView] = useState<'import' | 'history'>('import');
+
+  // OCR 状态
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrProgress, setOcrProgress] = useState(0);
+  const [ocrResults, setOcrResults] = useState<ImageOcrResult[] | null>(null);
+  const [ocrError, setOcrError] = useState<string | null>(null);
+
+  // 文件导入状态
+  const [fileWarnings, setFileWarnings] = useState<string[]>([]);
+  const [readingFiles, setReadingFiles] = useState(false);
 
   // 发送人映射状态
   const [userSenderName, setUserSenderName] = useState<string | null>(null);
@@ -219,6 +231,95 @@ export function ChatImportPage({ onNavigate }: Props) {
       setError(err instanceof Error ? err.message : '聊天记录保存失败，请稍后重试');
     } finally {
       setImporting(false);
+    }
+  };
+
+  // ── OCR 图片识别 ──────────────────────────────────────
+  const handleOcrFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setOcrLoading(true);
+    setOcrProgress(0);
+    setOcrResults(null);
+    setOcrError(null);
+
+    try {
+      const { recognizeChatImages } = await import('@/lib/chatImageOcr');
+      const results = await recognizeChatImages(
+        Array.from(files),
+        (progress) => setOcrProgress(progress),
+      );
+
+      setOcrResults(results);
+
+      const successTexts = results
+        .filter((r) => (r.normalizedText || r.text) && !r.warning)
+        .map((r) => r.normalizedText || r.text)
+        .join('\n');
+
+      if (successTexts) {
+        setRawText((prev) => {
+          const separator = prev.trim() ? '\n' : '';
+          return prev + separator + successTexts;
+        });
+      }
+
+      const hasOcrResult = results.some((r) => r.normalizedText || r.text);
+      if (hasOcrResult) {
+        setError(null);
+      }
+
+      const warnings = results.filter((r) => r.warning);
+      if (warnings.length > 0 && successTexts.length === 0) {
+        setOcrError(warnings.map((w) => w.warning).join('；'));
+      }
+    } catch {
+      setOcrError('OCR 初始化失败，请改用文本粘贴导入');
+    } finally {
+      setOcrLoading(false);
+      e.target.value = '';
+    }
+  };
+
+  // ── 文件导入 ──────────────────────────────────────────
+  const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setReadingFiles(true);
+    setFileWarnings([]);
+    setParseResult(null);
+    setUserSenderName(null);
+    setGirlSenderName(null);
+    setImported(false);
+
+    try {
+      const results = await readChatFiles(Array.from(files));
+      const warnings = results.filter((r) => r.warning).map((r) => r.warning!);
+      setFileWarnings(warnings);
+
+      // 合并文本，文件间用分隔行标记
+      const mergedText = results
+        .filter((r) => r.text)
+        .map((r) => `--- 文件：${r.fileName} ---\n${r.text}`)
+        .join('\n\n');
+
+      if (mergedText) {
+        setRawText((prev) => {
+          const separator = prev.trim() ? '\n\n' : '';
+          return prev + separator + mergedText;
+        });
+      }
+
+      if (warnings.length === results.length && !mergedText) {
+        setError('所有文件均无法读取，请检查文件格式和大小');
+      }
+    } catch {
+      setError('文件读取失败，请重试');
+    } finally {
+      setReadingFiles(false);
+      e.target.value = '';
     }
   };
 
@@ -709,6 +810,185 @@ export function ChatImportPage({ onNavigate }: Props) {
                 <LiquidButton onClick={handleParse} disabled={!rawText.trim()}>
                   解析聊天记录 <ArrowRight size={16} />
                 </LiquidButton>
+              </div>
+            </GlassCard>
+          )}
+
+          {/* 文件导入 */}
+          {!parseResult && !imported && (
+            <GlassCard style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-rose)', marginBottom: 8 }}>
+                📂 从文件导入聊天记录
+              </div>
+              <p style={{ margin: '0 0 14px', fontSize: 13, color: 'var(--text-purple)', opacity: 0.75, lineHeight: 1.6 }}>
+                支持 .txt、.md、.csv、.json 文件。文件只会在浏览器本地读取，不会上传服务器。
+              </p>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                <label
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '10px 20px',
+                    borderRadius: 999,
+                    background: readingFiles
+                      ? 'rgba(200,200,200,0.3)'
+                      : 'linear-gradient(135deg, rgba(200,168,212,0.1), rgba(176,160,204,0.12))',
+                    border: '1px solid rgba(200,168,212,0.3)',
+                    color: readingFiles ? 'var(--text-purple)' : '#8B6B9E',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: readingFiles ? 'not-allowed' : 'pointer',
+                    opacity: readingFiles ? 0.6 : 1,
+                  }}
+                >
+                  {readingFiles ? '⏳ 读取中...' : '📁 选择文件'}
+                  <input
+                    type="file"
+                    accept=".txt,.md,.csv,.json,text/plain,text/markdown,text/csv,application/json"
+                    multiple
+                    onChange={handleFileImport}
+                    disabled={readingFiles}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+
+                <span style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.6 }}>
+                  单文件 ≤ 2MB，最多 10 个
+                </span>
+              </div>
+
+              {fileWarnings.length > 0 && (
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: '10px 14px',
+                    borderRadius: 12,
+                    background: 'rgba(245,158,11,0.1)',
+                    border: '1px solid rgba(245,158,11,0.3)',
+                    fontSize: 12,
+                    color: '#D97706',
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {fileWarnings.map((w, i) => (
+                    <div key={i}>{w}</div>
+                  ))}
+                </div>
+              )}
+
+              <div
+                style={{
+                  marginTop: 14,
+                  padding: '10px 14px',
+                  borderRadius: 12,
+                  background: 'rgba(196,160,112,0.08)',
+                  border: '1px solid rgba(196,160,112,0.2)',
+                  fontSize: 11,
+                  color: 'var(--graphite-rose)',
+                  lineHeight: 1.6,
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 6,
+                }}
+              >
+                <span style={{ flexShrink: 0 }}>🔒</span>
+                <span>
+                  文件内容只会在当前浏览器中读取和解析，不会上传服务器。请不要导入未经允许的敏感聊天记录。
+                </span>
+              </div>
+            </GlassCard>
+          )}
+
+          {/* OCR 图片识别 */}
+          {!parseResult && !imported && (
+            <GlassCard style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-rose)', marginBottom: 8 }}>
+                📷 从聊天截图识别文字
+              </div>
+              <p style={{ margin: '0 0 14px', fontSize: 13, color: 'var(--text-purple)', opacity: 0.75, lineHeight: 1.6 }}>
+                选择聊天截图，通过 Mineru 云端识别文字并填入上方输入框。识别结果请检查后再解析。
+              </p>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                <label
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '10px 20px',
+                    borderRadius: 999,
+                    background: ocrLoading
+                      ? 'rgba(200,200,200,0.3)'
+                      : 'linear-gradient(135deg, rgba(212,96,122,0.1), rgba(191,142,110,0.15))',
+                    border: '1px solid rgba(212,96,122,0.25)',
+                    color: ocrLoading ? 'var(--text-purple)' : '#D4607A',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: ocrLoading ? 'not-allowed' : 'pointer',
+                    opacity: ocrLoading ? 0.6 : 1,
+                  }}
+                >
+                  {ocrLoading ? '⏳ 识别中...' : '📁 选择图片'}
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    multiple
+                    onChange={handleOcrFiles}
+                    disabled={ocrLoading}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+
+                {ocrLoading && (
+                  <span style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.7 }}>
+                    识别进度 {ocrProgress}%
+                  </span>
+                )}
+
+                {ocrResults && !ocrLoading && (
+                  <span style={{ fontSize: 12, color: '#4A7A3E' }}>
+                    已识别 {ocrResults.filter((r) => r.text).length} 张图片
+                  </span>
+                )}
+              </div>
+
+              {ocrError && (
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: '10px 14px',
+                    borderRadius: 12,
+                    background: 'rgba(245,158,11,0.1)',
+                    border: '1px solid rgba(245,158,11,0.3)',
+                    fontSize: 12,
+                    color: '#D97706',
+                  }}
+                >
+                  {ocrError}
+                </div>
+              )}
+
+              <div
+                style={{
+                  marginTop: 14,
+                  padding: '10px 14px',
+                  borderRadius: 12,
+                  background: 'rgba(196,160,112,0.08)',
+                  border: '1px solid rgba(196,160,112,0.2)',
+                  fontSize: 11,
+                  color: 'var(--graphite-rose)',
+                  lineHeight: 1.6,
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 6,
+                }}
+              >
+                <span style={{ flexShrink: 0 }}>🔒</span>
+                <span>
+                  图片将通过 Mineru 云端 API 识别。请勿上传包含隐私信息的截图。识别结果请检查后再导入。
+                </span>
               </div>
             </GlassCard>
           )}
