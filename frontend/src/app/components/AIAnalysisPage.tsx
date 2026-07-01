@@ -1,12 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowRight, Sparkles, RefreshCw, Lightbulb, Ban, AlertCircle, History, FileText } from 'lucide-react';
+import { ArrowRight, Sparkles, RefreshCw, Lightbulb, Ban, AlertCircle, History, FileText, MessageCircle } from 'lucide-react';
 import { GlassCard, LiquidButton, HeatMeter, StageBadge, AIInsightCard, WarningNotice, GlassInput } from './GlassUI';
 import { CountUp } from './CountUp';
 import { BlurText } from './BlurText';
 import type { PageName } from './GlassUI';
 import { useAnalyzeChat } from '@/hooks/useAnalyzeChat';
 import { useAnalysisRequestStore } from '@/stores/analysisRequestStore';
+import { useUserStore } from '@/stores';
+import { chatRepository } from '@/lib/db/repositories/chatRepo';
 import { AIAnalysisHistoryPanel } from './AIAnalysisHistoryPanel';
+import type { ChatSession, ChatMessage } from '@/types';
+import { formatDateTime } from '@/utils/date';
 
 type ActiveView = 'current' | 'history';
 
@@ -21,6 +25,50 @@ export function AIAnalysisPage({ onNavigate }: Props) {
 
   const { pendingSessionId, pendingFocusQuestion, clearPending } = useAnalysisRequestStore();
   const autoAnalyzeStartedRef = useRef(false);
+
+  // ── 聊天记录选择器 ──────────────────────────────────────────
+  const [chatRecords, setChatRecords] = useState<ChatSession[]>([]);
+  const [loadingRecords, setLoadingRecords] = useState(false);
+  const [previewMessages, setPreviewMessages] = useState<ChatMessage[]>([]);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const [recordsError, setRecordsError] = useState<string | null>(null);
+
+  const { currentUser } = useUserStore();
+
+  const loadChatRecords = async () => {
+    if (!currentUser?.id) return;
+    setLoadingRecords(true);
+    setRecordsError(null);
+    try {
+      const sessions = await chatRepository.listSessions(currentUser.id);
+      setChatRecords(sessions);
+      console.log('📚 [AIAnalysisPage] 已加载聊天记录数量:', sessions.length);
+    } catch (e: any) {
+      console.error('[AIAnalysisPage] 加载聊天记录失败:', e);
+      setRecordsError('加载聊天记录失败');
+    } finally {
+      setLoadingRecords(false);
+    }
+  };
+
+  const selectChatRecord = async (sessionId: string) => {
+    console.log('📌 [AIAnalysisPage] 当前选中聊天记录:', sessionId);
+    setCurrentSessionId(sessionId);
+    setLoadingPreview(true);
+    try {
+      const msgs = await chatRepository.getMessages(sessionId);
+      setPreviewMessages(msgs);
+    } catch {
+      setPreviewMessages([]);
+    } finally {
+      setLoadingPreview(false);
+    }
+  };
+
+  // 挂载时加载聊天记录列表
+  useEffect(() => {
+    loadChatRecords();
+  }, [currentUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 页面挂载时：检查待分析请求或加载缓存
   useEffect(() => {
@@ -39,11 +87,14 @@ export function AIAnalysisPage({ onNavigate }: Props) {
       });
       console.log('🚀 [AIAnalysisPage] 自动开始分析导入的聊天记录');
 
-      analyze({
-        sessionId: sid,
-        userQuestion: fq || undefined,
+      // 自动选中 + 加载消息 + 分析
+      selectChatRecord(sid).then(() => {
+        analyze({
+          sessionId: sid,
+          userQuestion: fq || undefined,
+        });
       });
-    } else {
+    } else if (!pendingSessionId) {
       // 没有待分析请求，加载缓存报告
       loadCached();
     }
@@ -51,9 +102,13 @@ export function AIAnalysisPage({ onNavigate }: Props) {
 
   const handleAnalyze = () => {
     if (loading) return;
+    if (!currentSessionId) {
+      setRecordsError('请先选择一段聊天记录');
+      return;
+    }
     console.log('🖱️ [AIAnalysisPage] 用户点击开始分析');
     analyze({
-      sessionId: currentSessionId || undefined,
+      sessionId: currentSessionId,
       userQuestion: currentFocusQuestion || userQuestion || undefined,
     });
   };
@@ -145,6 +200,116 @@ export function AIAnalysisPage({ onNavigate }: Props) {
               <div style={{ fontSize: 14, color: 'var(--text-rose)', lineHeight: 1.6 }}>
                 {currentFocusQuestion}
               </div>
+            </GlassCard>
+          )}
+
+          {/* 聊天记录选择器 */}
+          {!data && !loading && (
+            <GlassCard style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-rose)', marginBottom: 4 }}>
+                <MessageCircle size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />
+                聊天记录分析
+              </div>
+              <p style={{ margin: '0 0 14px', fontSize: 13, color: 'var(--text-purple)', opacity: 0.7, lineHeight: 1.6 }}>
+                选择一段已保存的聊天记录进行分析，也可以先预览内容再开始。
+              </p>
+
+              {recordsError && (
+                <div style={{ marginBottom: 12, padding: '8px 12px', borderRadius: 10, background: 'rgba(220,80,80,0.1)', border: '1px solid rgba(220,80,80,0.2)', fontSize: 12, color: '#C0392B' }}>
+                  {recordsError}
+                </div>
+              )}
+
+              {loadingRecords ? (
+                <div style={{ fontSize: 13, color: 'var(--text-purple)', opacity: 0.7, padding: '16px 0', textAlign: 'center' }}>
+                  正在加载聊天记录...
+                </div>
+              ) : chatRecords.length === 0 ? (
+                <div style={{ fontSize: 13, color: 'var(--text-purple)', opacity: 0.7, padding: '16px 0', textAlign: 'center', lineHeight: 1.8 }}>
+                  还没有已保存的聊天记录，请先导入或粘贴聊天内容。
+                </div>
+              ) : (
+                <>
+                  <select
+                    value={currentSessionId || ''}
+                    onChange={(e) => {
+                      const sid = e.target.value;
+                      if (sid) {
+                        selectChatRecord(sid);
+                        setRecordsError(null);
+                      } else {
+                        setCurrentSessionId(null);
+                        setPreviewMessages([]);
+                      }
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: 12,
+                      border: '1px solid rgba(200,168,212,0.3)',
+                      background: 'rgba(255,255,255,0.4)',
+                      fontSize: 14,
+                      color: 'var(--text-rose)',
+                      outline: 'none',
+                      marginBottom: 12,
+                    }}
+                  >
+                    <option value="">请选择要分析的聊天记录</option>
+                    {chatRecords.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.title || '未命名聊天记录'} — {r.messageCount} 条消息 — {formatDateTime(r.importedAt)}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* 预览 */}
+                  {loadingPreview && (
+                    <div style={{ fontSize: 13, color: 'var(--text-purple)', opacity: 0.7, padding: '12px 0', textAlign: 'center' }}>
+                      正在加载消息预览...
+                    </div>
+                  )}
+
+                  {!loadingPreview && currentSessionId && previewMessages.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-purple)', marginBottom: 8, opacity: 0.7 }}>
+                        预览（前 10 条，共 {previewMessages.length} 条）
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 300, overflowY: 'auto' }}>
+                        {previewMessages.slice(0, 10).map((msg) => {
+                          const isMe = msg.sender === 'user';
+                          return (
+                            <div key={msg.id} style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start' }}>
+                              <div style={{ maxWidth: '75%' }}>
+                                <div style={{ fontSize: 10, color: 'var(--text-purple)', opacity: 0.6, marginBottom: 2 }}>
+                                  {isMe ? '我' : '她'}
+                                </div>
+                                <div style={{
+                                  padding: '8px 12px',
+                                  borderRadius: 12,
+                                  background: isMe ? 'rgba(232,116,138,0.1)' : 'rgba(139,92,246,0.08)',
+                                  border: isMe ? '1px solid rgba(232,116,138,0.2)' : '1px solid rgba(139,92,246,0.15)',
+                                  fontSize: 13,
+                                  color: 'var(--text-rose)',
+                                  lineHeight: 1.5,
+                                  whiteSpace: 'pre-wrap',
+                                  wordBreak: 'break-word',
+                                }}>
+                                  {msg.content}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {previewMessages.length > 10 && (
+                        <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-purple)', opacity: 0.6, textAlign: 'center' }}>
+                          还有 {previewMessages.length - 10} 条未展示
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
             </GlassCard>
           )}
 

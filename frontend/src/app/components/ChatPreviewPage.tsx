@@ -11,11 +11,13 @@
  */
 
 import { useMemo, useState } from 'react';
-import { ArrowLeft, Check, Edit2, Trash2, Merge, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Check, Edit2, Trash2, Merge, AlertTriangle, Save } from 'lucide-react';
 import { GlassCard, LiquidButton } from './GlassUI';
 import type { PageName } from './GlassUI';
 import { useChatImportStore } from '@/stores/chatImportStore';
 import { useUserStore } from '@/stores';
+import { useUiStore } from '@/stores/uiStore';
+import { useAnalysisRequestStore } from '@/stores/analysisRequestStore';
 import { chatRepository } from '@/lib/db/repositories/chatRepo';
 import type { ChatMessageDraft, SenderRole } from '@/types/chatImport';
 import type { MinerUParsedMessage, DraftSpeakerRole } from '@/types/minerUChatImport';
@@ -49,6 +51,8 @@ function StandardPreview({ store, currentUser, currentGirl, onNavigate }: any) {
   const [editText, setEditText] = useState('');
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const { showToast } = useUiStore();
+  const { setPending } = useAnalysisRequestStore();
 
   const stats = useMemo(() => {
     const me = store.draftMessages.filter((m: any) => m.senderRole === 'me').length;
@@ -59,11 +63,7 @@ function StandardPreview({ store, currentUser, currentGirl, onNavigate }: any) {
 
   const canSave = stats.me >= 1 && stats.her >= 1;
 
-  const handleSave = async () => {
-    setSaveError(null);
-    if (!canSave) { setSaveError('至少需要 1 条"我"和 1 条"她"的消息才能保存'); return; }
-    if (!currentUser?.id) { setSaveError('请先完成资料建档'); return; }
-
+  const doSave = async (): Promise<string> => {
     const messagesToSave = store.draftMessages
       .filter((m: any) => m.cleanedText.trim())
       .map((m: any) => ({
@@ -73,15 +73,47 @@ function StandardPreview({ store, currentUser, currentGirl, onNavigate }: any) {
         senderName: m.senderName,
       }));
 
-    console.log('✅ [ChatPreviewPage] 用户确认后的消息:', messagesToSave);
+    console.log('💾 [ChatPreviewPage] 开始保存确认后的聊天记录');
+    console.log('💾 [ChatPreviewPage] 保存消息数:', messagesToSave.length);
+
+    const session = await chatRepository.createSessionWithMessages(
+      currentUser.id, currentGirl?.id ?? 'default-girl',
+      messagesToSave, 'paste',
+      `与 ${currentGirl?.nickname || '她'} 的聊天记录`,
+    );
+
+    console.log('✅ [ChatPreviewPage] 保存成功 chatRecordId:', session.id);
+    return session.id;
+  };
+
+  const handleSaveOnly = async () => {
+    setSaveError(null);
+    if (!canSave) { setSaveError('至少需要 1 条"我"和 1 条"她"的消息才能保存'); return; }
+    if (!currentUser?.id) { setSaveError('请先完成资料建档'); return; }
+
     setSaving(true);
     try {
-      await chatRepository.createSessionWithMessages(
-        currentUser.id, currentGirl?.id ?? 'default-girl',
-        messagesToSave, 'paste',
-        `与 ${currentGirl?.nickname || '她'} 的聊天记录`,
-      );
+      await doSave();
       store.clearImportResult();
+      showToast('聊天记录已保存', 'success');
+      onNavigate('chat-import');
+    } catch (err: any) {
+      setSaveError(err.message || '保存失败，请重试');
+    } finally { setSaving(false); }
+  };
+
+  const handleSaveAndAnalyze = async () => {
+    setSaveError(null);
+    if (!canSave) { setSaveError('至少需要 1 条"我"和 1 条"她"的消息才能保存'); return; }
+    if (!currentUser?.id) { setSaveError('请先完成资料建档'); return; }
+
+    setSaving(true);
+    try {
+      const chatRecordId = await doSave();
+      console.log('🚀 [ChatPreviewPage] 保存并分析，chatRecordId:', chatRecordId);
+      store.clearImportResult();
+      setPending(chatRecordId, undefined);
+      showToast('聊天记录已保存，正在跳转分析...', 'success');
       onNavigate('ai-analysis');
     } catch (err: any) {
       setSaveError(err.message || '保存失败，请重试');
@@ -113,7 +145,7 @@ function StandardPreview({ store, currentUser, currentGirl, onNavigate }: any) {
         onCommitEdit={() => { if (editingId) store.updateMessageText(editingId, editText.trim()); setEditingId(null); setEditText(''); }}
         onCancelEdit={() => setEditingId(null)} />
       <SaveBar mode="standard" canSave={canSave} saving={saving} saveError={saveError} unknownCount={stats.unknown}
-        onSave={handleSave} />
+        onSaveOnly={handleSaveOnly} onSaveAndAnalyze={handleSaveAndAnalyze} />
     </div>
   );
 }
@@ -129,6 +161,8 @@ function MinerUPreview({ store, currentUser, currentGirl, onNavigate }: any) {
   const [saving, setSaving] = useState(false);
   // A→me 映射：true = A是我B是她，false = A是她B是我
   const [aIsMe, setAIsMe] = useState<boolean | null>(null);
+  const { showToast } = useUiStore();
+  const { setPending } = useAnalysisRequestStore();
 
   const result = store.minerUImportResult;
   const stats = useMemo(() => {
@@ -140,15 +174,7 @@ function MinerUPreview({ store, currentUser, currentGirl, onNavigate }: any) {
 
   const canSave = stats.A >= 1 && stats.B >= 1 && aIsMe !== null;
 
-  const handleSave = async () => {
-    setSaveError(null);
-    if (!canSave) {
-      if (aIsMe === null) setSaveError('请先选择 A 和 B 分别对应"我"还是"她"');
-      else setSaveError('至少需要 1 条 A 和 1 条 B 的消息才能保存');
-      return;
-    }
-    if (!currentUser?.id) { setSaveError('请先完成资料建档'); return; }
-
+  const doSave = async (): Promise<string> => {
     const messagesToSave = store.minerUMessages
       .filter((m: any) => m.cleanedText.trim())
       .map((m: any) => {
@@ -160,14 +186,54 @@ function MinerUPreview({ store, currentUser, currentGirl, onNavigate }: any) {
         return { sender, content: m.cleanedText.trim(), sentAt: new Date(), senderName: role };
       });
 
-    console.log('✅ [ChatPreviewPage] 用户确认后的消息:', messagesToSave);
+    console.log('💾 [ChatPreviewPage] 开始保存确认后的聊天记录 (MinerU)');
+    console.log('💾 [ChatPreviewPage] 保存消息数:', messagesToSave.length);
+
+    const session = await chatRepository.createSessionWithMessages(
+      currentUser.id, currentGirl?.id ?? 'default-girl',
+      messagesToSave, 'ocr',
+    );
+
+    console.log('✅ [ChatPreviewPage] 保存成功 chatRecordId:', session.id);
+    return session.id;
+  };
+
+  const handleSaveOnly = async () => {
+    setSaveError(null);
+    if (!canSave) {
+      if (aIsMe === null) setSaveError('请先选择 A 和 B 分别对应"我"还是"她"');
+      else setSaveError('至少需要 1 条 A 和 1 条 B 的消息才能保存');
+      return;
+    }
+    if (!currentUser?.id) { setSaveError('请先完成资料建档'); return; }
+
     setSaving(true);
     try {
-      await chatRepository.createSessionWithMessages(
-        currentUser.id, currentGirl?.id ?? 'default-girl',
-        messagesToSave, 'ocr',
-      );
+      await doSave();
       store.clearMinerUImportResult();
+      showToast('聊天记录已保存', 'success');
+      onNavigate('chat-import');
+    } catch (err: any) {
+      setSaveError(err.message || '保存失败，请重试');
+    } finally { setSaving(false); }
+  };
+
+  const handleSaveAndAnalyze = async () => {
+    setSaveError(null);
+    if (!canSave) {
+      if (aIsMe === null) setSaveError('请先选择 A 和 B 分别对应"我"还是"她"');
+      else setSaveError('至少需要 1 条 A 和 1 条 B 的消息才能保存');
+      return;
+    }
+    if (!currentUser?.id) { setSaveError('请先完成资料建档'); return; }
+
+    setSaving(true);
+    try {
+      const chatRecordId = await doSave();
+      console.log('🚀 [ChatPreviewPage] 保存并分析 (MinerU)，chatRecordId:', chatRecordId);
+      store.clearMinerUImportResult();
+      setPending(chatRecordId, undefined);
+      showToast('聊天记录已保存，正在跳转分析...', 'success');
       onNavigate('ai-analysis');
     } catch (err: any) {
       setSaveError(err.message || '保存失败，请重试');
@@ -245,9 +311,14 @@ function MinerUPreview({ store, currentUser, currentGirl, onNavigate }: any) {
           <span style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.7 }}>
             {canSave ? '✅ 满足保存条件' : aIsMe === null ? '请先选择 A/B 对应关系' : '需要至少 1 条 A 和 1 条 B'}
           </span>
-          <LiquidButton onClick={handleSave} disabled={!canSave || saving}>
-            {saving ? '保存中...' : '保存并去分析'} <Check size={16} />
-          </LiquidButton>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <LiquidButton variant="secondary" onClick={handleSaveOnly} disabled={!canSave || saving}>
+              {saving ? '保存中...' : '保存'} <Save size={16} />
+            </LiquidButton>
+            <LiquidButton onClick={handleSaveAndAnalyze} disabled={!canSave || saving}>
+              {saving ? '保存中...' : '保存并分析'} <Check size={16} />
+            </LiquidButton>
+          </div>
         </div>
       </GlassCard>
     </div>
@@ -410,7 +481,7 @@ function SmallIconBtn({ title, onClick, disabled, children }: { title: string; o
   );
 }
 
-function SaveBar({ mode, canSave, saving, saveError, unknownCount, onSave, aIsMe }: any) {
+function SaveBar({ mode, canSave, saving, saveError, unknownCount, onSaveOnly, onSaveAndAnalyze, aIsMe }: any) {
   return (
     <GlassCard style={{ padding: 16, position: 'sticky', bottom: 16 }}>
       {saveError && (
@@ -427,9 +498,14 @@ function SaveBar({ mode, canSave, saving, saveError, unknownCount, onSave, aIsMe
         <span style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.7 }}>
           {canSave ? '✅ 满足保存条件' : mode === 'mineru' && aIsMe === null ? '请先选择 A/B 对应关系' : '需要至少 1 条有效消息'}
         </span>
-        <LiquidButton onClick={onSave} disabled={!canSave || saving}>
-          {saving ? '保存中...' : '保存并去分析'} <Check size={16} />
-        </LiquidButton>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <LiquidButton variant="secondary" onClick={onSaveOnly} disabled={!canSave || saving}>
+            {saving ? '保存中...' : '保存'} <Save size={16} />
+          </LiquidButton>
+          <LiquidButton onClick={onSaveAndAnalyze} disabled={!canSave || saving}>
+            {saving ? '保存中...' : '保存并分析'} <Check size={16} />
+          </LiquidButton>
+        </div>
       </div>
     </GlassCard>
   );
