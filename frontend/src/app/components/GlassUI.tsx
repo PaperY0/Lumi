@@ -11,9 +11,10 @@ export type PageName =
   | 'chat-preview'
   | 'ai-analysis'
   | 'reply-assist'
-  | 'simulation'
-  | 'love-code'
-  | 'settings';
+    | 'simulation'
+    | 'love-code'
+    | 'emergency-manual'
+    | 'settings';
 
 // ─── Glass Card ────────────────────────────────────────────────────────────────
 interface GlassCardProps {

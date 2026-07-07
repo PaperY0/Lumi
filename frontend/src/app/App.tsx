@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 import { Sidebar, BottomTabBar } from './components/Sidebar';
 import { OnboardingPage } from './components/OnboardingPage';
 import { DashboardPage } from './components/DashboardPage';
@@ -12,11 +13,36 @@ import { AIAnalysisPage } from './components/AIAnalysisPage';
 import { ReplyAssistPage } from './components/ReplyAssistPage';
 import { SimulationPage } from './components/SimulationPage';
 import { LoveCodePage } from './components/LoveCodePage';
+import { EmergencyManualPage } from './components/EmergencyManualPage';
 import { SettingsPage } from './components/SettingsPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import type { PageName } from './components/GlassUI';
 import { useSettingsStore, useUserStore } from '@/stores';
 import { questionnaireRepository } from '@/lib/db';
+
+const PAGE_PATHS: Record<PageName, string> = {
+  dashboard: '/dashboard',
+  profile: '/profile',
+  'male-questionnaire': '/male-questionnaire',
+  'female-questionnaire': '/female-questionnaire',
+  'relationship-portrait': '/relationship-portrait',
+  'chat-import': '/chat-import',
+  'chat-preview': '/chat-preview',
+  'ai-analysis': '/ai-analysis',
+  'reply-assist': '/reply-assist',
+  simulation: '/simulation',
+  'love-code': '/love-code',
+  'emergency-manual': '/emergency-manual',
+  settings: '/settings',
+};
+
+const PATH_PAGES = Object.fromEntries(
+  Object.entries(PAGE_PATHS).map(([page, path]) => [path, page])
+) as Record<string, PageName>;
+
+function pageFromPath(pathname: string): PageName {
+  return PATH_PAGES[pathname] || 'dashboard';
+}
 
 // Background ambient orbs
 function BackgroundOrbs() {
@@ -41,11 +67,13 @@ function BackgroundOrbs() {
 }
 
 export default function App() {
+  const routerNavigate = useNavigate();
+  const location = useLocation();
   const [showOnboarding, setShowOnboarding] = useState(true);
-  const [currentPage, setCurrentPage] = useState<PageName>('dashboard');
   const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(true); // ✅ Onboarding 守卫：检查状态
 
-  const navigate = (page: PageName) => setCurrentPage(page);
+  const currentPage = pageFromPath(location.pathname);
+  const navigate = (page: PageName) => routerNavigate(PAGE_PATHS[page]);
 
   // ✅ Onboarding 守卫：挂载时检查引导状态和数据完整性
   useEffect(() => {
@@ -116,7 +144,7 @@ export default function App() {
       if (!girl) {
         console.log('🔀 [OnboardingGuard] 未找到 girl，跳转 profile');
         logDiag('onboarding', 'profile (no girl)');
-        setCurrentPage('profile');
+        navigate('profile');
         setShowOnboarding(false);
         return;
       }
@@ -127,7 +155,7 @@ export default function App() {
       if (!_maleQ) {
         console.log('🔀 [OnboardingGuard] 未完成男生问卷，跳转 male-questionnaire');
         logDiag('onboarding', 'male-questionnaire (no maleQ)');
-        setCurrentPage('male-questionnaire');
+        navigate('male-questionnaire');
         setShowOnboarding(false);
         return;
       }
@@ -138,7 +166,7 @@ export default function App() {
       if (!_femaleQ || !_femaleQ.girlId) {
         console.log('🔀 [OnboardingGuard] 未完成女生问卷或 girlId 缺失，跳转 female-questionnaire');
         logDiag('onboarding', 'female-questionnaire (no femaleQ or girlId)');
-        setCurrentPage('female-questionnaire');
+        navigate('female-questionnaire');
         setShowOnboarding(false);
         return;
       }
@@ -191,7 +219,7 @@ export default function App() {
           <OnboardingPage onComplete={() => {
             console.log('🔀 [App] 欢迎页完成，跳转 profile');
             setShowOnboarding(false);
-            setCurrentPage('profile');
+            navigate('profile');
           }} />
         </div>
       </div>
@@ -222,6 +250,8 @@ export default function App() {
         return <SimulationPage onNavigate={navigate} />;
       case 'love-code':
         return <LoveCodePage />;
+      case 'emergency-manual':
+        return <EmergencyManualPage />;
       case 'settings':
         return <SettingsPage onNavigate={navigate} />;
       default:

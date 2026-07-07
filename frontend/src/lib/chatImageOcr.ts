@@ -11,9 +11,11 @@
  * Token 在 vite.config proxy 层注入（onProxyReq），前端不可见。
  */
 
+import { AI_API_BASE } from './ai/config';
+
 // ─── 常量 ─────────────────────────────────────────────
 
-const MINERU_BASE = '/api/mineru/api/v1/agent/parse';
+const MINERU_BASE = `${AI_API_BASE}/api/mineru/api/v1/agent/parse`;
 const MINERU_CREATE = `${MINERU_BASE}/file`;
 const MINERU_QUERY = `${MINERU_BASE}`; // GET /api/v1/agent/parse/{task_id}
 
@@ -219,7 +221,7 @@ async function createTask(file: File): Promise<{ taskId: string; fileUrl: string
 async function uploadToOss(fileUrl: string, file: File): Promise<void> {
   // 浏览器直传 OSS 会有 CORS 问题 → 走 Vite dev server 本地代理
   // 生产环境需后端提供同样的 OSS 上传代理接口
-  const uploadUrl = `/api/mineru/upload-to-oss?url=${encodeURIComponent(fileUrl)}`;
+  const uploadUrl = `${AI_API_BASE}/api/mineru/upload-to-oss?url=${encodeURIComponent(fileUrl)}`;
 
   console.log(`[OCR] Step 2 — PUT via local proxy (${(file.size / 1024).toFixed(1)}KB)`);
 
@@ -321,7 +323,7 @@ async function pollTask(
 
 async function downloadAndCleanMarkdown(url: string): Promise<string> {
   // 浏览器直连 CDN 会被 CORS 拦截 → 走 Vite dev server 本地代理
-  const proxyUrl = `/api/mineru-md?url=${encodeURIComponent(url)}`;
+  const proxyUrl = `${AI_API_BASE}/api/mineru-md?url=${encodeURIComponent(url)}`;
 
   console.log(`[OCR] Step 4 - downloading markdown via local proxy`);
   const response = await fetch(proxyUrl);

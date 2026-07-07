@@ -1,9 +1,3 @@
-/**
- * Lumi Server - 主入口文件
- * 提供 4 个 AI 接口：analyze、reply、simulate、portrait
- * 支持 mock 模式，配置 CORS 允许前端访问
- */
-
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
@@ -12,17 +6,23 @@ import analyzeRouter from './routes/analyze.js';
 import replyRouter from './routes/reply.js';
 import simulateRouter from './routes/simulate.js';
 import minerUChatRouter from './routes/minerUChat.js';
+import minerUProxyRouter from './routes/minerUProxy.js';
+import {
+  aiRateLimiter,
+  attachRequestId,
+  getAllowedOrigins,
+  getRequestId,
+  globalRateLimiter,
+} from './middleware/security.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// 中间件配置
-app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174'] 
-}));
+app.use(attachRequestId);
+app.use(cors({ origin: getAllowedOrigins() }));
+app.use(globalRateLimiter);
 app.use(express.json({ limit: '5mb' }));
 
-// 健康检查接口
 app.get('/api/health', (req, res) => {
   const mockMode = process.env.MOCK_MODE === 'true' || !process.env.DEEPSEEK_API_KEY;
   res.json({
@@ -32,40 +32,44 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// 挂载路由
-app.use('/api', portraitRouter);
-app.use('/api', analyzeRouter);
-app.use('/api', replyRouter);
-app.use('/api', simulateRouter);
-app.use('/api', minerUChatRouter);
+app.use('/api', minerUProxyRouter);
+app.use('/api', aiRateLimiter, analyzeRouter);
+app.use('/api', aiRateLimiter, replyRouter);
+app.use('/api', aiRateLimiter, simulateRouter);
+app.use('/api', aiRateLimiter, portraitRouter);
+app.use('/api', aiRateLimiter, minerUChatRouter);
 
-// 404 处理
 app.use((req, res) => {
-  res.status(404).json({ error: '接口不存在' });
+  res.status(404).json({ error: 'API endpoint not found' });
 });
 
-// 全局错误处理
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('❌ 服务器错误:', err);
+  console.error(`[${getRequestId(res)}] server error`, {
+    message: err?.message,
+    stack: err?.stack,
+  });
   res.status(500).json({
-    error: err.message || '服务器内部错误',
+    error: err.message || 'Internal server error',
   });
 });
 
-// 启动服务
 app.listen(PORT, () => {
   const mockMode = process.env.MOCK_MODE === 'true' || !process.env.DEEPSEEK_API_KEY;
   console.log(`
-🚀 Lumi Server 已启动
-📡 监听端口: ${PORT}
-🌐 健康检查: http://localhost:${PORT}/api/health
-${mockMode ? '🔄 运行模式: MOCK (使用假数据)' : '🤖 运行模式: AI (调用 DeepSeek API)'}
+Lumi Server started
+Port: ${PORT}
+Health: http://localhost:${PORT}/api/health
+Mode: ${mockMode ? 'MOCK' : 'AI'}
+Allowed origins: ${getAllowedOrigins().join(', ')}
 
-可用接口:
-  POST /api/portrait  - 关系画像生成
-  POST /api/analyze   - 聊天消息分析
-  POST /api/reply     - 回复建议生成
-  POST /api/simulate  - 模拟对方回复
-  POST /api/parse-mineru-chat - MinerU 聊天清洗 + A/B 初筛
+Routes:
+  POST /api/portrait
+  POST /api/analyze
+  POST /api/reply
+  POST /api/simulate
+  POST /api/parse-mineru-chat
+  POST /api/mineru/upload-to-oss
+  GET  /api/mineru-md
+  *    /api/mineru/*
   `);
 });

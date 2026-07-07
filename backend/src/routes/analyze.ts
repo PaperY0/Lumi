@@ -1,18 +1,13 @@
-/**
- * 聊天分析路由 - POST /api/analyze
- * 分析聊天记录，生成关系分析报告
- */
-
 import { Router } from 'express';
 import { z } from 'zod';
 import { callLLM } from '../llm/client.js';
 import { mockAnalyze } from '../llm/mock.js';
 import { AnalyzeResponseSchema } from '../schemas/index.js';
 import { buildAnalyzePrompt } from '../prompts/analyze.js';
+import { logRouteEvent, summarizeRequestBody } from '../middleware/security.js';
 
 const router = Router();
 
-// 输入参数校验 — 匹配前端 AnalyzeChatRequest
 const AnalyzeInputSchema = z.object({
   userProfile: z.any().optional(),
   girlProfile: z.any().optional(),
@@ -24,27 +19,25 @@ const AnalyzeInputSchema = z.object({
 });
 
 router.post('/analyze', async (req, res) => {
-  console.log('📥 [/api/analyze] 收到请求');
-  console.log('📥 [/api/analyze] raw body:', JSON.stringify(req.body, null, 2));
+  logRouteEvent(res, '/api/analyze', 'request_received', summarizeRequestBody(req.body));
 
   let input: z.infer<typeof AnalyzeInputSchema>;
 
   try {
     input = AnalyzeInputSchema.parse(req.body);
-    console.log('✅ [/api/analyze] schema parse 成功:', {
+    logRouteEvent(res, '/api/analyze', 'schema_ok', {
       hasUserProfile: !!input.userProfile,
       hasGirlProfile: !!input.girlProfile,
       hasMaleQuestionnaire: !!input.maleQuestionnaire,
       hasFemaleQuestionnaire: !!input.femaleQuestionnaire,
       hasChatSession: !!input.chatSession,
       messagesCount: input.messages?.length ?? 0,
-      userQuestion: input.userQuestion,
+      userQuestionLength: input.userQuestion?.length ?? 0,
     });
   } catch (error: any) {
-    console.error('❌ [/api/analyze] schema parse 失败:', {
+    logRouteEvent(res, '/api/analyze', 'schema_failed', {
       issues: error?.issues,
       message: error?.message,
-      rawBody: req.body,
     });
     return res.status(400).json({
       success: false,
@@ -55,38 +48,27 @@ router.post('/analyze', async (req, res) => {
 
   try {
     const mockMode = process.env.MOCK_MODE === 'true' || !process.env.DEEPSEEK_API_KEY;
-
-    console.log('🤖 [/api/analyze] 准备调用 AI:', {
-      mode: process.env.MOCK_MODE,
+    logRouteEvent(res, '/api/analyze', 'llm_prepare', {
       useMock: mockMode,
       messagesCount: input.messages?.length ?? 0,
-      hasUserProfile: !!input.userProfile,
-      hasGirlProfile: !!input.girlProfile,
-      userQuestion: input.userQuestion,
     });
 
     let result: any;
 
     if (mockMode) {
-      console.log('🧪 [/api/analyze] 当前走 mock 分析，没有调用真实 AI');
       result = mockAnalyze();
     } else {
       try {
-        // 构建 prompt 并调用 LLM
-        console.log('🚀 [/api/analyze] 正在调用真实 AI 接口...');
         const messages = buildAnalyzePrompt(input);
         const raw = await callLLM(messages);
-        console.log('✅ [/api/analyze] 真实 AI 返回成功');
-
-        // 校验 LLM 返回的数据结构
         result = AnalyzeResponseSchema.parse(raw);
       } catch (llmError: any) {
-        console.error('❌ [/api/analyze] 真实 AI 调用失败，回退到 mock:', llmError.message);
+        logRouteEvent(res, '/api/analyze', 'llm_failed_fallback_mock', { message: llmError?.message });
         result = mockAnalyze();
       }
     }
 
-    console.log('📤 [/api/analyze] 准备返回分析报告:', {
+    logRouteEvent(res, '/api/analyze', 'response_ready', {
       hasSimpleAnswer: !!result?.simpleAnswer,
       hasRelationshipStage: !!result?.relationshipStage,
       hasInteractionHeat: !!result?.interactionHeat,
@@ -94,7 +76,7 @@ router.post('/analyze', async (req, res) => {
 
     res.json(result);
   } catch (error: any) {
-    console.error('❌ [/api/analyze] 处理失败:', error);
+    logRouteEvent(res, '/api/analyze', 'handler_failed', { message: error?.message });
     res.status(500).json({
       success: false,
       message: '分析处理失败',
