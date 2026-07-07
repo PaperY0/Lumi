@@ -74,7 +74,7 @@ test.describe('聊天导入 — 解析流程', () => {
     await textarea.fill('wh：今天还好吗？\nwsy：还行，有点累\nwh：那早点休息\nwsy：嗯嗯');
 
     // 点击解析
-    await page.getByRole('button', { name: /解析/ }).click();
+    await page.getByRole('button', { name: '解析聊天记录' }).click();
     await page.waitForTimeout(800);
 
     // 断言出现发送人选择区域
@@ -91,7 +91,7 @@ test.describe('聊天导入 — 解析流程', () => {
     await page.waitForTimeout(500);
 
     // 不输入文本，解析按钮应为 disabled
-    const parseBtn = page.getByRole('button', { name: /解析/ });
+    const parseBtn = page.getByRole('button', { name: '解析聊天记录' });
     await expect(parseBtn).toBeDisabled({ timeout: 5000 });
   });
 });
