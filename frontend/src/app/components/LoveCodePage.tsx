@@ -11,7 +11,7 @@ import {
   X,
   Search,
 } from 'lucide-react';
-import { GlassCard } from './GlassUI';
+import { GlassCard, LiquidButton } from './GlassUI';
 import { IconBadge } from './IconBadge';
 import { AnimatedCard } from './AnimatedCard';
 import { articles as defaultArticles, categories } from '@/data/loveGuideArticles';
@@ -240,14 +240,13 @@ export function LoveCodePage() {
           </p>
         </div>
 
-        <button
+        <LiquidButton
           onClick={handleCreate}
-          className="btn-primary"
-          style={{ minWidth: 132, justifyContent: 'center', display: 'inline-flex', alignItems: 'center', gap: 8 }}
+          style={{ minWidth: 132, justifyContent: 'center' }}
         >
           <Plus size={16} />
           新增文章
-        </button>
+        </LiquidButton>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 1fr) auto', gap: 12, marginBottom: 18 }}>
@@ -440,9 +439,9 @@ function ArticleEditor({
         <h2 style={{ margin: 0, fontSize: 17, color: 'var(--text-rose)' }}>
           {editing ? '编辑自定义文章' : '新增自定义文章'}
         </h2>
-        <button onClick={onCancel} className="btn-secondary" style={{ width: 38, height: 38, justifyContent: 'center' }} aria-label="关闭编辑">
+        <LiquidButton variant="secondary" onClick={onCancel} style={{ width: 42, height: 42, minHeight: 42, padding: 0, justifyContent: 'center' }} ariaLabel="关闭编辑">
           <X size={16} />
-        </button>
+        </LiquidButton>
       </div>
 
       {error && (
@@ -488,13 +487,13 @@ function ArticleEditor({
       </Field>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 }}>
-        <button onClick={onCancel} className="btn-secondary">
+        <LiquidButton variant="secondary" onClick={onCancel} style={{ minWidth: 96, justifyContent: 'center' }}>
           取消
-        </button>
-        <button onClick={onSave} className="btn-primary">
+        </LiquidButton>
+        <LiquidButton onClick={onSave} style={{ minWidth: 132, justifyContent: 'center' }}>
           <Save size={15} />
           保存文章
-        </button>
+        </LiquidButton>
       </div>
     </GlassCard>
   );

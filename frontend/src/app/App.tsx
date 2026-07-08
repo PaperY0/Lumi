@@ -16,6 +16,7 @@ import { LoveCodePage } from './components/LoveCodePage';
 import { EmergencyManualPage } from './components/EmergencyManualPage';
 import { SettingsPage } from './components/SettingsPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { GlobalToast } from './components/GlobalToast';
 import type { PageName } from './components/GlassUI';
 import { useSettingsStore, useUserStore } from '@/stores';
 import { questionnaireRepository } from '@/lib/db';
@@ -297,6 +298,7 @@ export default function App() {
 
       {/* Mobile bottom tab bar */}
       <BottomTabBar currentPage={currentPage} onNavigate={navigate} />
+      <GlobalToast />
     </div>
   );
 }

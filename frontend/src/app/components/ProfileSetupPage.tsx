@@ -465,7 +465,7 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
             </div>
 
             <div>
-              <label style={{ fontSize: 13, color: 'var(--text-purple)', fontWeight: 500, display: 'block', marginBottom: 8, paddingLeft: 4 }}>当前阶段</label>
+              <label style={{ fontSize: 13, color: 'var(--text-purple)', fontWeight: 500, display: 'block', marginBottom: 8, paddingLeft: 4 }}>我的恋爱状态</label>
               {/* ✅ 「当前阶段」映射到 schema 的 relationshipStatus */}
               <Controller
                 name="relationshipStatus"
@@ -579,7 +579,7 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
             <GlassInput label="认识时长" placeholder="例如：3个月、半年" value={knowDuration} onChange={setKnowDuration} />
 
             <div>
-              <label style={{ fontSize: 13, color: 'var(--text-purple)', fontWeight: 500, display: 'block', marginBottom: 8, paddingLeft: 4 }}>当前关系阶段</label>
+              <label style={{ fontSize: 13, color: 'var(--text-purple)', fontWeight: 500, display: 'block', marginBottom: 8, paddingLeft: 4 }}>我和她的关系阶段</label>
               <PillTagSelector
                 options={relationOptions}
                 selected={relation}

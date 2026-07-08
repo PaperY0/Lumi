@@ -48,14 +48,16 @@ interface ButtonProps {
   style?: React.CSSProperties;
   className?: string;
   disabled?: boolean;
+  ariaLabel?: string;
 }
 
-export function LiquidButton({ children, onClick, variant = 'primary', style = {}, className = '', disabled }: ButtonProps) {
+export function LiquidButton({ children, onClick, variant = 'primary', style = {}, className = '', disabled, ariaLabel }: ButtonProps) {
   return (
     <button
       className={`${variant === 'primary' ? 'btn-primary' : 'btn-secondary'} ${className}`}
       onClick={onClick}
       disabled={disabled}
+      aria-label={ariaLabel}
       style={{
         borderRadius: 999,
         padding: '13px 32px',
