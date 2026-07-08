@@ -17,7 +17,7 @@ type ActiveView = 'current' | 'history';
 interface Props { onNavigate: (page: PageName) => void; }
 
 const ANALYSIS_FORM_MAX_WIDTH = 800;
-const ANALYSIS_REPORT_MAX_WIDTH = 1280;
+const ANALYSIS_REPORT_MAX_WIDTH = ANALYSIS_FORM_MAX_WIDTH;
 const ANALYSIS_HISTORY_MAX_WIDTH = 1200;
 
 export function AIAnalysisPage({ onNavigate }: Props) {
