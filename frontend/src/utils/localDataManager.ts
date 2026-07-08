@@ -25,6 +25,7 @@ export interface LocalDataSummary {
   analysisReportCount: number;
   replyHistoryCount: number;
   simulateHistoryCount: number;
+  loveGuideArticleCount: number;
   localStorageKeyCount: number;
   lastUpdatedAt: string | null;
 }
@@ -72,6 +73,7 @@ export async function getLocalDataSummary(): Promise<LocalDataSummary> {
     analyses,
     replies,
     simulations,
+    loveGuideArticles,
   ] = await Promise.all([
     db.userProfiles.toArray(),
     db.girlProfiles.toArray(),
@@ -82,6 +84,7 @@ export async function getLocalDataSummary(): Promise<LocalDataSummary> {
     db.analysisReports.toArray(),
     db.replyHistory.toArray(),
     db.simulateHistory.toArray(),
+    db.loveGuideArticles.toArray(),
   ]);
 
   // 计算 localStorage 中项目相关 key 数量
@@ -101,6 +104,7 @@ export async function getLocalDataSummary(): Promise<LocalDataSummary> {
   lastUpdatedAt = mergeLatest(lastUpdatedAt, pickLatestTime(analyses));
   lastUpdatedAt = mergeLatest(lastUpdatedAt, pickLatestTime(replies));
   lastUpdatedAt = mergeLatest(lastUpdatedAt, pickLatestTime(simulations));
+  lastUpdatedAt = mergeLatest(lastUpdatedAt, pickLatestTime(loveGuideArticles));
 
   return {
     userProfileCount: users.length,
@@ -112,6 +116,7 @@ export async function getLocalDataSummary(): Promise<LocalDataSummary> {
     analysisReportCount: analyses.length,
     replyHistoryCount: replies.length,
     simulateHistoryCount: simulations.length,
+    loveGuideArticleCount: loveGuideArticles.length,
     localStorageKeyCount: lsCount,
     lastUpdatedAt,
   };
@@ -136,6 +141,7 @@ export async function exportLocalData(): Promise<LocalDataExport> {
     simMessages,
     importantDates,
     appSettings,
+    loveGuideArticles,
   ] = await Promise.all([
     db.userProfiles.toArray(),
     db.girlProfiles.toArray(),
@@ -151,6 +157,7 @@ export async function exportLocalData(): Promise<LocalDataExport> {
     db.simulationMessages.toArray(),
     db.importantDates.toArray(),
     db.appSettings.toArray(),
+    db.loveGuideArticles.toArray(),
   ]);
 
   // 导出项目相关 localStorage
@@ -185,6 +192,7 @@ export async function exportLocalData(): Promise<LocalDataExport> {
       simulationMessages: simMessages,
       importantDates,
       appSettings,
+      loveGuideArticles,
     },
     localStorage: lsData,
   };

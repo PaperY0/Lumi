@@ -132,6 +132,33 @@ body {
 }
 .glass-input::placeholder { color: rgba(80, 56, 72, 0.4); }
 
+.love-code-field input,
+.love-code-field textarea,
+.love-code-field select {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid rgba(200, 96, 122, 0.18);
+  background: rgba(255, 251, 253, 0.65);
+  color: var(--text-rose);
+  padding: 10px 12px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+}
+
+.love-code-field textarea {
+  resize: vertical;
+  line-height: 1.7;
+}
+
+.love-code-field input:focus,
+.love-code-field textarea:focus,
+.love-code-field select:focus {
+  border-color: rgba(196, 160, 112, 0.6);
+  box-shadow: 0 0 0 3px rgba(196,160,112,0.12);
+  background: rgba(255, 253, 255, 0.88);
+}
+
 /* ─── Gradient Texts ───────────────────────────────────────── */
 .gradient-text {
   background: linear-gradient(135deg, #A04860 0%, #884060 45%, #907080 100%);

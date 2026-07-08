@@ -211,6 +211,7 @@ export function SettingsPage({ onNavigate }: Props) {
             <DataRow label="AI 分析报告" value={summary.analysisReportCount} />
             <DataRow label="回复建议记录" value={summary.replyHistoryCount} />
             <DataRow label="模拟练习记录" value={summary.simulateHistoryCount} />
+            <DataRow label="自定义法典文章" value={summary.loveGuideArticleCount} />
             <DataRow label="本地缓存项" value={summary.localStorageKeyCount} />
             <div style={{ padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: 13, color: 'var(--text-purple)', opacity: 0.8 }}>最近更新时间</span>

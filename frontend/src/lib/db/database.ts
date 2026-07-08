@@ -26,6 +26,7 @@ import type {
   ImportantDate,
   RelationshipPortrait,
   SimulateHistoryRecord,
+  CustomLoveGuideArticle,
 } from '@/types';
 
 /**
@@ -62,6 +63,8 @@ export class LumiDB extends Dexie {
   appSettings!: Table<AppSetting, string>;
   /** 模拟对话练习历史 */
   simulateHistory!: Table<SimulateHistoryRecord, string>;
+  /** 恋爱法典自定义文章 */
+  loveGuideArticles!: Table<CustomLoveGuideArticle, string>;
 
   constructor() {
     super('LumiDB');
@@ -98,6 +101,11 @@ export class LumiDB extends Dexie {
     // v3：新增模拟对话练习历史表
     this.version(3).stores({
       simulateHistory: 'id, createdAt, updatedAt, userId, girlId, scenario, difficulty',
+    });
+
+    // v4：新增恋爱法典本地自定义文章表
+    this.version(4).stores({
+      loveGuideArticles: 'id, category, createdAt, updatedAt',
     });
   }
 

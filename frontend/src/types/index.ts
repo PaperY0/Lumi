@@ -10,3 +10,4 @@ export * from './importantDate';
 export * from './portrait';
 export * from './chatImport';
 export * from './minerUChatImport';
+export * from './loveGuide';

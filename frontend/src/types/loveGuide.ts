@@ -17,3 +17,9 @@ export interface LoveGuideArticle {
   readTimeMinutes: number;
   difficulty: '入门' | '进阶' | '高阶';
 }
+
+export interface CustomLoveGuideArticle extends LoveGuideArticle {
+  source: 'custom';
+  createdAt: string;
+  updatedAt: string;
+}
