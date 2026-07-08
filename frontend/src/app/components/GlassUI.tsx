@@ -43,21 +43,22 @@ export function GlassCard({ children, className = '', style = {}, onClick, paddi
 // ─── Liquid Button ──────────────────────────────────────────────────────────────
 interface ButtonProps {
   children: React.ReactNode;
-  onClick?: () => void;
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
   variant?: 'primary' | 'secondary';
   style?: React.CSSProperties;
   className?: string;
   disabled?: boolean;
   ariaLabel?: string;
+  'aria-label'?: string;
 }
 
-export function LiquidButton({ children, onClick, variant = 'primary', style = {}, className = '', disabled, ariaLabel }: ButtonProps) {
+export function LiquidButton({ children, onClick, variant = 'primary', style = {}, className = '', disabled, ariaLabel, 'aria-label': ariaLabelAttr }: ButtonProps) {
   return (
     <button
       className={`${variant === 'primary' ? 'btn-primary' : 'btn-secondary'} ${className}`}
       onClick={onClick}
       disabled={disabled}
-      aria-label={ariaLabel}
+      aria-label={ariaLabel ?? ariaLabelAttr}
       style={{
         borderRadius: 999,
         padding: '13px 32px',

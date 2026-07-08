@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowRight, Sparkles, RefreshCw, Lightbulb, Ban, AlertCircle, History, FileText, MessageCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Sparkles, RefreshCw, Lightbulb, Ban, AlertCircle, History, FileText, MessageCircle } from 'lucide-react';
 import { GlassCard, LiquidButton, HeatMeter, StageBadge, AIInsightCard, WarningNotice, GlassInput } from './GlassUI';
 import { CountUp } from './CountUp';
 import { BlurText } from './BlurText';
@@ -15,6 +15,10 @@ import { formatDateTime } from '@/utils/date';
 type ActiveView = 'current' | 'history';
 
 interface Props { onNavigate: (page: PageName) => void; }
+
+const ANALYSIS_FORM_MAX_WIDTH = 800;
+const ANALYSIS_REPORT_MAX_WIDTH = 1280;
+const ANALYSIS_HISTORY_MAX_WIDTH = 1200;
 
 export function AIAnalysisPage({ onNavigate }: Props) {
   const [userQuestion, setUserQuestion] = useState('');
@@ -113,6 +117,11 @@ export function AIAnalysisPage({ onNavigate }: Props) {
     });
   };
 
+  const handleBackToCurrentAnalysis = () => {
+    setData(null);
+    setActiveView('current');
+  };
+
   // 判断是否为聊天记录不足的错误
   const isChatInsufficient = error && (
     error.includes('聊天记录') || error.includes('导入')
@@ -124,8 +133,15 @@ export function AIAnalysisPage({ onNavigate }: Props) {
     data.interactionHeat === 'warm' ? 65 : 30
   ) : 0;
 
+  const pageMaxWidth =
+    activeView === 'history'
+      ? ANALYSIS_HISTORY_MAX_WIDTH
+      : data && !loading
+        ? ANALYSIS_REPORT_MAX_WIDTH
+        : ANALYSIS_FORM_MAX_WIDTH;
+
   return (
-    <div style={{ padding: '32px', maxWidth: 1600, margin: '0 auto' }} className="page-enter">
+    <div style={{ padding: '32px', maxWidth: pageMaxWidth, margin: '0 auto', width: '100%' }} className="page-enter">
       {/* 标题 */}
       <div style={{ marginBottom: 28 }}>
         <BlurText text="AI 聊天分析" startDelay={60} className="gradient-text" style={{ fontSize: 28, letterSpacing: '-0.03em', fontWeight: 700, display: 'block' }} />
@@ -374,16 +390,26 @@ export function AIAnalysisPage({ onNavigate }: Props) {
           {/* 报告内容 */}
           {data && !loading && (
             <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <LiquidButton
+                    variant="secondary"
+                    onClick={handleBackToCurrentAnalysis}
+                    style={{ minHeight: 38, padding: '8px 16px', fontSize: 13 }}
+                  >
+                    <ArrowLeft size={14} /> 返回 AI 分析页面
+                  </LiquidButton>
                 <p style={{ margin: 0, fontSize: 13, color: 'var(--text-purple)', opacity: 0.75 }}>
                   分析于 {new Date(data.createdAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </p>
-                <button
+                </div>
+                <LiquidButton
+                  variant="secondary"
                   onClick={handleAnalyze}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: '1px solid rgba(232,116,138,0.3)', borderRadius: 999, padding: '8px 16px', cursor: 'pointer', fontSize: 13, color: 'var(--pink-primary)' }}
+                  style={{ minHeight: 38, padding: '8px 16px', fontSize: 13 }}
                 >
                   <RefreshCw size={14} /> 重新分析
-                </button>
+                </LiquidButton>
               </div>
 
               {/* 一句话结论 */}

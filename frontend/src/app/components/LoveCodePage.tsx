@@ -375,28 +375,28 @@ export function LoveCodePage() {
 
               {article.source === 'custom' && (
                 <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-                  <button
+                  <LiquidButton
+                    variant="secondary"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleEdit(article);
                     }}
-                    className="btn-secondary"
-                    style={{ flex: 1, justifyContent: 'center', minHeight: 34 }}
+                    style={{ flex: 1, justifyContent: 'center', minHeight: 38, padding: '8px 18px', fontSize: 13 }}
                   >
                     <Pencil size={14} />
                     编辑
-                  </button>
-                  <button
+                  </LiquidButton>
+                  <LiquidButton
+                    variant="secondary"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDelete(article);
                     }}
-                    className="btn-secondary"
-                    style={{ width: 42, justifyContent: 'center', minHeight: 34, color: '#C96A6A' }}
+                    style={{ width: 42, height: 38, minHeight: 38, padding: 0, justifyContent: 'center', color: '#C96A6A' }}
                     aria-label={`删除 ${article.title}`}
                   >
                     <Trash2 size={14} />
-                  </button>
+                  </LiquidButton>
                 </div>
               )}
             </GlassCard>
@@ -581,14 +581,14 @@ function ArticleDetail({
         </button>
         {article.source === 'custom' && (
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={onEdit} className="btn-secondary">
+            <LiquidButton variant="secondary" onClick={onEdit} style={{ minHeight: 38, padding: '8px 18px', fontSize: 13 }}>
               <Pencil size={14} />
               编辑
-            </button>
-            <button onClick={onDelete} className="btn-secondary" style={{ color: '#C96A6A' }}>
+            </LiquidButton>
+            <LiquidButton variant="secondary" onClick={onDelete} style={{ minHeight: 38, padding: '8px 18px', fontSize: 13, color: '#C96A6A' }}>
               <Trash2 size={14} />
               删除
-            </button>
+            </LiquidButton>
           </div>
         )}
       </div>

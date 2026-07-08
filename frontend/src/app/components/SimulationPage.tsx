@@ -52,8 +52,8 @@ export function SimulationPage({ onNavigate }: Props) {
     const trimmed = replyText.trim();
     if (!trimmed || loading || finished) return;
     console.log('🖱️ [SimulationPage] 用户发送模拟回复:', trimmed);
-    await sendUserReply(trimmed);
     setReplyText('');
+    await sendUserReply(trimmed);
   };
 
   const handleFinishPractice = async () => {
