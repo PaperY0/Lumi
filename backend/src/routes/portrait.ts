@@ -1,29 +1,24 @@
-/**
- * 关系画像路由 - POST /api/portrait
- * 综合男生问卷、女生问卷、双方资料生成关系画像
- */
-
 import { Router } from 'express';
 import { z } from 'zod';
 import { callLLM } from '../llm/client.js';
 import { mockPortrait } from '../llm/mock.js';
-import { PortraitResponseSchema } from '../schemas/index.js';
+import { getRequestId, logRouteEvent } from '../middleware/security.js';
 import { buildPortraitPrompt } from '../prompts/portrait.js';
+import { PortraitResponseSchema } from '../schemas/index.js';
 
 const router = Router();
 
-// 输入参数校验
 const PortraitInputSchema = z.object({
   userProfile: z.object({
     name: z.string().optional(),
     age: z.number().optional(),
     occupation: z.string().optional(),
-  }).optional(),
+  }).passthrough().optional(),
   girlProfile: z.object({
     name: z.string().optional(),
     age: z.number().optional(),
     occupation: z.string().optional(),
-  }).optional(),
+  }).passthrough().optional(),
   userQuestionnaire: z.record(z.any()).optional(),
   girlQuestionnaire: z.record(z.any()).optional(),
   chatHistory: z.array(z.object({
@@ -35,30 +30,41 @@ const PortraitInputSchema = z.object({
 
 router.post('/portrait', async (req, res) => {
   try {
-    // 校验输入参数
     const input = PortraitInputSchema.parse(req.body);
 
+    logRouteEvent(res, '/api/portrait', 'portrait_generate_start', {
+      hasUserProfile: !!input.userProfile,
+      hasGirlProfile: !!input.girlProfile,
+      hasUserQuestionnaire: !!input.userQuestionnaire,
+      hasGirlQuestionnaire: !!input.girlQuestionnaire,
+      chatHistoryCount: input.chatHistory?.length ?? 0,
+      chatContentChars: input.chatHistory?.reduce((sum, message) => sum + message.content.length, 0) ?? 0,
+    });
+
     try {
-      // 构建 prompt 并调用 LLM
       const messages = buildPortraitPrompt(input);
       const raw = await callLLM(messages);
-
-      // 校验 LLM 返回的数据结构
       const parsed = PortraitResponseSchema.parse(raw);
+
+      logRouteEvent(res, '/api/portrait', 'portrait_generate_success', {
+        maleTypeTagsCount: parsed.maleTypeTags.length,
+        femalePersonalityTagsCount: parsed.femalePersonalityTags.length,
+        positiveSignalsCount: parsed.positiveSignals.length,
+        cautionSignalsCount: parsed.cautionSignals.length,
+        interactionHeat: parsed.interactionHeat,
+      });
 
       res.json(parsed);
     } catch (error: any) {
-      // LLM 调用失败或数据校验失败时，返回 mock 数据
       if (error.message === 'MOCK_MODE') {
-        console.warn('🔄 使用 mock 模式（MOCK_MODE 已启用或未配置 API Key）');
+        console.warn(`[${getRequestId(res)}] /api/portrait using mock mode`);
       } else {
-        console.warn('⚠️ LLM 调用或数据校验失败，回退到 mock 数据:', error.message);
+        console.warn(`[${getRequestId(res)}] /api/portrait fallback to mock`, { message: error.message });
       }
       res.json(mockPortrait());
     }
   } catch (error: any) {
-    // 输入参数校验失败
-    console.error('❌ 输入参数校验失败:', error);
+    console.error(`[${getRequestId(res)}] /api/portrait invalid input`, { message: error?.message });
     res.status(400).json({ error: '输入参数格式不正确', details: error.message });
   }
 });

@@ -74,9 +74,15 @@ export function RelationshipPortraitPage({ onNavigate }: Props) {
           style={{ fontSize: 28, letterSpacing: '-0.03em', fontWeight: 700, display: 'block' }}
         />
         <p style={{ margin: '6px 0 0', fontSize: 14, color: 'var(--text-purple)', opacity: 0.75 }}>
-          基于你填写的信息综合生成，不代表对方真实想法的绝对结论。
+          基于资料、问卷和最近聊天综合生成；没有聊天记录时，也可以先生成基础画像。
         </p>
       </div>
+
+      <GlassCard style={{ marginBottom: 20, background: 'rgba(255,245,248,0.48)' }} padding="14px 18px">
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--text-purple)', lineHeight: 1.7 }}>
+          重新生成时会优先参考最近一次已保存聊天的最多 40 条消息，用来判断当前阶段、互动热度和风险信号。AI 只做辅助判断，不替代真实沟通。
+        </p>
+      </GlassCard>
 
       {/* 生成按钮 */}
       <div style={{ marginBottom: 20 }}>
@@ -143,7 +149,7 @@ export function RelationshipPortraitPage({ onNavigate }: Props) {
             还没有生成画像
           </h3>
           <p style={{ margin: '0 0 20px', fontSize: 14, color: 'var(--text-purple)', opacity: 0.7 }}>
-            点击上方按钮，AI 将基于你的问卷答案生成关系画像
+            点击上方按钮，AI 将基于资料、问卷和最近聊天生成关系画像
           </p>
         </GlassCard>
       )}
