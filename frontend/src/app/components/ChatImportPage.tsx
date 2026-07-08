@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+﻿import { useState, useMemo, useCallback } from 'react';
 import { ArrowRight, ChevronDown, ChevronUp, HelpCircle, AlertCircle } from 'lucide-react';
 import { GlassCard, LiquidButton } from './GlassUI';
 import { BlurText } from './BlurText';
@@ -10,6 +10,7 @@ import { parseMinerUChatMarkdown } from '@/lib/parsers/minerUImportPipeline';
 import { aiClient } from '@/lib/ai/aiClient';
 import type { ImageOcrResult } from '@/lib/chatImageOcr';
 import { readChatFiles, type ChatFileImportResult } from '@/lib/chatFileImporter';
+import type { MinerUParseResponse } from '@/types/minerUChatImport';
 import { chatRepository } from '@/lib/db/repositories/chatRepo';
 import { useUserStore, useUiStore } from '@/stores';
 import { useChatImportStore } from '@/stores/chatImportStore';
@@ -18,6 +19,28 @@ import { ChatRecordHistoryPanel } from './ChatRecordHistoryPanel';
 
 interface Props {
   onNavigate: (page: PageName) => void;
+}
+
+function combineMinerUImageResults(results: ImageOcrResult[]): MinerUParseResponse | null {
+  const parsed = results
+    .map((result) => result.minerUParse)
+    .filter((result): result is MinerUParseResponse => Boolean(result));
+
+  if (parsed.length === 0) return null;
+  if (parsed.length === 1) return parsed[0];
+
+  return {
+    originalMarkdown: parsed.map((result) => result.originalMarkdown).join('\n\n---\n\n'),
+    rawText: parsed.map((result) => result.rawText).join('\n'),
+    messages: parsed.flatMap((result, resultIndex) =>
+      result.messages.map((message, messageIndex) => ({
+        ...message,
+        id: message.id || `mineru-image-${resultIndex}-${messageIndex}`,
+      }))
+    ),
+    warnings: parsed.flatMap((result) => result.warnings || []),
+    removedNoiseCount: parsed.reduce((total, result) => total + (result.removedNoiseCount || 0), 0),
+  };
 }
 
 export function ChatImportPage({ onNavigate }: Props) {
@@ -297,6 +320,15 @@ export function ChatImportPage({ onNavigate }: Props) {
       );
 
       setOcrResults(results);
+
+      const minerUImageResult = combineMinerUImageResults(results);
+      if (minerUImageResult) {
+        setMinerUImportResult(minerUImageResult);
+        setError(null);
+        showToast(`图片识别完成，已生成 ${minerUImageResult.messages.length} 条待确认消息`, 'success');
+        onNavigate('chat-preview');
+        return;
+      }
 
       const successTexts = results
         .filter((r) => (r.normalizedText || r.text) && !r.warning)
@@ -845,7 +877,7 @@ export function ChatImportPage({ onNavigate }: Props) {
               />
               <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.6 }}>
-                  建议至少 20 条消息以获得更准确的分析
+                  建议至少 10 条消息以获得更准确的分析
                 </span>
                 <span style={{ fontSize: 12, color: rawText.length > 50 ? 'var(--pink-primary)' : 'var(--text-purple)', opacity: 0.6 }}>
                   {rawText.length} 字符

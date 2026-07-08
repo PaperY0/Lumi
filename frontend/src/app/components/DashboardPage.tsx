@@ -294,11 +294,12 @@ const hour = new Date().getHours();
       </div>
 
       {/* ── Quick Actions Bento ──────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 14, marginBottom: 20 }}>
         {[
           { icon: <MessageSquare size={22} color="#D4607A" />, title: '她这句话是什么意思？', desc: '输入消息，AI 解析含义', page: 'reply-assist' as PageName, gradient: 'rgba(212,96,122,0.08), rgba(242,189,204,0.12)' },
-          { icon: <Sparkles size={22} color="#C8A8D4" />, title: '帮我生成回复', desc: '三种风格，一键复制', page: 'reply-assist' as PageName, gradient: 'rgba(200,168,212,0.08), rgba(220,190,240,0.1)' },
+          { icon: <Sparkles size={22} color="#C8A8D4" />, title: '帮我生成回复', desc: '六种风格，一键复制', page: 'reply-assist' as PageName, gradient: 'rgba(200,168,212,0.08), rgba(220,190,240,0.1)' },
           { icon: <MessageCircle size={22} color="#BF8E6E" />, title: '模拟一次对话', desc: '练习真实场景，即时反馈', page: 'simulation' as PageName, gradient: 'rgba(191,142,110,0.08), rgba(240,184,160,0.1)' },
+          { icon: <AlertCircle size={22} color="#D4607A" />, title: '应急手册', desc: '冷场、道歉、误会快速处理', page: 'emergency-manual' as PageName, gradient: 'rgba(212,96,122,0.07), rgba(196,160,112,0.1)' },
         ].map((a, i) => (
           <AnimatedCard key={a.title} delay={i * 80} enable3d>
             <div

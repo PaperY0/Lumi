@@ -62,7 +62,9 @@ export function ReplyAssistPage({ onNavigate }: Props) {
     try {
       await navigator.clipboard.writeText(text);
       setCopiedText(text);
-      console.log('📋 [ReplyAssistPage] 已复制回复:', text);
+      if (import.meta.env.DEV) {
+        console.log('📋 [ReplyAssistPage] 已复制回复', { length: text.length });
+      }
       setTimeout(() => setCopiedText(null), 1800);
     } catch (err) {
       console.error('❌ [ReplyAssistPage] 复制失败:', err);
@@ -74,11 +76,13 @@ export function ReplyAssistPage({ onNavigate }: Props) {
     const trimmed = userMessage.trim();
     if (!trimmed) return;
 
-    console.log('🖱️ [ReplyAssistPage] 用户点击分析并生成回复', {
-      userMessage: trimmed,
-      selectedScene,
-      selectedIntent,
-    });
+    if (import.meta.env.DEV) {
+      console.log('🖱️ [ReplyAssistPage] 用户点击分析并生成回复', {
+        messageLength: trimmed.length,
+        selectedScene,
+        selectedIntent,
+      });
+    }
 
     await generate(trimmed, selectedIntent, selectedScene);
   };

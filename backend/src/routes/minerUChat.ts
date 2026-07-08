@@ -1,10 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { callLLM } from '../llm/client.js';
-import { mockMinerUChatParse } from '../llm/mock.js';
-import { MinerUParseResponseSchema } from '../schemas/index.js';
-import { buildMinerUChatPrompt } from '../prompts/minerUChat.js';
 import { logRouteEvent, summarizeRequestBody } from '../middleware/security.js';
+import { parseMinerUChatMarkdown } from '../services/minerUChatParser.js';
 
 const router = Router();
 
@@ -33,42 +30,15 @@ router.post('/parse-mineru-chat', async (req, res) => {
   const { originalMarkdown } = input;
 
   try {
-    const mockMode = process.env.MOCK_MODE === 'true' || !process.env.DEEPSEEK_API_KEY;
     logRouteEvent(res, '/api/parse-mineru-chat', 'llm_prepare', {
-      useMock: mockMode,
+      useMock: process.env.MOCK_MODE === 'true' || !process.env.DEEPSEEK_API_KEY,
       originalMarkdownLength: originalMarkdown.length,
     });
 
-    let result: any;
-
-    if (mockMode) {
-      result = mockMinerUChatParse({ originalMarkdown });
-    } else {
-      try {
-        const messages = buildMinerUChatPrompt({ originalMarkdown });
-        const raw = await callLLM(messages);
-        result = MinerUParseResponseSchema.parse(raw);
-      } catch (llmError: any) {
-        logRouteEvent(res, '/api/parse-mineru-chat', 'llm_failed_fallback_mock', { message: llmError?.message });
-        result = mockMinerUChatParse({ originalMarkdown });
-      }
-    }
-
-    const messagesWithId = (result.messages || []).map((m: any, i: number) => ({
-      ...m,
-      id: m.id || `mineru-${Date.now()}-${i}`,
-    }));
-
-    const response = {
-      originalMarkdown,
-      rawText: result.rawText || '',
-      messages: messagesWithId,
-      warnings: result.warnings || [],
-      removedNoiseCount: result.removedNoiseCount,
-    };
+    const response = await parseMinerUChatMarkdown(originalMarkdown);
 
     logRouteEvent(res, '/api/parse-mineru-chat', 'response_ready', {
-      messagesCount: messagesWithId.length,
+      messagesCount: response.messages.length,
       warningsCount: response.warnings.length,
     });
     res.json(response);

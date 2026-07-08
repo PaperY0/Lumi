@@ -1,23 +1,41 @@
 import { useMemo, useState } from 'react';
-import { Copy, Search, ShieldAlert } from 'lucide-react';
-import { emergencyManualItems } from '@/data/emergencyManualItems';
+import { CheckCircle2, Copy, Search, ShieldAlert } from 'lucide-react';
+import { emergencyManualCategories, emergencyManualItems } from '@/data/emergencyManualItems';
 import { BlurText } from './BlurText';
 
-const categories = ['全部', '冷场', '道歉', '误会', '边界', '邀约', '降温'] as const;
+const sectionTitleStyle: React.CSSProperties = {
+  margin: '0 0 5px',
+  fontSize: 12,
+  color: '#D4607A',
+  fontWeight: 700,
+};
+
+const bodyStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: 13,
+  color: '#5E4A60',
+  lineHeight: 1.65,
+  wordBreak: 'break-word',
+  overflowWrap: 'break-word',
+};
 
 export function EmergencyManualPage() {
   const [query, setQuery] = useState('');
-  const [category, setCategory] = useState<(typeof categories)[number]>('全部');
+  const [category, setCategory] = useState<(typeof emergencyManualCategories)[number]>('全部');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     return emergencyManualItems.filter((item) => {
       const categoryOk = category === '全部' || item.category === category;
-      const queryOk = !normalized || [item.title, item.trigger, item.doFirst, item.suggestedReply, item.avoid]
-        .join(' ')
-        .toLowerCase()
-        .includes(normalized);
+      const queryOk = !normalized || [
+        item.title,
+        item.trigger,
+        item.quickAnswer,
+        item.explanation,
+        item.suggestedReply,
+        item.avoid,
+      ].join(' ').toLowerCase().includes(normalized);
       return categoryOk && queryOk;
     });
   }, [category, query]);
@@ -44,7 +62,7 @@ export function EmergencyManualPage() {
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="搜索：冷淡、道歉、误会、邀约..."
+              placeholder="搜索：冷淡、道歉、误会、边界、邀约..."
               style={{
                 width: '100%',
                 boxSizing: 'border-box',
@@ -58,7 +76,7 @@ export function EmergencyManualPage() {
             />
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {categories.map((item) => {
+            {emergencyManualCategories.map((item) => {
               const active = item === category;
               return (
                 <button
@@ -83,51 +101,74 @@ export function EmergencyManualPage() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
-        {filtered.map((item) => (
-          <article key={item.id} className="glass-card hoverable-card" style={{ borderRadius: 20, padding: 20, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <div style={{ width: 34, height: 34, borderRadius: 11, background: 'linear-gradient(135deg,#D4607A,#BF8E6E)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <ShieldAlert size={16} color="white" />
-              </div>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 12, color: '#D4607A', fontWeight: 700 }}>{item.category}</div>
-                <h3 style={{ margin: 0, fontSize: 16, color: '#4A2E38' }}>{item.title}</h3>
-              </div>
-            </div>
+      {filtered.length === 0 ? (
+        <div className="glass-card" style={{ borderRadius: 24, padding: 28, textAlign: 'center', color: '#7B5C6E' }}>
+          没找到对应场景，可以换个关键词试试。
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
+          {filtered.map((item) => {
+            const copied = copiedId === item.id;
+            return (
+              <article key={item.id} className="glass-card hoverable-card" style={{ borderRadius: 20, padding: 20, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                  <div style={{ width: 34, height: 34, borderRadius: 11, background: 'linear-gradient(135deg,#D4607A,#BF8E6E)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <ShieldAlert size={16} color="white" />
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 12, color: '#D4607A', fontWeight: 700 }}>{item.category}</div>
+                    <h3 style={{ margin: 0, fontSize: 16, color: '#4A2E38', lineHeight: 1.35 }}>{item.title}</h3>
+                  </div>
+                </div>
 
-            <p style={{ margin: '0 0 10px', fontSize: 13, color: '#7B5C6E', lineHeight: 1.6 }}>触发：{item.trigger}</p>
-            <p style={{ margin: '0 0 12px', fontSize: 13, color: '#4A2E38', lineHeight: 1.6 }}>先做：{item.doFirst}</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
+                  <section>
+                    <p style={sectionTitleStyle}>触发场景</p>
+                    <p style={bodyStyle}>{item.trigger}</p>
+                  </section>
+                  <section>
+                    <p style={sectionTitleStyle}>简单回答</p>
+                    <p style={{ ...bodyStyle, color: '#4A2E38', fontWeight: 600 }}>{item.quickAnswer}</p>
+                  </section>
+                  <section>
+                    <p style={sectionTitleStyle}>原因解释</p>
+                    <p style={bodyStyle}>{item.explanation}</p>
+                  </section>
+                  <section style={{ borderRadius: 16, padding: 14, background: 'rgba(212,96,122,0.07)', border: '1px solid rgba(212,96,122,0.18)' }}>
+                    <p style={sectionTitleStyle}>建议话术</p>
+                    <p style={{ ...bodyStyle, color: '#4A2E38', whiteSpace: 'pre-line' }}>{item.suggestedReply}</p>
+                  </section>
+                  <section>
+                    <p style={{ ...sectionTitleStyle, color: '#B85D68' }}>不要这样做</p>
+                    <p style={{ ...bodyStyle, color: '#9A5E68' }}>{item.avoid}</p>
+                  </section>
+                </div>
 
-            <div style={{ borderRadius: 16, padding: 14, background: 'rgba(212,96,122,0.07)', border: '1px solid rgba(212,96,122,0.18)', marginBottom: 12 }}>
-              <div style={{ fontSize: 12, color: '#D4607A', fontWeight: 700, marginBottom: 6 }}>可直接参考</div>
-              <p style={{ margin: 0, fontSize: 14, color: '#4A2E38', lineHeight: 1.65, whiteSpace: 'pre-line' }}>{item.suggestedReply}</p>
-            </div>
-
-            <p style={{ margin: '0 0 14px', fontSize: 12, color: '#9A5E68', lineHeight: 1.55 }}>避免：{item.avoid}</p>
-
-            <button
-              onClick={() => copyReply(item.id, item.suggestedReply)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                border: 'none',
-                borderRadius: 999,
-                padding: '8px 14px',
-                background: copiedId === item.id ? 'linear-gradient(135deg,#D4607A,#C5956C)' : 'rgba(255,248,252,0.75)',
-                color: copiedId === item.id ? 'white' : '#D4607A',
-                cursor: 'pointer',
-                fontSize: 13,
-                fontWeight: 600,
-              }}
-            >
-              <Copy size={13} />
-              {copiedId === item.id ? '已复制' : '复制建议'}
-            </button>
-          </article>
-        ))}
-      </div>
+                <button
+                  onClick={() => copyReply(item.id, item.suggestedReply)}
+                  style={{
+                    marginTop: 16,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    border: 'none',
+                    borderRadius: 999,
+                    padding: '8px 14px',
+                    background: copied ? 'linear-gradient(135deg,#D4607A,#C5956C)' : 'rgba(255,248,252,0.75)',
+                    color: copied ? 'white' : '#D4607A',
+                    cursor: 'pointer',
+                    fontSize: 13,
+                    fontWeight: 600,
+                  }}
+                >
+                  {copied ? <CheckCircle2 size={13} /> : <Copy size={13} />}
+                  {copied ? '已复制' : '复制建议话术'}
+                </button>
+              </article>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

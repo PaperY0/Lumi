@@ -1,6 +1,6 @@
 # Lumi Project Health
 
-Last updated: 2026-07-07
+Last updated: 2026-07-08
 
 ## Current Status
 
@@ -9,6 +9,11 @@ Last updated: 2026-07-07
 - Backend: Express 4, TypeScript, DeepSeek-compatible OpenAI SDK, Zod.
 - Local data: browser IndexedDB via Dexie; selected UI preferences in localStorage.
 - AI safety baseline added: request IDs, rate limiting, CORS environment config, and backend log redaction.
+- Routing baseline added: main pages now have stable browser paths through `BrowserRouter`.
+- Deployment baseline added: frontend/backend Dockerfiles, `docker-compose.yml`, and deployment notes exist.
+- MinerU OCR is moving to the backend v4 precise parsing flow through `POST /api/mineru/parse-image-chat`.
+- AI chat analysis now accepts 10+ messages instead of the earlier 20-message recommendation.
+- V1.1 progress: emergency manual has static searchable content; reply generation prompts/mock responses now target six styles.
 
 ## Security Checklist
 
@@ -17,9 +22,14 @@ Last updated: 2026-07-07
 - Backend logs should not print raw chat messages, raw request bodies, or API keys.
 - AI routes are protected by a stricter rate limit than the global API.
 - MinerU token is read only by the backend.
+- Frontend image OCR should call only `/api/mineru/parse-image-chat`; old OSS/Agent routes are compatibility-only until removed.
 
 ## Known Follow-Ups
 
-- Run and refresh Playwright E2E coverage after the routing and deployment changes settle.
+- Run and refresh Playwright E2E coverage after the MinerU v4 and emergency-manual changes settle.
+- Re-run Docker validation after the current uncommitted MinerU v4 work is frozen.
+- Validate real large WeChat/QQ screenshots through the full flow: image upload, MinerU markdown, LLM cleanup, A/B preview, save, then AI analysis.
+- Finish PRD V1.1: relationship portrait optimization and local Love Code article management.
+- Start PRD V1.2 with important-day reminders before gift/date-guide recommendations.
 - Decide whether `.claude/` is project config or personal local state before committing it.
 - Rotate any real DeepSeek API key that may have been pasted into tools, screenshots, or chat.

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * AI 聊天分析 Hook
  * 封装"收集数据 → 校验聊天记录 → 调 AI 接口 → 保存报告"的完整流程
  */
@@ -13,6 +13,8 @@ import {
 } from '@/lib/db';
 import { chatRepository } from '@/lib/db/repositories/chatRepo';
 import type { AIAnalysisReport } from '@/types';
+
+const MIN_ANALYSIS_MESSAGE_COUNT = 10;
 
 export function useAnalyzeChat() {
   const [data, setData] = useState<AIAnalysisReport | null>(null);
@@ -106,15 +108,15 @@ export function useAnalyzeChat() {
       // 6. 校验聊天记录数量
       if (!session || messages.length === 0) {
         console.warn('⚠️ [useAnalyzeChat.analyze] 未找到聊天记录，停止分析，禁止空 messages 调用 AI');
-        setError('还没有导入聊天记录。请先导入至少 20 条聊天记录，这样 AI 才能基于真实互动给出更准确的分析。');
+        setError('还没有导入聊天记录。请先导入至少 10 条聊天记录，这样 AI 才能基于真实互动给出更准确的分析。');
         return;
       }
 
-      if (messages.length < 20) {
-        console.warn('⚠️ [useAnalyzeChat.analyze] 聊天记录不足 20 条，停止分析，禁止调用 AI:', {
+      if (messages.length < MIN_ANALYSIS_MESSAGE_COUNT) {
+        console.warn('⚠️ [useAnalyzeChat.analyze] 聊天记录不足 10 条，停止分析，禁止调用 AI:', {
           messagesCount: messages.length,
         });
-        setError(`当前只导入了 ${messages.length} 条聊天记录。建议至少导入 20 条聊天记录后再分析，这样结果会更准确。`);
+        setError(`当前只导入了 ${messages.length} 条聊天记录。建议至少导入 10 条聊天记录后再分析，这样结果会更准确。`);
         return;
       }
 

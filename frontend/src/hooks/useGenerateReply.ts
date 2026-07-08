@@ -36,10 +36,13 @@ export function useGenerateReply() {
     setError(null);
 
     try {
-      console.log('🎯 [useGenerateReply.generate] 开始生成回复建议');
-      console.log('📥 [useGenerateReply.generate] 对方消息:', trimmedUserMessage);
-      console.log('📥 [useGenerateReply.generate] 用户意图:', userIntent);
-      console.log('📥 [useGenerateReply.generate] 当前场景:', scene);
+      if (import.meta.env.DEV) {
+        console.log('🎯 [useGenerateReply.generate] 开始生成回复建议', {
+          messageLength: trimmedUserMessage.length,
+          userIntent,
+          scene,
+        });
+      }
 
       // 2. 读取当前 user
       const user = await userProfileRepository.getCurrent();
@@ -48,7 +51,9 @@ export function useGenerateReply() {
         setError('请先完成你的个人档案');
         return;
       }
-      console.log('✅ [useGenerateReply.generate] user 收集成功:', { id: user.id, nickname: user.nickname });
+      if (import.meta.env.DEV) {
+        console.log('✅ [useGenerateReply.generate] user 收集成功:', { id: user.id });
+      }
 
       // 3. 读取当前 girl
       const girls = await girlProfileRepository.getByUserId(user.id);
@@ -58,7 +63,9 @@ export function useGenerateReply() {
         setError('请先完成她的资料');
         return;
       }
-      console.log('✅ [useGenerateReply.generate] girl 收集成功:', { id: girl.id, nickname: girl.nickname });
+      if (import.meta.env.DEV) {
+        console.log('✅ [useGenerateReply.generate] girl 收集成功:', { id: girl.id });
+      }
 
       // 4. 读取问卷
       const maleQ = await questionnaireRepository.getLatestMale(user.id);
@@ -70,13 +77,19 @@ export function useGenerateReply() {
       if (latestSession) {
         const messages = await chatRepository.getMessages(latestSession.id);
         recentMessages = messages.slice(-10);
-        console.log('📥 [useGenerateReply.generate] recentMessages 数量:', recentMessages.length);
+        if (import.meta.env.DEV) {
+          console.log('📥 [useGenerateReply.generate] recentMessages 数量:', recentMessages.length);
+        }
       } else {
-        console.log('ℹ️ [useGenerateReply.generate] 未找到聊天记录，使用空 recentMessages 继续生成回复');
+        if (import.meta.env.DEV) {
+          console.log('ℹ️ [useGenerateReply.generate] 未找到聊天记录，使用空 recentMessages 继续生成回复');
+        }
       }
 
       // 6. 调用 AI 接口
-      console.log('🚀 [useGenerateReply.generate] 准备调用 /api/reply');
+      if (import.meta.env.DEV) {
+        console.log('🚀 [useGenerateReply.generate] 准备调用 /api/reply');
+      }
 
       const reply = await aiClient.generateReply({
         userProfile: user,
@@ -89,12 +102,14 @@ export function useGenerateReply() {
         scene,
       });
 
-      console.log('✅ [useGenerateReply.generate] 回复生成完成:', {
-        hasSimpleAnswer: !!reply.simpleAnswer,
-        recommendedRepliesCount: reply.recommendedReplies?.length ?? 0,
-        avoidRepliesCount: reply.avoidReplies?.length ?? 0,
-        hasAnalysis: !!reply.analysis,
-      });
+      if (import.meta.env.DEV) {
+        console.log('✅ [useGenerateReply.generate] 回复生成完成:', {
+          hasSimpleAnswer: !!reply.simpleAnswer,
+          recommendedRepliesCount: reply.recommendedReplies?.length ?? 0,
+          avoidRepliesCount: reply.avoidReplies?.length ?? 0,
+          hasAnalysis: !!reply.analysis,
+        });
+      }
 
       // 7. 更新状态
       setData(reply);
@@ -114,7 +129,9 @@ export function useGenerateReply() {
           avoidReplies: reply.avoidReplies ?? [],
           createdAt: reply.createdAt || undefined,
         });
-        console.log('✅ [useGenerateReply.generate] 回复历史保存成功');
+        if (import.meta.env.DEV) {
+          console.log('✅ [useGenerateReply.generate] 回复历史保存成功');
+        }
       } catch (saveError) {
         console.error('❌ [useGenerateReply.generate] 回复历史保存失败:', saveError);
         // 不覆盖已生成的 data，只记录错误

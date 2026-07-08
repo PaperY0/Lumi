@@ -6,6 +6,7 @@ import analyzeRouter from './routes/analyze.js';
 import replyRouter from './routes/reply.js';
 import simulateRouter from './routes/simulate.js';
 import minerUChatRouter from './routes/minerUChat.js';
+import minerUImageRouter from './routes/minerUImage.js';
 import minerUProxyRouter from './routes/minerUProxy.js';
 import {
   aiRateLimiter,
@@ -32,6 +33,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+app.use('/api', aiRateLimiter, minerUImageRouter);
 app.use('/api', minerUProxyRouter);
 app.use('/api', aiRateLimiter, analyzeRouter);
 app.use('/api', aiRateLimiter, replyRouter);
@@ -68,8 +70,9 @@ Routes:
   POST /api/reply
   POST /api/simulate
   POST /api/parse-mineru-chat
-  POST /api/mineru/upload-to-oss
-  GET  /api/mineru-md
-  *    /api/mineru/*
+  POST /api/mineru/parse-image-chat
+  POST /api/mineru/upload-to-oss  (compat only; frontend should not call)
+  GET  /api/mineru-md            (compat only; frontend should not call)
+  *    /api/mineru/*             (compat only; frontend should not call)
   `);
 });
