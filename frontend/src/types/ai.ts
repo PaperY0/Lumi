@@ -16,6 +16,7 @@ export interface PortraitRequest {
   girlProfile?: GirlProfile;
   userQuestionnaire?: MaleQuestionnaireResult;
   girlQuestionnaire?: FemaleQuestionnaireResult;
+  profileContext?: string;
   chatHistory?: Array<{ role: string; content: string; timestamp?: string }>;
 }
 

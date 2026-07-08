@@ -7,6 +7,7 @@ import {
   userProfileRepository,
 } from '@/lib/db';
 import { chatRepository } from '@/lib/db/repositories/chatRepo';
+import { buildRelationshipProfileContext } from '@/lib/ai/profileContext';
 import type { PortraitRequest, PortraitResponse } from '@/types';
 
 const MAX_PORTRAIT_CHAT_MESSAGES = 40;
@@ -93,6 +94,22 @@ export function useGeneratePortrait() {
       const maleQuestionnaire = await questionnaireRepository.getLatestMale(user.id);
       const femaleQuestionnaire = await questionnaireRepository.getLatestFemale(user.id);
       const chatHistory = await buildRecentChatHistory(user.id, girl.id);
+      const profileContext = buildRelationshipProfileContext({
+        userProfile: user,
+        girlProfile: girl,
+        maleQuestionnaire,
+        femaleQuestionnaire,
+        recentMessages: chatHistory.map((message, index) => ({
+          id: `portrait-context-${index}`,
+          sessionId: 'portrait-context',
+          sender: message.role === 'user' ? 'user' : 'other',
+          senderName: message.role,
+          sentAt: message.timestamp ?? new Date().toISOString(),
+          content: message.content,
+          messageType: 'text',
+          sourceMethod: 'paste',
+        })),
+      });
 
       if (import.meta.env.DEV) {
         console.log('[useGeneratePortrait] generating portrait', {
@@ -101,6 +118,8 @@ export function useGeneratePortrait() {
           hasMaleQuestionnaire: !!maleQuestionnaire,
           hasFemaleQuestionnaire: !!femaleQuestionnaire,
           chatHistoryCount: chatHistory.length,
+          userContextFields: profileContext.stats.userFieldCount,
+          girlContextFields: profileContext.stats.girlFieldCount,
         });
       }
 
@@ -109,6 +128,7 @@ export function useGeneratePortrait() {
         girlProfile: girl,
         userQuestionnaire: maleQuestionnaire ?? undefined,
         girlQuestionnaire: femaleQuestionnaire ?? undefined,
+        profileContext: profileContext.summary,
         chatHistory,
       });
 

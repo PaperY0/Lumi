@@ -88,4 +88,6 @@ export interface GirlProfile {
   isEmotional?: boolean;
   /** 是否看重仪式感 */
   likesRitual?: boolean;
+  /** 其他备注：用户主动记录的非敏感补充信息 */
+  notes?: string;
 }

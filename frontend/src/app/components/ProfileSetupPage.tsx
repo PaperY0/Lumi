@@ -184,6 +184,7 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
 
           // ✅ 任务 6：回显生日
           setImportantDate(girl.birthday || '');
+          setNotes(girl.notes || '');
 
           console.log('✅ [ProfileSetupPage] girlProfile 回显完成:', {
             id: girl.id,
@@ -296,6 +297,7 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
         tabooBehaviors: triggers,
         birthday: importantDate || undefined, // ✅ 任务 6：保存生日
         importantDates: importantDate ? [{ name: '生日', date: importantDate }] : [],
+        notes: notes.trim() || undefined,
       };
 
       console.log('📥 [ProfileSetupPage] girlPayload birthday:', girlPayload.birthday);

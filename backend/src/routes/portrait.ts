@@ -21,6 +21,7 @@ const PortraitInputSchema = z.object({
   }).passthrough().optional(),
   userQuestionnaire: z.record(z.any()).optional(),
   girlQuestionnaire: z.record(z.any()).optional(),
+  profileContext: z.string().optional(),
   chatHistory: z.array(z.object({
     role: z.string(),
     content: z.string(),
@@ -37,6 +38,7 @@ router.post('/portrait', async (req, res) => {
       hasGirlProfile: !!input.girlProfile,
       hasUserQuestionnaire: !!input.userQuestionnaire,
       hasGirlQuestionnaire: !!input.girlQuestionnaire,
+      profileContextChars: input.profileContext?.length ?? 0,
       chatHistoryCount: input.chatHistory?.length ?? 0,
       chatContentChars: input.chatHistory?.reduce((sum, message) => sum + message.content.length, 0) ?? 0,
     });
