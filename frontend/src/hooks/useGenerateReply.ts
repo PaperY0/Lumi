@@ -11,8 +11,11 @@ import {
   questionnaireRepository,
   replyRepository,
 } from '@/lib/db';
+import { buildRelationshipProfileContext } from '@/lib/ai/profileContext';
 import { chatRepository } from '@/lib/db/repositories/chatRepo';
 import type { ReplyResponse, ChatMessage } from '@/types';
+
+const MAX_REPLY_CONTEXT_MESSAGES = 20;
 
 export function useGenerateReply() {
   const [data, setData] = useState<ReplyResponse | null>(null);
@@ -76,7 +79,7 @@ export function useGenerateReply() {
       const latestSession = await chatRepository.getLatestSession(user.id, girl.id);
       if (latestSession) {
         const messages = await chatRepository.getMessages(latestSession.id);
-        recentMessages = messages.slice(-10);
+        recentMessages = messages.slice(-MAX_REPLY_CONTEXT_MESSAGES);
         if (import.meta.env.DEV) {
           console.log('📥 [useGenerateReply.generate] recentMessages 数量:', recentMessages.length);
         }
@@ -85,10 +88,21 @@ export function useGenerateReply() {
           console.log('ℹ️ [useGenerateReply.generate] 未找到聊天记录，使用空 recentMessages 继续生成回复');
         }
       }
+      const profileContext = buildRelationshipProfileContext({
+        userProfile: user,
+        girlProfile: girl,
+        maleQuestionnaire: maleQ,
+        femaleQuestionnaire: femaleQ,
+        recentMessages,
+      });
 
       // 6. 调用 AI 接口
       if (import.meta.env.DEV) {
-        console.log('🚀 [useGenerateReply.generate] 准备调用 /api/reply');
+        console.log('🚀 [useGenerateReply.generate] 准备调用 /api/reply', {
+          userContextFields: profileContext.stats.userFieldCount,
+          girlContextFields: profileContext.stats.girlFieldCount,
+          recentMessageCount: profileContext.stats.recentMessageCount,
+        });
       }
 
       const reply = await aiClient.generateReply({
@@ -97,6 +111,7 @@ export function useGenerateReply() {
         maleQuestionnaire: maleQ ?? null,
         femaleQuestionnaire: femaleQ ?? null,
         recentMessages,
+        profileContext: profileContext.summary,
         userMessage: trimmedUserMessage,
         userIntent,
         scene,

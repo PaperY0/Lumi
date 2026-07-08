@@ -114,6 +114,8 @@ export interface ReplyRequest {
   femaleQuestionnaire?: FemaleQuestionnaireResult | null;
   /** 最近的聊天记录（可选） */
   recentMessages?: ChatMessage[];
+  /** 双方资料、问卷状态和最近互动的中文结构化上下文 */
+  profileContext?: string;
   /** 对方最新发来的消息内容（必填） */
   userMessage: string;
   /** 用户意图，如"我想约她吃饭"（可选） */

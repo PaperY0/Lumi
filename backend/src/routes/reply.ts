@@ -14,6 +14,7 @@ const ReplyInputSchema = z.object({
   maleQuestionnaire: z.any().nullable().optional(),
   femaleQuestionnaire: z.any().nullable().optional(),
   recentMessages: z.array(z.any()).optional().default([]),
+  profileContext: z.string().optional(),
   userMessage: z.string().optional(),
   userIntent: z.string().optional(),
   scene: z.string().optional(),
@@ -27,6 +28,7 @@ const ReplyInputSchema = z.object({
   maleQuestionnaire: z.any().nullable().optional(),
   femaleQuestionnaire: z.any().nullable().optional(),
   recentMessages: z.array(z.any()).optional().default([]),
+  profileContext: z.string().optional(),
   userMessage: z.string().min(1, 'userMessage 不能为空'),
   userIntent: z.string().optional(),
   scene: z.string().optional(),
@@ -44,6 +46,7 @@ router.post('/reply', async (req, res) => {
       hasUserProfile: !!input.userProfile,
       hasGirlProfile: !!input.girlProfile,
       recentMessagesCount: input.recentMessages?.length ?? 0,
+      profileContextChars: input.profileContext?.length ?? 0,
       userMessageLength: input.userMessage.length,
       userIntentLength: input.userIntent?.length ?? 0,
       scene: input.scene,
@@ -65,6 +68,7 @@ router.post('/reply', async (req, res) => {
     logRouteEvent(res, '/api/reply', 'llm_prepare', {
       useMock: mockMode,
       recentMessagesCount: input.recentMessages?.length ?? 0,
+      profileContextChars: input.profileContext?.length ?? 0,
       userMessageLength: input.userMessage.length,
     });
 

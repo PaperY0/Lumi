@@ -6,6 +6,7 @@ export interface ReplyInput {
   maleQuestionnaire?: Record<string, any> | null;
   femaleQuestionnaire?: Record<string, any> | null;
   recentMessages?: Array<Record<string, any>>;
+  profileContext?: string;
   userMessage: string;
   userIntent?: string;
   scene?: string;
@@ -20,70 +21,83 @@ const replyStyles = [
   '边界尊重型',
 ];
 
+function renderRecentMessages(messages: Array<Record<string, any>> = []): string {
+  if (messages.length === 0) return 'No recent messages.';
+
+  return messages.slice(-20).map((msg) => {
+    const role = msg.sender === 'user' ? 'boy' : 'girl';
+    const content = typeof msg.content === 'string' ? msg.content : '';
+    return `[${role}] ${content}`;
+  }).join('\n');
+}
+
 export function buildReplyPrompt(input: ReplyInput): LLMMessage[] {
-  const systemPrompt = `你是一位温和、克制、尊重边界的恋爱沟通顾问。你的职责是帮助用户更好地回复对方，建立健康的沟通模式。
+  const systemPrompt = `You are Lumi's reply assistant.
 
-原则：
-1. 回复必须真诚、自然，避免套路和操控。
-2. 尊重双方边界，不鼓励施压、冷暴力、PUA 或过度追问。
-3. 根据上下文生成 6 种不同风格的回复。
-4. 明确指出应该避免的回复方式。
+Your job:
+- Help the user reply naturally and respectfully.
+- Generate six different reply styles.
+- Use the full profile context to avoid known boundaries and personalize tone.
+- Output Chinese JSON only. No Markdown, no prose outside JSON.
 
-必须返回严格 JSON，字段使用 camelCase：
+Safety rules:
+1. Do not provide PUA, manipulation, pressure, guilt-tripping, interrogation, or cold-violence replies.
+2. Respect the other person's known dislikes, boundaries, and current relationship stage.
+3. If the other person seems cold or pressured, prefer low-pressure replies.
+4. Do not overuse her interests mechanically. Mention them only when it feels natural.
+5. The "avoidReplies" field must explain what not to say, especially if it would hit a known dislike or boundary.
+
+Return exactly this JSON shape with Chinese values and all six styles:
 {
   "id": "reply-${Date.now()}",
   "createdAt": "${new Date().toISOString()}",
-  "simpleAnswer": "一句话简短建议",
+  "simpleAnswer": "one short Chinese answer",
   "recommendedReplies": [
-    { "style": "自然真诚型", "text": "具体回复" },
-    { "style": "轻松幽默型", "text": "具体回复" },
-    { "style": "稳重关心型", "text": "具体回复" },
-    { "style": "暧昧升温型", "text": "具体回复" },
-    { "style": "道歉修复型", "text": "具体回复" },
-    { "style": "边界尊重型", "text": "具体回复" }
+    { "style": "自然真诚型", "text": "reply text" },
+    { "style": "轻松幽默型", "text": "reply text" },
+    { "style": "稳重关心型", "text": "reply text" },
+    { "style": "暧昧升温型", "text": "reply text" },
+    { "style": "道歉修复型", "text": "reply text" },
+    { "style": "边界尊重型", "text": "reply text" }
   ],
-  "avoidReplies": ["不建议的回复1", "不建议的回复2"],
-  "analysis": "详细分析"
+  "avoidReplies": ["bad reply pattern 1", "bad reply pattern 2"],
+  "analysis": "brief Chinese analysis"
 }`;
 
-  let userContent = '';
+  const userContent = `Generate reply suggestions with this priority:
+1. The other person's latest message and the user's intent.
+2. Full profile context: both people's stage, communication style, user's confusion, her interests, dislikes, contact frequency, important dates, and notes.
+3. Recent messages for immediate conversation tone.
+4. Raw profile/questionnaire JSON only as fallback.
 
-  if (input.userProfile) {
-    userContent += `## 男生资料\n${JSON.stringify(input.userProfile, null, 2)}\n\n`;
-  }
+## Full profile context, read first
+${input.profileContext || 'No structured profile context. Fall back to raw profile JSON below.'}
 
-  if (input.girlProfile) {
-    userContent += `## 女生资料\n${JSON.stringify(input.girlProfile, null, 2)}\n\n`;
-  }
+## Latest message from her
+"${input.userMessage}"
 
-  if (input.maleQuestionnaire) {
-    userContent += `## 男生问卷结果\n${JSON.stringify(input.maleQuestionnaire, null, 2)}\n\n`;
-  }
+## User intent
+${input.userIntent || 'Not specified'}
 
-  if (input.femaleQuestionnaire) {
-    userContent += `## 女生观察问卷结果\n${JSON.stringify(input.femaleQuestionnaire, null, 2)}\n\n`;
-  }
+## Current scene
+${input.scene || 'Not specified'}
 
-  if (input.recentMessages && input.recentMessages.length > 0) {
-    userContent += `## 最近聊天记录\n`;
-    for (const msg of input.recentMessages.slice(-10)) {
-      const role = msg.sender === 'user' ? '男生' : '女生';
-      userContent += `[${role}] ${msg.content}\n`;
-    }
-    userContent += '\n';
-  }
+## Recent messages
+${renderRecentMessages(input.recentMessages)}
 
-  userContent += `## 对方最新消息\n"${input.userMessage}"\n\n`;
+## Raw user profile
+${input.userProfile ? JSON.stringify(input.userProfile, null, 2) : 'None'}
 
-  if (input.userIntent) {
-    userContent += `## 用户意图\n${input.userIntent}\n\n`;
-  }
+## Raw girl profile
+${input.girlProfile ? JSON.stringify(input.girlProfile, null, 2) : 'None'}
 
-  if (input.scene) {
-    userContent += `## 当前场景\n${input.scene}\n\n`;
-  }
+## Male questionnaire
+${input.maleQuestionnaire ? JSON.stringify(input.maleQuestionnaire, null, 2) : 'None'}
 
-  userContent += `请生成 ${replyStyles.join('、')} 这 6 种风格的回复建议。`;
+## Female observation questionnaire
+${input.femaleQuestionnaire ? JSON.stringify(input.femaleQuestionnaire, null, 2) : 'None'}
+
+Generate exactly these six styles: ${replyStyles.join('、')}. Keep replies concise, natural, and usable for chat copy-paste.`;
 
   return [
     { role: 'system', content: systemPrompt },
