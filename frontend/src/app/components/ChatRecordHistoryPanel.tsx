@@ -110,7 +110,7 @@ function DetailView({
   onAnalyze: (sessionId: string) => void;
 }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, width: '100%' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-rose)', margin: 0 }}>
           聊天记录详情
@@ -275,7 +275,7 @@ export function ChatRecordHistoryPanel({ onNavigate }: Props) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, width: '100%' }}>
       <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-rose)', margin: 0 }}>
         聊天记录历史
       </h2>
@@ -327,7 +327,7 @@ export function ChatRecordHistoryPanel({ onNavigate }: Props) {
 
       {/* 历史列表 */}
       {!loading && sessions.map((session) => (
-        <GlassCard key={session.id} style={{ background: 'rgba(232, 116, 138, 0.03)' }}>
+        <GlassCard key={session.id} style={{ width: '100%', boxSizing: 'border-box', background: 'rgba(232, 116, 138, 0.03)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {/* 标题行 */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
