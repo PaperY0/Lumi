@@ -43,6 +43,17 @@ const CARD_BASE: React.CSSProperties = {
   minWidth: 0,
 };
 
+const HISTORY_PANEL_STYLE: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 14,
+  width: '100%',
+  maxWidth: 800,
+  margin: 0,
+  minWidth: 0,
+  boxSizing: 'border-box',
+};
+
 // ── 主组件 ────────────────────────────────────────────────────────────────────
 
 export function ReplyHistoryPanel() {
@@ -116,7 +127,7 @@ export function ReplyHistoryPanel() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
+    <div style={HISTORY_PANEL_STYLE}>
       {/* 成功提示 */}
       {successMessage && (
         <div

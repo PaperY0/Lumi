@@ -1,5 +1,6 @@
 ﻿import { useState, useMemo, useCallback } from 'react';
 import { ArrowRight, ChevronDown, ChevronUp, HelpCircle, AlertCircle } from 'lucide-react';
+import type { CSSProperties } from 'react';
 import { GlassCard, LiquidButton } from './GlassUI';
 import { BlurText } from './BlurText';
 import type { PageName } from './GlassUI';
@@ -20,6 +21,13 @@ import { ChatRecordHistoryPanel } from './ChatRecordHistoryPanel';
 interface Props {
   onNavigate: (page: PageName) => void;
 }
+
+const CHAT_IMPORT_CONTENT_STYLE: CSSProperties = {
+  width: '100%',
+  maxWidth: 800,
+  margin: '0 auto',
+  boxSizing: 'border-box',
+};
 
 function combineMinerUImageResults(results: ImageOcrResult[]): MinerUParseResponse | null {
   const parsed = results
@@ -789,7 +797,8 @@ export function ChatImportPage({ onNavigate }: Props) {
 
   // ── 主渲染 ────────────────────────────────────────────
   return (
-    <div style={{ padding: '32px', maxWidth: 800, margin: '0 auto' }} className="page-enter">
+    <div style={{ padding: '32px', width: '100%', boxSizing: 'border-box' }} className="page-enter">
+      <div style={CHAT_IMPORT_CONTENT_STYLE}>
       {/* 标题 */}
       <div style={{ marginBottom: 28 }}>
         <h1 className="gradient-text" style={{ margin: 0, fontSize: 28, letterSpacing: '-0.03em' }}>
@@ -806,6 +815,11 @@ export function ChatImportPage({ onNavigate }: Props) {
           onClick={() => setActiveView('import')}
           style={{
             padding: '8px 20px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            width: 104,
+            boxSizing: 'border-box',
+            justifyContent: 'center',
             borderRadius: 10,
             border: activeView === 'import' ? '2px solid var(--pink-primary)' : '1px solid rgba(255,255,255,0.3)',
             background: activeView === 'import' ? 'rgba(232, 116, 138, 0.1)' : 'rgba(255,255,255,0.2)',
@@ -822,6 +836,11 @@ export function ChatImportPage({ onNavigate }: Props) {
           onClick={() => setActiveView('history')}
           style={{
             padding: '8px 20px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            width: 104,
+            boxSizing: 'border-box',
+            justifyContent: 'center',
             borderRadius: 10,
             border: activeView === 'history' ? '2px solid var(--pink-primary)' : '1px solid rgba(255,255,255,0.3)',
             background: activeView === 'history' ? 'rgba(232, 116, 138, 0.1)' : 'rgba(255,255,255,0.2)',
@@ -1148,6 +1167,7 @@ export function ChatImportPage({ onNavigate }: Props) {
       {activeView === 'history' && (
         <ChatRecordHistoryPanel onNavigate={onNavigate} />
       )}
+      </div>
     </div>
   );
 }
