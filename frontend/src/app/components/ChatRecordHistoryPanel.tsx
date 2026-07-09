@@ -175,6 +175,8 @@ export function ChatRecordHistoryPanel({ onNavigate }: Props) {
   const [girlId, setGirlId] = useState<string | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+  const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
 
   const {
     sessions,
@@ -191,6 +193,7 @@ export function ChatRecordHistoryPanel({ onNavigate }: Props) {
     selectSession,
     clearSelectedSession,
     deleteSession,
+    renameSession,
     clearMessage,
   } = useChatRecordHistory();
 
@@ -243,6 +246,23 @@ export function ChatRecordHistoryPanel({ onNavigate }: Props) {
     await deleteSession(confirmingDeleteId);
     setConfirmingDeleteId(null);
   }, [confirmingDeleteId, deleteSession]);
+
+  const startRename = useCallback((session: ChatSession) => {
+    setConfirmingDeleteId(null);
+    setEditingTitleId(session.id);
+    setEditingTitle(session.title || '');
+  }, []);
+
+  const cancelRename = useCallback(() => {
+    setEditingTitleId(null);
+    setEditingTitle('');
+  }, []);
+
+  const saveRename = useCallback(async () => {
+    if (!editingTitleId) return;
+    await renameSession(editingTitleId, editingTitle);
+    cancelRename();
+  }, [cancelRename, editingTitle, editingTitleId, renameSession]);
 
   // 未建档提示
   if (!loadingProfile && !userId) {
@@ -332,9 +352,107 @@ export function ChatRecordHistoryPanel({ onNavigate }: Props) {
             {/* 标题行 */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-rose)', marginBottom: 4 }}>
-                  {getSessionTitle(session)}
-                </div>
+                {editingTitleId === session.id ? (
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6, flexWrap: 'wrap' }}>
+                    <input
+                      className="glass-input"
+                      value={editingTitle}
+                      autoFocus
+                      maxLength={32}
+                      placeholder="给这段聊天起个名字"
+                      onChange={(e) => setEditingTitle(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          void saveRename();
+                        }
+                        if (e.key === 'Escape') {
+                          e.preventDefault();
+                          cancelRename();
+                        }
+                      }}
+                      style={{
+                        flex: '1 1 220px',
+                        minWidth: 0,
+                        borderRadius: 999,
+                        padding: '8px 14px',
+                        fontSize: 13,
+                        color: 'var(--text-rose)',
+                      }}
+                    />
+                    <button
+                      onClick={() => void saveRename()}
+                      style={{
+                        background: 'linear-gradient(135deg,#D4607A,#C5956C)',
+                        border: 'none',
+                        borderRadius: 999,
+                        padding: '7px 14px',
+                        color: 'white',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      保存
+                    </button>
+                    <button
+                      onClick={cancelRename}
+                      style={{
+                        background: 'rgba(255,255,255,0.45)',
+                        border: '1px solid rgba(212,96,122,0.18)',
+                        borderRadius: 999,
+                        padding: '7px 14px',
+                        color: 'var(--text-purple)',
+                        fontSize: 13,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      取消
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
+                    <button
+                      onDoubleClick={() => startRename(session)}
+                      title="双击也可以重命名"
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        textAlign: 'left',
+                        background: 'transparent',
+                        border: 'none',
+                        padding: 0,
+                        fontSize: 15,
+                        fontWeight: 600,
+                        color: 'var(--text-rose)',
+                        cursor: 'default',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {getSessionTitle(session)}
+                    </button>
+                    <button
+                      onClick={() => startRename(session)}
+                      disabled={confirmingDeleteId === session.id || deletingId === session.id}
+                      style={{
+                        background: 'rgba(255,248,252,0.65)',
+                        border: '1px solid rgba(212,96,122,0.2)',
+                        borderRadius: 999,
+                        padding: '5px 12px',
+                        color: 'var(--pink-primary)',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: (confirmingDeleteId === session.id || deletingId === session.id) ? 'default' : 'pointer',
+                        opacity: (confirmingDeleteId === session.id || deletingId === session.id) ? 0.45 : 1,
+                        flexShrink: 0,
+                      }}
+                    >
+                      重命名
+                    </button>
+                  </div>
+                )}
                 <div style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.7 }}>
                   {formatDateTime(session.importedAt)}
                 </div>
@@ -365,7 +483,7 @@ export function ChatRecordHistoryPanel({ onNavigate }: Props) {
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button
                 onClick={() => selectSession(session)}
-                disabled={confirmingDeleteId === session.id || deletingId === session.id}
+                disabled={confirmingDeleteId === session.id || deletingId === session.id || editingTitleId === session.id}
                 style={{
                   background: 'rgba(139, 92, 246, 0.08)',
                   border: '1px solid rgba(139, 92, 246, 0.2)',
@@ -373,8 +491,8 @@ export function ChatRecordHistoryPanel({ onNavigate }: Props) {
                   padding: '6px 14px',
                   color: '#8B5CF6',
                   fontSize: 13,
-                  cursor: (confirmingDeleteId === session.id || deletingId === session.id) ? 'default' : 'pointer',
-                  opacity: (confirmingDeleteId === session.id || deletingId === session.id) ? 0.5 : 1,
+                  cursor: (confirmingDeleteId === session.id || deletingId === session.id || editingTitleId === session.id) ? 'default' : 'pointer',
+                  opacity: (confirmingDeleteId === session.id || deletingId === session.id || editingTitleId === session.id) ? 0.5 : 1,
                   transition: 'all 0.2s ease',
                 }}
               >
@@ -382,7 +500,7 @@ export function ChatRecordHistoryPanel({ onNavigate }: Props) {
               </button>
               <button
                 onClick={() => handleAnalyzeFromHistory(session.id)}
-                disabled={confirmingDeleteId === session.id || deletingId === session.id}
+                disabled={confirmingDeleteId === session.id || deletingId === session.id || editingTitleId === session.id}
                 style={{
                   background: 'rgba(232, 116, 138, 0.08)',
                   border: '1px solid rgba(232, 116, 138, 0.2)',
@@ -390,8 +508,8 @@ export function ChatRecordHistoryPanel({ onNavigate }: Props) {
                   padding: '6px 14px',
                   color: 'var(--pink-primary)',
                   fontSize: 13,
-                  cursor: (confirmingDeleteId === session.id || deletingId === session.id) ? 'default' : 'pointer',
-                  opacity: (confirmingDeleteId === session.id || deletingId === session.id) ? 0.5 : 1,
+                  cursor: (confirmingDeleteId === session.id || deletingId === session.id || editingTitleId === session.id) ? 'default' : 'pointer',
+                  opacity: (confirmingDeleteId === session.id || deletingId === session.id || editingTitleId === session.id) ? 0.5 : 1,
                   transition: 'all 0.2s ease',
                 }}
               >
@@ -399,16 +517,16 @@ export function ChatRecordHistoryPanel({ onNavigate }: Props) {
               </button>
               <button
                 onClick={() => setConfirmingDeleteId(session.id)}
-                disabled={deletingId === session.id}
+                disabled={deletingId === session.id || editingTitleId === session.id}
                 style={{
                   background: 'rgba(239, 68, 68, 0.06)',
                   border: '1px solid rgba(239, 68, 68, 0.15)',
                   borderRadius: 8,
                   padding: '6px 14px',
-                  color: deletingId === session.id ? 'rgba(239, 68, 68, 0.4)' : '#EF4444',
+                  color: (deletingId === session.id || editingTitleId === session.id) ? 'rgba(239, 68, 68, 0.4)' : '#EF4444',
                   fontSize: 13,
-                  cursor: deletingId === session.id ? 'default' : 'pointer',
-                  opacity: deletingId === session.id ? 0.6 : 1,
+                  cursor: (deletingId === session.id || editingTitleId === session.id) ? 'default' : 'pointer',
+                  opacity: (deletingId === session.id || editingTitleId === session.id) ? 0.6 : 1,
                   transition: 'all 0.2s ease',
                 }}
               >

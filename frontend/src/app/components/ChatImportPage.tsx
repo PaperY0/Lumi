@@ -17,6 +17,7 @@ import { useUserStore, useUiStore } from '@/stores';
 import { useChatImportStore } from '@/stores/chatImportStore';
 import { useAnalysisRequestStore } from '@/stores/analysisRequestStore';
 import { ChatRecordHistoryPanel } from './ChatRecordHistoryPanel';
+import { PageBackButton } from './PageBackButton';
 
 interface Props {
   onNavigate: (page: PageName) => void;
@@ -801,6 +802,9 @@ export function ChatImportPage({ onNavigate }: Props) {
       <div style={CHAT_IMPORT_CONTENT_STYLE}>
       {/* 标题 */}
       <div style={{ marginBottom: 28 }}>
+        <div style={{ marginBottom: 12 }}>
+          <PageBackButton />
+        </div>
         <h1 className="gradient-text" style={{ margin: 0, fontSize: 28, letterSpacing: '-0.03em' }}>
           <BlurText text="聊天导入" startDelay={60} className="gradient-text" style={{ fontWeight: 700, display: 'inline' }} />
         </h1>

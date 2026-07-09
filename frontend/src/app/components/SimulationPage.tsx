@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, type KeyboardEventHandler } from 'react';
 import { Sparkles, RotateCcw, MessageSquare, AlertCircle, Lightbulb, Zap, ShieldCheck, Send, CheckCircle, History } from 'lucide-react';
 import { BlurText } from './BlurText';
 import { IconBadge } from './IconBadge';
 import type { PageName } from './GlassUI';
 import { useSimulateChat } from '@/hooks/useSimulateChat';
 import { SimulateHistoryPanel } from './SimulateHistoryPanel';
+import { PageBackButton } from './PageBackButton';
 
 interface Props { onNavigate: (page: PageName) => void; }
 
@@ -56,6 +57,20 @@ export function SimulationPage({ onNavigate }: Props) {
     await sendUserReply(trimmed);
   };
 
+  const handleReplyKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = (e) => {
+    if (
+      e.key === 'Enter' &&
+      !e.shiftKey &&
+      !e.ctrlKey &&
+      !e.metaKey &&
+      !e.altKey &&
+      !e.nativeEvent.isComposing
+    ) {
+      e.preventDefault();
+      void handleSendReply();
+    }
+  };
+
   const handleFinishPractice = async () => {
     if (saving || loading) return;
     console.log('🏁 [SimulationPage] 用户点击结束练习并保存');
@@ -77,6 +92,9 @@ export function SimulationPage({ onNavigate }: Props) {
 
           {/* ── Header ──────────────────────────────────────────── */}
           <div style={{ marginBottom: 20 }}>
+            <div style={{ marginBottom: 12 }}>
+              <PageBackButton />
+            </div>
             <BlurText text="模拟对话练习" startDelay={60} style={{ fontSize: 24, fontWeight: 700, color: 'var(--deep-plum)', letterSpacing: '-0.03em', display: 'block' }} />
             <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--graphite-rose)', opacity: 0.75 }}>
               AI 模拟女生回应，帮你在真实聊天前先练一遍
@@ -313,7 +331,7 @@ export function SimulationPage({ onNavigate }: Props) {
                       className="glass-input"
                       value={replyText}
                       onChange={e => setReplyText(e.target.value)}
-                      onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); handleSendReply(); } }}
+                      onKeyDown={handleReplyKeyDown}
                       placeholder="试着自然回应她，比如：辛苦啦，今天早点休息～"
                       rows={2}
                       disabled={loading || saving}

@@ -108,6 +108,25 @@ export function useChatRecordHistory() {
     }
   }, [deletingId, selectedSession]);
 
+  /** 重命名某条会话 */
+  const renameSession = useCallback(async (sessionId: string, title: string) => {
+    const cleanTitle = title.trim();
+    setError(null);
+    try {
+      await chatRepository.updateSessionTitle(sessionId, cleanTitle);
+      setSessions((prev) => prev.map((session) => (
+        session.id === sessionId ? { ...session, title: cleanTitle || undefined } : session
+      )));
+      setSelectedSession((prev) => (
+        prev?.id === sessionId ? { ...prev, title: cleanTitle || undefined } : prev
+      ));
+      setSuccessMessage(cleanTitle ? '已重命名聊天记录' : '已恢复默认聊天记录名称');
+    } catch (err) {
+      console.error('❌ [useChatRecordHistory] 重命名失败:', err);
+      setError('重命名聊天记录失败，请稍后重试');
+    }
+  }, []);
+
   /** 清除提示消息 */
   const clearMessage = useCallback(() => {
     setError(null);
@@ -134,6 +153,7 @@ export function useChatRecordHistory() {
     selectSession,
     clearSelectedSession,
     deleteSession,
+    renameSession,
     clearMessage,
     reload,
   };

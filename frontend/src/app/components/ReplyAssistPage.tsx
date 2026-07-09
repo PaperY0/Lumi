@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, type KeyboardEventHandler } from 'react';
 import { Sparkles, ArrowRight, MessageSquare, AlertCircle, Ban, BookOpen, Copy, FileText, History } from 'lucide-react';
 import { GlassCard, GlassTextarea, WarningNotice } from './GlassUI';
 import { BlurText } from './BlurText';
 import type { PageName } from './GlassUI';
 import { useGenerateReply } from '@/hooks/useGenerateReply';
 import { ReplyHistoryPanel } from './ReplyHistoryPanel';
+import { PageBackButton } from './PageBackButton';
 
 interface Props { onNavigate: (page: PageName) => void; }
 
@@ -89,10 +90,29 @@ export function ReplyAssistPage({ onNavigate }: Props) {
 
   const canGenerate = userMessage.trim().length > 0 && !loading;
 
+  const handleMessageKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = (e) => {
+    if (
+      e.key === 'Enter' &&
+      !e.shiftKey &&
+      !e.ctrlKey &&
+      !e.metaKey &&
+      !e.altKey &&
+      !e.nativeEvent.isComposing
+    ) {
+      e.preventDefault();
+      if (canGenerate) {
+        void handleGenerate();
+      }
+    }
+  };
+
   return (
     <div style={{ padding: '28px 32px 48px', maxWidth: 1140, margin: '0 auto', width: '100%', overflowX: 'hidden', boxSizing: 'border-box' }}>
       {/* Header */}
       <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 12 }}>
+          <PageBackButton />
+        </div>
         <BlurText text="帮我回复" startDelay={60} style={{ fontSize: 26, fontWeight: 700, color: '#4A2E38', letterSpacing: '-0.04em', display: 'block' }} />
         <p style={{ margin: '5px 0 0', fontSize: 14, color: '#7B5C6E', opacity: 0.75 }}>
           不知道怎么回时，先生成几个自然、不冒犯的表达参考
@@ -153,6 +173,7 @@ export function ReplyAssistPage({ onNavigate }: Props) {
               placeholder={'输入她发的消息...\n\n例如："那天没看到消息，忘了回了"'}
               value={userMessage}
               onChange={setUserMessage}
+              onKeyDown={handleMessageKeyDown}
               rows={5}
             />
             {!userMessage && (

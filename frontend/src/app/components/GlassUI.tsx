@@ -115,8 +115,13 @@ export function GlassInput({ placeholder, value, onChange, label, type = 'text',
 }
 
 // ─── Glass Textarea ─────────────────────────────────────────────────────────────
-export function GlassTextarea({ placeholder, value, onChange, label, rows = 3 }: {
-  placeholder?: string; value?: string; onChange?: (v: string) => void; label?: string; rows?: number;
+export function GlassTextarea({ placeholder, value, onChange, onKeyDown, label, rows = 3 }: {
+  placeholder?: string;
+  value?: string;
+  onChange?: (v: string) => void;
+  onKeyDown?: React.KeyboardEventHandler<HTMLTextAreaElement>;
+  label?: string;
+  rows?: number;
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -131,6 +136,7 @@ export function GlassTextarea({ placeholder, value, onChange, label, rows = 3 }:
         value={value}
         rows={rows}
         onChange={(e) => onChange?.(e.target.value)}
+        onKeyDown={onKeyDown}
         style={{
           borderRadius: 18,
           padding: '11px 16px',

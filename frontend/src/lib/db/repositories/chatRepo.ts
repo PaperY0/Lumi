@@ -49,6 +49,12 @@ export const chatRepository = {
     return db.chatSessions.get(id);
   },
 
+  /** 更新会话标题；空标题会清空自定义标题，界面继续显示默认名称 */
+  async updateSessionTitle(id: string, title?: string): Promise<void> {
+    const cleanTitle = title?.trim() || undefined;
+    await db.chatSessions.update(id, { title: cleanTitle });
+  },
+
   /** 列出某男生的所有会话，按 importedAt 倒序（最新在前） */
   async listSessions(userId: string): Promise<ChatSession[]> {
     const list = await db.chatSessions
