@@ -423,6 +423,14 @@ body {
 ::-webkit-scrollbar-thumb { background: rgba(200,96,122,0.2); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(200,96,122,0.36); }
 
+.hide-scrollbar {
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
 /* ─── Mobile ───────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .sidebar-desktop { display: none !important; }

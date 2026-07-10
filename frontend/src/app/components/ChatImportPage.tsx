@@ -1,5 +1,5 @@
 ﻿import { useState, useMemo, useCallback } from 'react';
-import { ArrowRight, ChevronDown, ChevronUp, HelpCircle, AlertCircle } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronUp, HelpCircle, AlertCircle, Upload, History } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { GlassCard, LiquidButton } from './GlassUI';
 import { BlurText } from './BlurText';
@@ -818,15 +818,14 @@ export function ChatImportPage({ onNavigate }: Props) {
         <button
           onClick={() => setActiveView('import')}
           style={{
-            padding: '8px 20px',
             display: 'inline-flex',
             alignItems: 'center',
-            width: 104,
-            boxSizing: 'border-box',
+            gap: 8,
             justifyContent: 'center',
-            borderRadius: 10,
-            border: activeView === 'import' ? '2px solid var(--pink-primary)' : '1px solid rgba(255,255,255,0.3)',
-            background: activeView === 'import' ? 'rgba(232, 116, 138, 0.1)' : 'rgba(255,255,255,0.2)',
+            borderRadius: 999,
+            padding: '10px 20px',
+            border: activeView === 'import' ? '1px solid rgba(232,116,138,0.3)' : '1px solid rgba(139,92,246,0.2)',
+            background: activeView === 'import' ? 'rgba(232,116,138,0.15)' : 'rgba(255,255,255,0.05)',
             color: activeView === 'import' ? 'var(--pink-primary)' : 'var(--text-purple)',
             fontSize: 14,
             fontWeight: activeView === 'import' ? 600 : 400,
@@ -834,20 +833,20 @@ export function ChatImportPage({ onNavigate }: Props) {
             transition: 'all 0.2s ease',
           }}
         >
+          <Upload size={16} />
           导入聊天
         </button>
         <button
           onClick={() => setActiveView('history')}
           style={{
-            padding: '8px 20px',
             display: 'inline-flex',
             alignItems: 'center',
-            width: 104,
-            boxSizing: 'border-box',
+            gap: 8,
             justifyContent: 'center',
-            borderRadius: 10,
-            border: activeView === 'history' ? '2px solid var(--pink-primary)' : '1px solid rgba(255,255,255,0.3)',
-            background: activeView === 'history' ? 'rgba(232, 116, 138, 0.1)' : 'rgba(255,255,255,0.2)',
+            borderRadius: 999,
+            padding: '10px 20px',
+            border: activeView === 'history' ? '1px solid rgba(232,116,138,0.3)' : '1px solid rgba(139,92,246,0.2)',
+            background: activeView === 'history' ? 'rgba(232,116,138,0.15)' : 'rgba(255,255,255,0.05)',
             color: activeView === 'history' ? 'var(--pink-primary)' : 'var(--text-purple)',
             fontSize: 14,
             fontWeight: activeView === 'history' ? 600 : 400,
@@ -855,6 +854,7 @@ export function ChatImportPage({ onNavigate }: Props) {
             transition: 'all 0.2s ease',
           }}
         >
+          <History size={16} />
           聊天记录
         </button>
       </div>

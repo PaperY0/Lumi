@@ -279,6 +279,7 @@ export default function App() {
 
         {/* Main content — simulation page gets overflow:hidden so it can fill 100% height */}
         <main
+          className={currentPage === 'reply-assist' ? 'hide-scrollbar' : undefined}
           style={{
             flex: 1,
             overflowY: currentPage === 'simulation' ? 'hidden' : 'auto',
