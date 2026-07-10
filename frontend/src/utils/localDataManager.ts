@@ -25,6 +25,7 @@ export interface LocalDataSummary {
   analysisReportCount: number;
   replyHistoryCount: number;
   simulateHistoryCount: number;
+  importantDateCount: number;
   loveGuideArticleCount: number;
   localStorageKeyCount: number;
   lastUpdatedAt: string | null;
@@ -73,6 +74,7 @@ export async function getLocalDataSummary(): Promise<LocalDataSummary> {
     analyses,
     replies,
     simulations,
+    importantDates,
     loveGuideArticles,
   ] = await Promise.all([
     db.userProfiles.toArray(),
@@ -84,6 +86,7 @@ export async function getLocalDataSummary(): Promise<LocalDataSummary> {
     db.analysisReports.toArray(),
     db.replyHistory.toArray(),
     db.simulateHistory.toArray(),
+    db.importantDates.toArray(),
     db.loveGuideArticles.toArray(),
   ]);
 
@@ -104,6 +107,7 @@ export async function getLocalDataSummary(): Promise<LocalDataSummary> {
   lastUpdatedAt = mergeLatest(lastUpdatedAt, pickLatestTime(analyses));
   lastUpdatedAt = mergeLatest(lastUpdatedAt, pickLatestTime(replies));
   lastUpdatedAt = mergeLatest(lastUpdatedAt, pickLatestTime(simulations));
+  lastUpdatedAt = mergeLatest(lastUpdatedAt, pickLatestTime(importantDates));
   lastUpdatedAt = mergeLatest(lastUpdatedAt, pickLatestTime(loveGuideArticles));
 
   return {
@@ -116,6 +120,7 @@ export async function getLocalDataSummary(): Promise<LocalDataSummary> {
     analysisReportCount: analyses.length,
     replyHistoryCount: replies.length,
     simulateHistoryCount: simulations.length,
+    importantDateCount: importantDates.length,
     loveGuideArticleCount: loveGuideArticles.length,
     localStorageKeyCount: lsCount,
     lastUpdatedAt,

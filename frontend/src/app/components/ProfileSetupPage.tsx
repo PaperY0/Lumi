@@ -92,7 +92,6 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
   const [freq, setFreq] = useState<string[]>([]);
   const [likes, setLikes] = useState<string[]>([]);
   const [triggers, setTriggers] = useState<string[]>([]);
-  const [importantDate, setImportantDate] = useState('');
   const [notes, setNotes] = useState('');
 
   // ✅ 任务 2：女生称呼必填校验
@@ -182,14 +181,11 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
           // tabooBehaviors
           setTriggers(girl.tabooBehaviors || []);
 
-          // ✅ 任务 6：回显生日
-          setImportantDate(girl.birthday || '');
           setNotes(girl.notes || '');
 
           console.log('✅ [ProfileSetupPage] girlProfile 回显完成:', {
             id: girl.id,
             nickname: girl.nickname,
-            birthday: girl.birthday,
             updatedAt: girl.updatedAt,
           });
         } else {
@@ -213,7 +209,6 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
       freq,
       likes,
       triggers,
-      importantDate,
       notes,
     });
 
@@ -295,12 +290,8 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
         interests: likes,
         likes: likes,
         tabooBehaviors: triggers,
-        birthday: importantDate || undefined, // ✅ 任务 6：保存生日
-        importantDates: importantDate ? [{ name: '生日', date: importantDate }] : [],
         notes: notes.trim() || undefined,
       };
-
-      console.log('📥 [ProfileSetupPage] girlPayload birthday:', girlPayload.birthday);
 
       // ✅ 任务 4：防止保存空女生资料（兜底检查）
       if (!girlPayload.nickname || !girlPayload.nickname.trim()) {
@@ -316,7 +307,6 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
         id: savedGirl.id,
         userId: savedGirl.userId,
         nickname: savedGirl.nickname,
-        birthday: savedGirl.birthday,
       });
 
       // ✅ 任务 4：清理重复记录
@@ -610,7 +600,6 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
               <PillTagSelector options={triggerOptions} selected={triggers} onToggle={v => toggle(triggers, v, setTriggers)} />
             </div>
 
-            <GlassInput label="重要日子（生日等）" placeholder="例如：10月3日生日" value={importantDate} onChange={setImportantDate} />
             <GlassTextarea label="备注" placeholder="其他想记录的信息..." value={notes} onChange={setNotes} rows={3} />
           </div>
         </GlassCard>

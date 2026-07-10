@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Heart, MessageCircle, Upload, BarChart2, BookOpen, Settings, Sparkles, MessageSquare, User, ShieldAlert } from 'lucide-react';
+import { Home, Heart, MessageCircle, Upload, BarChart2, BookOpen, Settings, Sparkles, MessageSquare, User, ShieldAlert, CalendarDays } from 'lucide-react';
 import type { PageName } from './GlassUI';
 import { BRAND_NAME, BRAND_SUBTITLE_SHORT } from '../brand';
 
@@ -12,6 +12,7 @@ const navItems: { id: PageName; icon: React.ReactNode; label: string }[] = [
   { id: 'simulation', icon: <MessageCircle size={18} />, label: '模拟对话' },
   { id: 'love-code', icon: <BookOpen size={18} />, label: '恋爱法典' },
   { id: 'emergency-manual', icon: <ShieldAlert size={18} />, label: '应急手册' },
+  { id: 'important-dates', icon: <CalendarDays size={18} />, label: '重要日子' },
   { id: 'settings', icon: <Settings size={18} />, label: '设置' },
 ];
 

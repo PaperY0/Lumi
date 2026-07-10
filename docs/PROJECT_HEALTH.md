@@ -1,6 +1,6 @@
 # Lumi Project Health
 
-Last updated: 2026-07-08
+Last updated: 2026-07-10
 
 ## Current Status
 
@@ -14,6 +14,7 @@ Last updated: 2026-07-08
 - MinerU OCR is moving to the backend v4 precise parsing flow through `POST /api/mineru/parse-image-chat`.
 - AI chat analysis now accepts 10+ messages instead of the earlier 20-message recommendation.
 - V1.1 progress: emergency manual has static searchable content; reply generation prompts/mock responses now target six styles.
+- V1.2 progress: local important-day reminders are being added as a dedicated page plus Dashboard reminder card.
 
 ## Security Checklist
 
@@ -31,5 +32,6 @@ Last updated: 2026-07-08
 - Validate real large WeChat/QQ screenshots through the full flow: image upload, MinerU markdown, LLM cleanup, A/B preview, save, then AI analysis.
 - Finish PRD V1.1: relationship portrait optimization and local Love Code article management.
 - Start PRD V1.2 with important-day reminders before gift/date-guide recommendations.
+- Optimize the profile setup page content next: remove duplicated/low-value fields, separate "AI context" from "reminder data", and make it clearer which inputs affect relationship analysis.
 - Decide whether `.claude/` is project config or personal local state before committing it.
 - Rotate any real DeepSeek API key that may have been pasted into tools, screenshots, or chat.

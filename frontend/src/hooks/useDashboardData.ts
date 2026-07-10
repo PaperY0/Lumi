@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import type { AIAnalysisReport, ReplyHistory, SimulateHistoryRecord } from '@/types';
+import type { AIAnalysisReport, ImportantDate, ReplyHistory, SimulateHistoryRecord } from '@/types';
 import {
   userProfileRepository,
   girlProfileRepository,
@@ -7,7 +7,13 @@ import {
   analysisRepository,
   replyRepository,
   simulateHistoryRepository,
+  importantDateRepository,
 } from '@/lib/db/repositories';
+
+export interface UpcomingImportantDate {
+  item: ImportantDate;
+  daysUntil: number;
+}
 
 export interface DashboardData {
   userName: string;
@@ -23,7 +29,21 @@ export interface DashboardData {
   latestSimulateHistory: SimulateHistoryRecord | null;
   totalPracticeMessages: number;
   averageSimulateScore: number | null;
+  upcomingImportantDates: UpcomingImportantDate[];
   lastActiveAt: string | null;
+}
+
+function daysUntilNext(dateValue: string): number | null {
+  const base = new Date(`${dateValue}T00:00:00`);
+  if (Number.isNaN(base.getTime())) return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let next = new Date(today.getFullYear(), base.getMonth(), base.getDate());
+  if (next < today) {
+    next = new Date(today.getFullYear() + 1, base.getMonth(), base.getDate());
+  }
+  return Math.ceil((next.getTime() - today.getTime()) / 86400000);
 }
 
 export function useDashboardData() {
@@ -69,6 +89,9 @@ export function useDashboardData() {
       const simulateList = userId
         ? await simulateHistoryRepository.listByUserId(userId)
         : [];
+      const importantDates = girl
+        ? await importantDateRepository.listByGirlId(girl.id)
+        : [];
 
       const latestAnalysis = analysisList[0] ?? null;
       const latestReply = replyList[0] ?? null;
@@ -91,6 +114,12 @@ export function useDashboardData() {
                 scoredRecords.length,
             )
           : null;
+
+      const upcomingImportantDates = importantDates
+        .map((item) => ({ item, daysUntil: daysUntilNext(item.date) }))
+        .filter((entry): entry is UpcomingImportantDate => entry.daysUntil != null && entry.daysUntil <= 30)
+        .sort((a, b) => a.daysUntil - b.daysUntil)
+        .slice(0, 4);
 
       // 最后活跃时间
       const timestamps = [
@@ -117,6 +146,7 @@ export function useDashboardData() {
         latestSimulateHistory: latestSimulate,
         totalPracticeMessages,
         averageSimulateScore,
+        upcomingImportantDates,
         lastActiveAt,
       };
 
@@ -125,6 +155,7 @@ export function useDashboardData() {
         analysisReportCount: result.analysisReportCount,
         replyHistoryCount: result.replyHistoryCount,
         simulateHistoryCount: result.simulateHistoryCount,
+        upcomingImportantDateCount: result.upcomingImportantDates.length,
       });
     } catch (e) {
       console.error('❌ [dashboard] 首页数据加载失败:', e);

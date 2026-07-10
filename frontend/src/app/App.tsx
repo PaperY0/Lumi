@@ -14,6 +14,7 @@ import { ReplyAssistPage } from './components/ReplyAssistPage';
 import { SimulationPage } from './components/SimulationPage';
 import { LoveCodePage } from './components/LoveCodePage';
 import { EmergencyManualPage } from './components/EmergencyManualPage';
+import { ImportantDatesPage } from './components/ImportantDatesPage';
 import { SettingsPage } from './components/SettingsPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { GlobalToast } from './components/GlobalToast';
@@ -34,6 +35,7 @@ const PAGE_PATHS: Record<PageName, string> = {
   simulation: '/simulation',
   'love-code': '/love-code',
   'emergency-manual': '/emergency-manual',
+  'important-dates': '/important-dates',
   settings: '/settings',
 };
 
@@ -253,6 +255,8 @@ export default function App() {
         return <LoveCodePage />;
       case 'emergency-manual':
         return <EmergencyManualPage />;
+      case 'important-dates':
+        return <ImportantDatesPage />;
       case 'settings':
         return <SettingsPage onNavigate={navigate} />;
       default:

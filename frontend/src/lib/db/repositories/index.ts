@@ -12,3 +12,4 @@ export { portraitRepository } from './portraitRepo';
 export { replyRepository } from './replyRepo';
 export { simulateHistoryRepository } from './simulateHistoryRepo';
 export { loveGuideRepository } from './loveGuideRepo';
+export { importantDateRepository } from './importantDateRepo';

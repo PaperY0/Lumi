@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, Upload, MessageCircle, ChevronRight, Sparkles, Heart, BarChart2, AlertCircle } from 'lucide-react';
+import { MessageSquare, Upload, MessageCircle, ChevronRight, Sparkles, Heart, BarChart2, AlertCircle, CalendarDays } from 'lucide-react';
 import { HeatMeter, StageBadge, AIInsightCard } from './GlassUI';
 import { AnimatedCard } from './AnimatedCard';
 import { CountUp } from './CountUp';
@@ -25,6 +25,18 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
 
 const hour = new Date().getHours();
   const greeting = hour < 6 ? '夜深了' : hour < 12 ? '早上好' : hour < 18 ? '下午好' : '晚上好';
+
+  const importantDateTypeLabel = {
+    birthday: '生日',
+    anniversary: '纪念日',
+    other: '自定义',
+  } as const;
+
+  const importantDateHint = (days: number) => {
+    if (days === 0) return '今天';
+    if (days === 1) return '明天';
+    return `${days} 天后`;
+  };
 
   useEffect(() => {
     const t = setTimeout(() => setHeroVisible(true), 60);
@@ -62,6 +74,7 @@ const hour = new Date().getHours();
   }
 
   const d = data!;
+  const [nextImportantDate, ...laterImportantDates] = d.upcomingImportantDates;
 
   return (
     <div style={{ padding: '32px 36px 48px', maxWidth: 960, margin: '0 auto' }}>
@@ -244,48 +257,52 @@ const hour = new Date().getHours();
           </div>
         </AnimatedCard>
 
-        {/* Simulate Practice Overview */}
+        {/* Important Dates */}
         <AnimatedCard delay={140} enable3d>
           <div className="glass-card" style={{ borderRadius: 24, padding: '20px', height: '100%', background: 'linear-gradient(145deg, rgba(255,252,255,0.65), rgba(255,245,250,0.52))' }}>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 14 }}>
-              <MessageCircle size={15} color="#BF8E6E" />
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#4A2E38' }}>模拟练习概览</span>
+              <CalendarDays size={15} color="#D4607A" />
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#4A2E38' }}>未来 30 天提醒</span>
             </div>
-            {d.simulateHistoryCount > 0 ? (
+            {d.upcomingImportantDates.length > 0 ? (
               <>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 12, color: '#7B5C6E' }}>累计练习消息</span>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: '#4A2E38' }}>{d.totalPracticeMessages} 条</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 12, color: '#7B5C6E' }}>平均评分</span>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: '#4A2E38' }}>{d.averageSimulateScore ?? '暂无评分'}</span>
-                  </div>
-                  {d.latestSimulateHistory && (
-                    <>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 12, color: '#7B5C6E' }}>最近场景</span>
-                        <span style={{ fontSize: 13, color: '#4A2E38' }}>{d.latestSimulateHistory.scenario}</span>
+                <div style={{ borderRadius: 18, padding: '14px 14px 13px', background: 'linear-gradient(135deg, rgba(255,244,248,0.78), rgba(255,250,253,0.56))', border: '1px solid rgba(212,96,122,0.18)', marginBottom: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: '#4A2E38', lineHeight: 1.35, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {nextImportantDate.item.name}
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 12, color: '#7B5C6E' }}>最近难度</span>
-                        <span style={{ fontSize: 13, color: '#4A2E38' }}>{d.latestSimulateHistory.difficulty}</span>
+                      <div style={{ marginTop: 5, fontSize: 11, color: '#7B5C6E', opacity: 0.72 }}>
+                        {importantDateTypeLabel[nextImportantDate.item.type]} · {new Date(`${nextImportantDate.item.date}T00:00:00`).toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' })}
                       </div>
-                    </>
-                  )}
+                    </div>
+                    <div style={{ borderRadius: 999, padding: '6px 10px', background: 'rgba(212,96,122,0.12)', color: '#D4607A', fontSize: 13, fontWeight: 800, whiteSpace: 'nowrap' }}>
+                      {importantDateHint(nextImportantDate.daysUntil)}
+                    </div>
+                  </div>
                 </div>
-                <button onClick={() => onNavigate('simulation')} style={{ fontSize: 12, color: '#BF8E6E', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 500 }}>
-                  继续练习 <ChevronRight size={13} />
+                {laterImportantDates.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#7B5C6E', opacity: 0.58 }}>接下来</div>
+                    {laterImportantDates.slice(0, 2).map(({ item, daysUntil }) => (
+                      <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center', borderRadius: 14, padding: '9px 10px', background: 'rgba(255,255,255,0.42)', border: '1px solid rgba(212,96,122,0.1)' }}>
+                        <span style={{ minWidth: 0, fontSize: 12, fontWeight: 700, color: '#4A2E38', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#D4607A', whiteSpace: 'nowrap' }}>{importantDateHint(daysUntil)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <button onClick={() => onNavigate('important-dates')} style={{ fontSize: 12, color: '#D4607A', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 500 }}>
+                  管理重要日子 <ChevronRight size={13} />
                 </button>
               </>
             ) : (
               <>
                 <p style={{ margin: '0 0 14px', fontSize: 13, color: '#5E4A60', lineHeight: 1.7 }}>
-                  完成一次模拟对话练习后，这里会展示你的练习数据。
+                  记录生日、纪念日或自定义日期后，未来 30 天内会在这里提醒。
                 </p>
-                <button onClick={() => onNavigate('simulation')} style={{ fontSize: 12, color: '#BF8E6E', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 500 }}>
-                  开始练习 <ChevronRight size={13} />
+                <button onClick={() => onNavigate('important-dates')} style={{ fontSize: 12, color: '#D4607A', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 500 }}>
+                  添加重要日子 <ChevronRight size={13} />
                 </button>
               </>
             )}
@@ -300,6 +317,7 @@ const hour = new Date().getHours();
           { icon: <Sparkles size={22} color="#C8A8D4" />, title: '帮我生成回复', desc: '六种风格，一键复制', page: 'reply-assist' as PageName, gradient: 'rgba(200,168,212,0.08), rgba(220,190,240,0.1)' },
           { icon: <MessageCircle size={22} color="#BF8E6E" />, title: '模拟一次对话', desc: '练习真实场景，即时反馈', page: 'simulation' as PageName, gradient: 'rgba(191,142,110,0.08), rgba(240,184,160,0.1)' },
           { icon: <AlertCircle size={22} color="#D4607A" />, title: '应急手册', desc: '冷场、道歉、误会快速处理', page: 'emergency-manual' as PageName, gradient: 'rgba(212,96,122,0.07), rgba(196,160,112,0.1)' },
+          { icon: <CalendarDays size={22} color="#C8A8D4" />, title: '重要日子提醒', desc: '生日、纪念日、本地记录', page: 'important-dates' as PageName, gradient: 'rgba(200,168,212,0.08), rgba(255,245,250,0.14)' },
         ].map((a, i) => (
           <AnimatedCard key={a.title} delay={i * 80} enable3d>
             <div

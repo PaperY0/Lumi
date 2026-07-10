@@ -14,6 +14,7 @@ export type PageName =
     | 'simulation'
     | 'love-code'
     | 'emergency-manual'
+    | 'important-dates'
     | 'settings';
 
 // ─── Glass Card ────────────────────────────────────────────────────────────────

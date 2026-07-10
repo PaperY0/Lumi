@@ -15,4 +15,8 @@ export interface ImportantDate {
   type: 'birthday' | 'anniversary' | 'other';
   /** 是否已提醒过（可选） */
   reminded?: boolean;
+  /** 创建时间 */
+  createdAt?: string;
+  /** 更新时间 */
+  updatedAt?: string;
 }
