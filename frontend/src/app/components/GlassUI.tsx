@@ -8,6 +8,7 @@ export type PageName =
     | 'female-questionnaire'
     | 'stage-questionnaires'
     | 'pursuit-self-assessment'
+    | 'pursuit-observation-assessment'
   | 'relationship-portrait'
   | 'chat-import'
   | 'chat-preview'

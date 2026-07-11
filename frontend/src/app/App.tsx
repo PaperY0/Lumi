@@ -8,6 +8,7 @@ import { MaleQuestionnairePage } from './components/MaleQuestionnairePage';
 import { FemaleQuestionnairePage } from './components/FemaleQuestionnairePage';
 import { StageQuestionnairePage } from './components/StageQuestionnairePage';
 import { PursuitSelfAssessmentPage } from './components/PursuitSelfAssessmentPage';
+import { PursuitObservationAssessmentPage } from './components/PursuitObservationAssessmentPage';
 import { RelationshipPortraitPage } from './components/RelationshipPortraitPage';
 import { ChatImportPage } from './components/ChatImportPage';
 import { ChatPreviewPage } from './components/ChatPreviewPage';
@@ -31,6 +32,7 @@ const PAGE_PATHS: Record<PageName, string> = {
   'female-questionnaire': '/female-questionnaire',
   'stage-questionnaires': '/stage-questionnaires',
   'pursuit-self-assessment': '/pursuit-self-assessment',
+  'pursuit-observation-assessment': '/pursuit-observation-assessment',
   'relationship-portrait': '/relationship-portrait',
   'chat-import': '/chat-import',
   'chat-preview': '/chat-preview',
@@ -247,6 +249,8 @@ export default function App() {
         return <StageQuestionnairePage onNavigate={navigate} />;
       case 'pursuit-self-assessment':
         return <PursuitSelfAssessmentPage onNavigate={navigate} />;
+      case 'pursuit-observation-assessment':
+        return <PursuitObservationAssessmentPage onNavigate={navigate} />;
       case 'relationship-portrait':
         return <RelationshipPortraitPage onNavigate={navigate} />;
       case 'chat-import':
