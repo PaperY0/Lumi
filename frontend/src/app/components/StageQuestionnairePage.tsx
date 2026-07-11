@@ -58,6 +58,7 @@ export function StageQuestionnairePage({ onNavigate }: Props) {
               const Icon = iconForAudience[item.audience];
               const isSelfAssessment = item.audience === 'self';
               const isObservationAssessment = item.audience === 'observation';
+              const isRelationshipAssessment = item.audience === 'relationship';
               return (
                 <GlassCard key={item.audience} hover={false} style={{ display: 'flex', flexDirection: 'column', minHeight: 246 }}>
                   <Icon size={28} color="var(--pink-primary)" />
@@ -68,6 +69,8 @@ export function StageQuestionnairePage({ onNavigate }: Props) {
                     <LiquidButton onClick={() => onNavigate('pursuit-self-assessment')} style={{ marginTop: 16, justifyContent: 'center' }}>开始填写</LiquidButton>
                   ) : isObservationAssessment ? (
                     <LiquidButton onClick={() => onNavigate('pursuit-observation-assessment')} style={{ marginTop: 16, justifyContent: 'center' }}>开始填写</LiquidButton>
+                  ) : isRelationshipAssessment ? (
+                    <LiquidButton onClick={() => onNavigate('pursuit-relationship-assessment')} style={{ marginTop: 16, justifyContent: 'center' }}>开始填写</LiquidButton>
                   ) : (
                     <div style={{ marginTop: 16, fontSize: 12, color: 'var(--text-purple)', opacity: 0.62 }}>题库准备中</div>
                   )}

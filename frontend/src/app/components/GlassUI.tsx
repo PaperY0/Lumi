@@ -9,6 +9,7 @@ export type PageName =
     | 'stage-questionnaires'
     | 'pursuit-self-assessment'
     | 'pursuit-observation-assessment'
+    | 'pursuit-relationship-assessment'
   | 'relationship-portrait'
   | 'chat-import'
   | 'chat-preview'
