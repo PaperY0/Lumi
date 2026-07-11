@@ -31,7 +31,7 @@ export function StageQuestionnairePage({ onNavigate }: Props) {
     loadStage();
   }, []);
 
-  const value = stage === '追求期' ? 'pursuing' : stage === '暧昧观察期' ? 'ambiguous' : stage === '升温期' ? 'warming' : 'observing';
+  const value = stage === '暧昧观察期' ? 'ambiguous' : stage === '升温期' ? 'warming' : 'observing';
   const catalog = getStageAssessmentCatalog(value);
 
   return (
@@ -52,7 +52,7 @@ export function StageQuestionnairePage({ onNavigate }: Props) {
 
       {catalog.available ? (
         <>
-          <div style={{ marginBottom: 18, fontSize: 15, fontWeight: 700, color: 'var(--text-rose)' }}>追求期的三份观察</div>
+          <div style={{ marginBottom: 18, fontSize: 15, fontWeight: 700, color: 'var(--text-rose)' }}>追求期 · {stage ?? '当前阶段'}专项观察</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
             {catalog.items.map((item) => {
               const Icon = iconForAudience[item.audience];
@@ -87,7 +87,7 @@ export function StageQuestionnairePage({ onNavigate }: Props) {
           <ShieldCheck size={34} color="var(--champagne-gold)" />
           <h2 style={{ margin: '16px 0 8px', fontSize: 20, color: 'var(--text-rose)' }}>{stage ?? '当前阶段'}题库正在准备</h2>
           <p style={{ margin: 0, fontSize: 14, color: 'var(--text-purple)', lineHeight: 1.7 }}>
-            现在先开放追求期专项问卷。初识接触期、暧昧观察期和升温期会在各自题库完成后独立上线，不会混用同一套问题。
+            当前问卷属于追求期总模式，并会根据初识接触期、升温期或暧昧观察期逐步替换为对应题库，不会把恋爱期内容混入。
           </p>
         </GlassCard>
       )}

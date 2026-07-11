@@ -11,7 +11,7 @@ interface Props { onNavigate: (page: PageName) => void; }
 
 const steps = ['资料建档', '男生问卷', '女生问卷', '关系画像', '聊天导入'];
 
-const stages = ['初识接触期', '追求期', '暧昧观察期', '升温期'];
+const stages = ['初识接触期', '升温期', '暧昧观察期'];
 
 export function RelationshipPortraitPage({ onNavigate }: Props) {
   // ✅ 使用 AI 画像生成 hook
@@ -50,12 +50,12 @@ export function RelationshipPortraitPage({ onNavigate }: Props) {
     const stageMap: Record<string, number> = {
       '初识接触期': 0,
       '关系冷淡期': 0,
-      '追求期': 1,
+      '追求期': 0,
       '暧昧观察期': 2,
       '暧昧推进期': 2,
-      '升温期': 3,
-      '关系明确期': 3,
-      '恋爱期': 3,
+      '升温期': 1,
+      '关系明确期': 1,
+      '恋爱期': 1,
     };
     return stageMap[stage] ?? 0;
   };
@@ -188,7 +188,7 @@ export function RelationshipPortraitPage({ onNavigate }: Props) {
                       transition: 'all 0.3s ease',
                     }}>
                       <span style={{ fontSize: i <= currentStage ? 16 : 14 }}>
-                        {i === 0 ? '💌' : i === 1 ? '🌸' : i === 2 ? '🔥' : '❤️'}
+                        {i === 0 ? '💌' : i === 1 ? '🔥' : '🌸'}
                       </span>
                     </div>
                     <span style={{

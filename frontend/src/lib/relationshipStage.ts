@@ -1,6 +1,7 @@
 import type { GirlProfile, UserProfile } from '@/types';
 
-export type RelationshipStageLabel = '初识接触期' | '追求期' | '暧昧观察期' | '升温期';
+export type RelationshipStageLabel = '初识接触期' | '升温期' | '暧昧观察期';
+/** `pursuing` remains readable for old IndexedDB records, but is no longer selectable. */
 export type RelationshipStageValue = 'observing' | 'pursuing' | 'ambiguous' | 'warming';
 
 export const relationshipStageOptions: ReadonlyArray<{
@@ -8,17 +9,16 @@ export const relationshipStageOptions: ReadonlyArray<{
   value: RelationshipStageValue;
 }> = [
   { label: '初识接触期', value: 'observing' },
-  { label: '追求期', value: 'pursuing' },
-  { label: '暧昧观察期', value: 'ambiguous' },
   { label: '升温期', value: 'warming' },
+  { label: '暧昧观察期', value: 'ambiguous' },
 ];
 
 const labelByValue: Record<GirlProfile['currentStage'], RelationshipStageLabel> = {
   stranger: '初识接触期',
   observing: '初识接触期',
-  pursuing: '追求期',
-  ambiguous: '暧昧观察期',
+  pursuing: '初识接触期',
   warming: '升温期',
+  ambiguous: '暧昧观察期',
   dating: '升温期',
 };
 

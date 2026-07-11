@@ -658,7 +658,7 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
       <GlassCard style={{ marginTop: 24 }} padding="20px 24px">
         <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-rose)', marginBottom: 6 }}>资料会如何帮助你</div>
         <p style={{ margin: 0, fontSize: 13, color: 'var(--text-purple)', lineHeight: 1.7, opacity: 0.8 }}>
-          这份追求期资料会作为关系画像、聊天分析、回复建议和模拟对话的参考。她明确说过的信息优先级更高；你的观察只会作为辅助参考，不会被当成事实。重要日子请在“重要日子”页面单独维护。
+          这份追求期资料会作为关系画像、聊天分析、回复建议和模拟对话的参考。追求期包含初识接触、升温和暧昧观察三个阶段。她明确说过的信息优先级更高；你的观察只会作为辅助参考，不会被当成事实。重要日子请在“重要日子”页面单独维护。
         </p>
       </GlassCard>
 
