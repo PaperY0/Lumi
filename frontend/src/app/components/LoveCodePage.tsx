@@ -15,7 +15,9 @@ import { GlassCard, LiquidButton } from './GlassUI';
 import { IconBadge } from './IconBadge';
 import { AnimatedCard } from './AnimatedCard';
 import { articles as defaultArticles, categories } from '@/data/loveGuideArticles';
-import { loveGuideRepository } from '@/lib/db/repositories';
+import { girlProfileRepository, loveGuideRepository, userProfileRepository } from '@/lib/db/repositories';
+import { filterLoveGuideArticlesByStage } from '@/lib/loveGuideStage';
+import { getRelationshipStageLabel, getRelationshipStageValue, relationshipStageOptions, type RelationshipStageValue } from '@/lib/relationshipStage';
 import type { CustomLoveGuideArticle, LoveGuideArticle, LoveGuideCategory } from '@/types/loveGuide';
 
 const READ_KEY = 'lumi_love_guide_read_article_ids';
@@ -36,6 +38,7 @@ interface ArticleFormState {
   tagsText: string;
   readTimeMinutes: string;
   difficulty: LoveGuideArticle['difficulty'];
+  stage: RelationshipStageValue;
 }
 
 const emptyForm: ArticleFormState = {
@@ -47,6 +50,7 @@ const emptyForm: ArticleFormState = {
   tagsText: '',
   readTimeMinutes: '3',
   difficulty: '入门',
+  stage: 'pursuing',
 };
 
 function loadReadIds(): Set<string> {
@@ -62,7 +66,7 @@ function saveReadIds(ids: Set<string>) {
   localStorage.setItem(READ_KEY, JSON.stringify([...ids]));
 }
 
-function articleToForm(article: ManagedArticle): ArticleFormState {
+function articleToForm(article: ManagedArticle, currentStage: RelationshipStageValue): ArticleFormState {
   return {
     title: article.title,
     subtitle: article.subtitle,
@@ -72,6 +76,7 @@ function articleToForm(article: ManagedArticle): ArticleFormState {
     tagsText: article.tags.join('、'),
     readTimeMinutes: String(article.readTimeMinutes),
     difficulty: article.difficulty,
+    stage: article.stage ?? currentStage,
   };
 }
 
@@ -94,6 +99,22 @@ export function LoveCodePage() {
   const [editingArticle, setEditingArticle] = useState<ManagedArticle | null>(null);
   const [form, setForm] = useState<ArticleFormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
+  const [currentStage, setCurrentStage] = useState<RelationshipStageValue>('pursuing');
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const user = await userProfileRepository.getCurrent();
+      if (!user) return;
+      const girl = (await girlProfileRepository.getByUserId(user.id))[0];
+      if (!girl || cancelled) return;
+      const label = getRelationshipStageLabel(girl);
+      setCurrentStage(getRelationshipStageValue(label));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const loadCustomArticles = useCallback(async () => {
     setLoadingCustom(true);
@@ -115,7 +136,7 @@ export function LoveCodePage() {
 
   const filtered = useMemo(() => {
     const keyword = query.trim().toLowerCase();
-    return allArticles.filter((article) => {
+    return filterLoveGuideArticlesByStage(allArticles, currentStage).filter((article) => {
       const matchesCategory = activeCategory === 'all' || article.category === activeCategory;
       if (!matchesCategory) return false;
       if (!keyword) return true;
@@ -127,7 +148,7 @@ export function LoveCodePage() {
         article.tags.join(' '),
       ].some((text) => text.toLowerCase().includes(keyword));
     });
-  }, [activeCategory, allArticles, query]);
+  }, [activeCategory, allArticles, currentStage, query]);
 
   const selectedArticle = selectedArticleId
     ? allArticles.find((a) => a.id === selectedArticleId) ?? null
@@ -151,19 +172,19 @@ export function LoveCodePage() {
 
   const handleCreate = useCallback(() => {
     setEditingArticle(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm, stage: currentStage });
     setFormError(null);
     setIsFormOpen(true);
-  }, []);
+  }, [currentStage]);
 
   const handleEdit = useCallback((article: ManagedArticle) => {
     if (article.source !== 'custom') return;
     setEditingArticle(article);
-    setForm(articleToForm(article));
+    setForm(articleToForm(article, currentStage));
     setFormError(null);
     setIsFormOpen(true);
     setSelectedArticleId(null);
-  }, []);
+  }, [currentStage]);
 
   const handleDelete = useCallback(async (article: ManagedArticle) => {
     if (article.source !== 'custom') return;
@@ -201,6 +222,7 @@ export function LoveCodePage() {
       tags: parseTags(form.tagsText),
       readTimeMinutes: Number.isFinite(readTime) && readTime > 0 ? readTime : 3,
       difficulty: form.difficulty,
+      stage: form.stage,
       createdAt: editingArticle?.createdAt ?? now,
       updatedAt: now,
     };
@@ -247,6 +269,10 @@ export function LoveCodePage() {
           <Plus size={16} />
           新增文章
         </LiquidButton>
+      </div>
+
+      <div style={{ marginBottom: 18, padding: '12px 16px', borderRadius: 16, border: '1px solid rgba(232,116,138,0.18)', background: 'rgba(255,245,248,0.5)', color: 'var(--text-purple)', fontSize: 13 }}>
+        当前法典：<strong style={{ color: 'var(--pink-primary)' }}>{getRelationshipStageLabel({ currentStage, currentStageLabel: undefined })}</strong>。阶段专属文章会随资料页中的关系阶段自动切换，旧文章仍作为通用指南保留。
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 1fr) auto', gap: 12, marginBottom: 18 }}>
@@ -469,6 +495,13 @@ function ArticleEditor({
             <option value="入门">入门</option>
             <option value="进阶">进阶</option>
             <option value="高阶">高阶</option>
+          </select>
+        </Field>
+        <Field label="适用阶段">
+          <select value={form.stage} onChange={(e) => onChange({ ...form, stage: e.target.value as RelationshipStageValue })}>
+            {relationshipStageOptions.map((stage) => (
+              <option key={stage.value} value={stage.value}>{stage.label}</option>
+            ))}
           </select>
         </Field>
         <Field label="标签">

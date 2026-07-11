@@ -6,6 +6,8 @@ export type LoveGuideCategory =
   | 'relationship'
   | 'selfGrowth';
 
+export type LoveGuideStage = 'observing' | 'pursuing' | 'ambiguous' | 'warming';
+
 export interface LoveGuideArticle {
   id: string;
   category: LoveGuideCategory;
@@ -16,6 +18,7 @@ export interface LoveGuideArticle {
   tags: string[];
   readTimeMinutes: number;
   difficulty: '入门' | '进阶' | '高阶';
+  stage?: LoveGuideStage;
 }
 
 export interface CustomLoveGuideArticle extends LoveGuideArticle {
