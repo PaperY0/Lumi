@@ -14,6 +14,7 @@ import {
 import { chatRepository } from '@/lib/db/repositories/chatRepo';
 import { buildPursuitContext, preparePursuitProfiles } from '@/lib/ai/profileContext';
 import type { AIAnalysisReport } from '@/types';
+import { loadPursuitQuestionnaires } from '@/lib/pursuitQuestionnaires';
 
 const MIN_ANALYSIS_MESSAGE_COUNT = 10;
 
@@ -89,6 +90,7 @@ export function useAnalyzeChat() {
       // 3. 收集问卷
       const maleQ = await questionnaireRepository.getLatestMale(user.id);
       const femaleQ = await questionnaireRepository.getLatestFemale(user.id);
+      const stageQuestionnaires = await loadPursuitQuestionnaires(user.id);
 
       // 4. 收集聊天会话
       let session;
@@ -126,6 +128,7 @@ export function useAnalyzeChat() {
         girlProfile: girl,
         maleQuestionnaire: maleQ,
         femaleQuestionnaire: femaleQ,
+        stageQuestionnaires,
         recentMessages: messages,
       });
       const pursuitProfiles = preparePursuitProfiles(user, girl);

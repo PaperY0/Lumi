@@ -14,6 +14,7 @@ import {
 import { buildPursuitContext, preparePursuitProfiles } from '@/lib/ai/profileContext';
 import { chatRepository } from '@/lib/db/repositories/chatRepo';
 import type { ReplyResponse, ChatMessage } from '@/types';
+import { loadPursuitQuestionnaires } from '@/lib/pursuitQuestionnaires';
 
 const MAX_REPLY_CONTEXT_MESSAGES = 20;
 
@@ -73,6 +74,7 @@ export function useGenerateReply() {
       // 4. 读取问卷
       const maleQ = await questionnaireRepository.getLatestMale(user.id);
       const femaleQ = await questionnaireRepository.getLatestFemale(user.id);
+      const stageQuestionnaires = await loadPursuitQuestionnaires(user.id);
 
       // 5. 读取最近聊天记录（允许为空）
       let recentMessages: ChatMessage[] = [];
@@ -93,6 +95,7 @@ export function useGenerateReply() {
         girlProfile: girl,
         maleQuestionnaire: maleQ,
         femaleQuestionnaire: femaleQ,
+        stageQuestionnaires,
         recentMessages,
       });
       const pursuitProfiles = preparePursuitProfiles(user, girl);

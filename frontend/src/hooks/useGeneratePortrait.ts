@@ -5,22 +5,15 @@ import {
   portraitRepository,
   questionnaireRepository,
   userProfileRepository,
-  stageQuestionnaireRepository,
 } from '@/lib/db';
 import { chatRepository } from '@/lib/db/repositories/chatRepo';
 import { buildPursuitContext, preparePursuitProfiles } from '@/lib/ai/profileContext';
 import { getRelationshipStageLabel, type RelationshipStageLabel } from '@/lib/relationshipStage';
 import { buildPursuitRhythmCard, type PursuitRhythmCard } from '@/lib/pursuitRhythm';
+import { loadPursuitQuestionnaires } from '@/lib/pursuitQuestionnaires';
 import type { PortraitRequest, PortraitResponse } from '@/types';
 
 const MAX_PORTRAIT_CHAT_MESSAGES = 40;
-
-async function loadPursuitQuestionnaires(userId: string) {
-  const results = await Promise.all((['self', 'observation', 'relationship'] as const).map((audience) =>
-    stageQuestionnaireRepository.getLatest(userId, 'pursuing', audience),
-  ));
-  return results.filter((result): result is NonNullable<typeof result> => Boolean(result));
-}
 
 async function buildRecentChatHistory(
   userId: string,

@@ -56,4 +56,24 @@ describe('buildPursuitContext', () => {
     expect(profiles.girlProfile).not.toHaveProperty('importantDates');
     expect(profiles.girlProfile.customInterests).toEqual(['看展']);
   });
+
+  it('includes saved pursuit assessments in the AI context', () => {
+    const context = buildPursuitContext({
+      userProfile,
+      girlProfile,
+      stageQuestionnaires: [{
+        id: 'assessment-1',
+        userId: userProfile.id,
+        relationshipStage: 'pursuing',
+        audience: 'relationship',
+        version: 1,
+        answers: [],
+        summary: ['需要暂停复盘', '请先停止推进'],
+        completedAt: '2026-07-11T00:00:00.000Z',
+      }],
+    });
+
+    expect(context.summary).toContain('需要暂停复盘');
+    expect(context.summary).toContain('追求期关系节奏问卷');
+  });
 });

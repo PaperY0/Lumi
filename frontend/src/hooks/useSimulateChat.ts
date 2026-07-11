@@ -21,6 +21,7 @@ import type {
   SimulateHistoryRecord,
   ChatMessage,
 } from '@/types';
+import { loadPursuitQuestionnaires } from '@/lib/pursuitQuestionnaires';
 
 function buildLocalSummary(params: {
   scenario: string;
@@ -73,6 +74,7 @@ export function useSimulateChat() {
 
     const maleQ = await questionnaireRepository.getLatestMale(user.id);
     const femaleQ = await questionnaireRepository.getLatestFemale(user.id);
+    const stageQuestionnaires = await loadPursuitQuestionnaires(user.id);
 
     let recentMessages: ChatMessage[] = [];
     const latestSession = await chatRepository.getLatestSession(user.id, girl.id);
@@ -94,6 +96,7 @@ export function useSimulateChat() {
       girlProfile: girl,
       maleQuestionnaire: maleQ,
       femaleQuestionnaire: femaleQ,
+      stageQuestionnaires,
       recentMessages,
     });
     const pursuitProfiles = preparePursuitProfiles(user, girl);
