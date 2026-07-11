@@ -19,4 +19,11 @@ describe('getStageAssessmentCatalog', () => {
     expect(catalog.available).toBe(false);
     expect(catalog.items).toEqual([]);
   });
+
+  it('offers the dedicated initial-contact set for the initial-contact phase', () => {
+    const catalog = getStageAssessmentCatalog('observing');
+
+    expect(catalog.available).toBe(true);
+    expect(catalog.items.every((item) => item.title.includes('初识接触期'))).toBe(true);
+  });
 });

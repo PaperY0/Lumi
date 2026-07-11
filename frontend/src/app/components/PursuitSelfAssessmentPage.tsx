@@ -3,8 +3,10 @@ import { ArrowLeft, ArrowRight, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { GlassCard, LiquidButton } from './GlassUI';
 import type { PageName } from './GlassUI';
 import { evaluatePursuitSelfAssessment, pursuitSelfQuestions } from '@/data/pursuitSelfQuestions';
+import { evaluateInitialContactSelf, initialContactSelfQuestions } from '@/data/initialContactSelfQuestions';
 import { girlProfileRepository, stageQuestionnaireRepository } from '@/lib/db';
 import { useUiStore, useUserStore } from '@/stores';
+import { getRelationshipStageLabel, getRelationshipStageValue, type RelationshipStageValue } from '@/lib/relationshipStage';
 
 interface Props {
   onNavigate: (page: PageName) => void;
@@ -15,13 +17,21 @@ export function PursuitSelfAssessmentPage({ onNavigate }: Props) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [showResult, setShowResult] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [relationshipStage, setRelationshipStage] = useState<RelationshipStageValue>('observing');
+
+  const questions = relationshipStage === 'observing' ? initialContactSelfQuestions : pursuitSelfQuestions;
+  const result = useMemo(() => relationshipStage === 'observing' ? evaluateInitialContactSelf(answers) : evaluatePursuitSelfAssessment(answers), [answers, relationshipStage]);
 
   useEffect(() => {
     async function loadExistingAnswers() {
       await useUserStore.getState().loadCurrentUser();
       const user = useUserStore.getState().currentUser;
       if (!user) return;
-      const existing = await stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'self');
+      const girl = (await girlProfileRepository.getByUserId(user.id))[0];
+      const stage = girl ? getRelationshipStageValue(getRelationshipStageLabel(girl)) : 'observing';
+      setRelationshipStage(stage);
+      const existing = await stageQuestionnaireRepository.getLatest(user.id, stage, 'self')
+        ?? (stage === 'observing' ? await stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'self') : undefined);
       if (!existing) return;
       setAnswers(Object.fromEntries(existing.answers.map((answer) => [answer.questionId, answer.optionId])));
     }
@@ -29,9 +39,8 @@ export function PursuitSelfAssessmentPage({ onNavigate }: Props) {
     loadExistingAnswers();
   }, []);
 
-  const question = pursuitSelfQuestions[current];
+  const question = questions[current];
   const selected = answers[question.id];
-  const result = useMemo(() => evaluatePursuitSelfAssessment(answers), [answers]);
 
   const save = async () => {
     const ui = useUiStore.getState();
@@ -48,9 +57,9 @@ export function PursuitSelfAssessmentPage({ onNavigate }: Props) {
       await stageQuestionnaireRepository.save({
         userId: user.id,
         girlId: girl?.id,
-        relationshipStage: 'pursuing',
+        relationshipStage,
         audience: 'self',
-        answers: pursuitSelfQuestions.map((item) => ({
+        answers: questions.map((item) => ({
           questionId: item.id,
           optionId: answers[item.id],
         })),
@@ -75,7 +84,7 @@ export function PursuitSelfAssessmentPage({ onNavigate }: Props) {
         <LiquidButton variant="secondary" onClick={() => setShowResult(false)} style={{ marginBottom: 24 }}>
           <ArrowLeft size={16} /> 返回题目
         </LiquidButton>
-        <h1 style={{ margin: '0 0 10px', fontSize: 28, color: 'var(--text-rose)' }}>你的追求期自我观察</h1>
+        <h1 style={{ margin: '0 0 10px', fontSize: 28, color: 'var(--text-rose)' }}>{relationshipStage === 'observing' ? '初识接触期自我观察' : '追求期自我观察'}</h1>
         <p style={{ margin: '0 0 22px', fontSize: 14, color: 'var(--text-purple)', lineHeight: 1.7 }}>
           这不是人格诊断，而是帮助你选择更尊重彼此节奏的下一步。
         </p>
@@ -120,10 +129,10 @@ export function PursuitSelfAssessmentPage({ onNavigate }: Props) {
       </LiquidButton>
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ margin: 0, fontSize: 26, color: 'var(--text-rose)' }}>我在关系中的样子</h1>
-        <p style={{ margin: '8px 0 0', fontSize: 14, color: 'var(--text-purple)', lineHeight: 1.7 }}>追求期自我理解 · 第 {current + 1} / {pursuitSelfQuestions.length} 题</p>
+        <p style={{ margin: '8px 0 0', fontSize: 14, color: 'var(--text-purple)', lineHeight: 1.7 }}>{relationshipStage === 'observing' ? '初识接触期自我理解' : '追求期自我理解'} · 第 {current + 1} / {questions.length} 题</p>
       </div>
       <div style={{ height: 5, borderRadius: 999, overflow: 'hidden', background: 'rgba(232,116,138,0.12)', marginBottom: 24 }}>
-        <div style={{ width: `${((current + 1) / pursuitSelfQuestions.length) * 100}%`, height: '100%', background: 'linear-gradient(90deg,#E8748A,#C5956C)', transition: 'width .25s ease' }} />
+          <div style={{ width: `${((current + 1) / questions.length) * 100}%`, height: '100%', background: 'linear-gradient(90deg,#E8748A,#C5956C)', transition: 'width .25s ease' }} />
       </div>
       <GlassCard hover={false} style={{ marginBottom: 16 }}>
         <h2 style={{ margin: 0, fontSize: 19, color: 'var(--text-rose)', lineHeight: 1.55 }}>{question.text}</h2>
@@ -137,7 +146,7 @@ export function PursuitSelfAssessmentPage({ onNavigate }: Props) {
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
         <LiquidButton variant="secondary" onClick={() => setCurrent((value) => Math.max(0, value - 1))} disabled={current === 0}><ArrowLeft size={16} /> 上一题</LiquidButton>
-        <LiquidButton disabled={!selected} onClick={() => current === pursuitSelfQuestions.length - 1 ? setShowResult(true) : setCurrent((value) => value + 1)}>{current === pursuitSelfQuestions.length - 1 ? '查看我的观察' : <>下一题 <ArrowRight size={16} /></>}</LiquidButton>
+        <LiquidButton disabled={!selected} onClick={() => current === questions.length - 1 ? setShowResult(true) : setCurrent((value) => value + 1)}>{current === questions.length - 1 ? '查看我的观察' : <>下一题 <ArrowRight size={16} /></>}</LiquidButton>
       </div>
     </div>
   );

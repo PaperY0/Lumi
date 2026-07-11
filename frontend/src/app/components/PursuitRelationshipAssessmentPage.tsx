@@ -3,8 +3,10 @@ import { ArrowLeft, ArrowRight, PauseCircle } from 'lucide-react';
 import { GlassCard, LiquidButton } from './GlassUI';
 import type { PageName } from './GlassUI';
 import { evaluatePursuitRelationship, pursuitRelationshipQuestions } from '@/data/pursuitRelationshipQuestions';
+import { evaluateInitialContactRelationship, initialContactRelationshipQuestions } from '@/data/initialContactRelationshipQuestions';
 import { girlProfileRepository, stageQuestionnaireRepository } from '@/lib/db';
 import { useUiStore, useUserStore } from '@/stores';
+import { getRelationshipStageLabel, getRelationshipStageValue, type RelationshipStageValue } from '@/lib/relationshipStage';
 
 interface Props { onNavigate: (page: PageName) => void; }
 
@@ -13,15 +15,21 @@ export function PursuitRelationshipAssessmentPage({ onNavigate }: Props) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [resultVisible, setResultVisible] = useState(false);
   const [saved, setSaved] = useState(false);
-  const question = pursuitRelationshipQuestions[current];
+  const [relationshipStage, setRelationshipStage] = useState<RelationshipStageValue>('observing');
+  const questions = relationshipStage === 'observing' ? initialContactRelationshipQuestions : pursuitRelationshipQuestions;
+  const question = questions[current];
   const selected = answers[question.id];
-  const result = useMemo(() => evaluatePursuitRelationship(answers), [answers]);
+  const result = useMemo(() => relationshipStage === 'observing' ? evaluateInitialContactRelationship(answers) : evaluatePursuitRelationship(answers), [answers, relationshipStage]);
 
   useEffect(() => { (async () => {
     await useUserStore.getState().loadCurrentUser();
     const user = useUserStore.getState().currentUser;
     if (!user) return;
-    const existing = await stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'relationship');
+    const girl = (await girlProfileRepository.getByUserId(user.id))[0];
+    const stage = girl ? getRelationshipStageValue(getRelationshipStageLabel(girl)) : 'observing';
+    setRelationshipStage(stage);
+    const existing = await stageQuestionnaireRepository.getLatest(user.id, stage, 'relationship')
+      ?? (stage === 'observing' ? await stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'relationship') : undefined);
     if (existing) setAnswers(Object.fromEntries(existing.answers.map((item) => [item.questionId, item.optionId])));
   })(); }, []);
 
@@ -32,7 +40,7 @@ export function PursuitRelationshipAssessmentPage({ onNavigate }: Props) {
     try {
       ui.showLoading('保存节奏检查...');
       const girl = (await girlProfileRepository.getByUserId(user.id))[0];
-      await stageQuestionnaireRepository.save({ userId: user.id, girlId: girl?.id, relationshipStage: 'pursuing', audience: 'relationship', answers: Object.entries(answers).map(([questionId, optionId]) => ({ questionId, optionId })), summary: [result.title, result.message] });
+      await stageQuestionnaireRepository.save({ userId: user.id, girlId: girl?.id, relationshipStage, audience: 'relationship', answers: Object.entries(answers).map(([questionId, optionId]) => ({ questionId, optionId })), summary: [result.title, result.message] });
       setSaved(true); ui.showToast('关系节奏检查已保存', 'success');
     } catch (error) { ui.showToast(`保存失败：${(error as Error).message}`, 'error'); } finally { ui.hideLoading(); }
   };
@@ -49,9 +57,9 @@ export function PursuitRelationshipAssessmentPage({ onNavigate }: Props) {
 
   return <div style={{ padding: 32, maxWidth: 720, margin: '0 auto' }} className="page-enter">
     <LiquidButton variant="secondary" onClick={() => onNavigate('stage-questionnaires')} style={{ marginBottom: 24 }}><ArrowLeft size={16} /> 返回专项问卷</LiquidButton>
-    <h1 style={{ margin: 0, fontSize: 26, color: 'var(--text-rose)' }}>关系节奏与边界</h1><p style={{ margin: '8px 0 20px', color: 'var(--text-purple)' }}>第 {current + 1} / 12 题 · 检查自己的推进方式</p>
+    <h1 style={{ margin: 0, fontSize: 26, color: 'var(--text-rose)' }}>关系节奏与边界</h1><p style={{ margin: '8px 0 20px', color: 'var(--text-purple)' }}>{relationshipStage === 'observing' ? '初识接触期' : '追求期'} · 第 {current + 1} / {questions.length} 题 · 检查自己的推进方式</p>
     <GlassCard hover={false} style={{ marginBottom: 16 }}><h2 style={{ margin: 0, fontSize: 19, color: 'var(--text-rose)', lineHeight: 1.55 }}>{question.text}</h2></GlassCard>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>{question.options.map((option) => <button key={option.id} onClick={() => setAnswers((previous) => ({ ...previous, [question.id]: option.id }))} style={{ textAlign: 'left', padding: '14px 17px', borderRadius: 18, cursor: 'pointer', border: selected === option.id ? '1px solid rgba(232,116,138,.65)' : '1px solid rgba(232,116,138,.16)', background: selected === option.id ? 'rgba(232,116,138,.12)' : 'rgba(255,255,255,.44)', color: 'var(--text-rose)', fontSize: 14 }}>{option.text}</button>)}</div>
-    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}><LiquidButton variant="secondary" disabled={current === 0} onClick={() => setCurrent((value) => Math.max(0, value - 1))}><ArrowLeft size={16} /> 上一题</LiquidButton><LiquidButton disabled={!selected} onClick={() => current === 11 ? setResultVisible(true) : setCurrent((value) => value + 1)}>{current === 11 ? '查看节奏结果' : <>下一题 <ArrowRight size={16} /></>}</LiquidButton></div>
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}><LiquidButton variant="secondary" disabled={current === 0} onClick={() => setCurrent((value) => Math.max(0, value - 1))}><ArrowLeft size={16} /> 上一题</LiquidButton><LiquidButton disabled={!selected} onClick={() => current === questions.length - 1 ? setResultVisible(true) : setCurrent((value) => value + 1)}>{current === questions.length - 1 ? '查看节奏结果' : <>下一题 <ArrowRight size={16} /></>}</LiquidButton></div>
   </div>;
 }

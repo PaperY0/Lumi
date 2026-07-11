@@ -79,7 +79,7 @@ export function StageQuestionnairePage({ onNavigate }: Props) {
             })}
           </div>
           <div style={{ marginTop: 22, borderRadius: 18, padding: '15px 18px', background: 'rgba(232,116,138,0.08)', border: '1px solid rgba(232,116,138,0.18)', fontSize: 13, color: 'var(--text-purple)', lineHeight: 1.7 }}>
-            本轮先完成问卷底座和入口。下一步会逐题上线原创题库、作答保存和结果反馈；题目会按具体行为描述，并提供“不确定/不适用”选项。
+            初识接触期题目会记录真实行为和互动事实，并提供“不确定”选项；结果用于帮助你调整节奏，不替你判断对方的内心。
           </div>
         </>
       ) : (

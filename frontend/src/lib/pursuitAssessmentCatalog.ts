@@ -34,7 +34,31 @@ const pursuitItems: StageAssessmentCatalogItem[] = [
   },
 ];
 
+const initialContactItems: StageAssessmentCatalogItem[] = [
+  {
+    audience: 'self',
+    title: '初识接触期 · 我的相处方式',
+    description: '检查第一印象、情绪稳定、聊天分寸和礼貌距离。',
+    boundary: '不诊断人格，只帮助你练习更舒服的靠近方式。',
+  },
+  {
+    audience: 'observation',
+    title: '初识接触期 · 她的互动观察',
+    description: '记录她是否愿意回应、分享、延续话题，以及是否表现出舒适或回避。',
+    boundary: '只记录已发生的互动，不推断她的内心。',
+  },
+  {
+    audience: 'relationship',
+    title: '初识接触期 · 礼貌边界检查',
+    description: '检查称呼、邀约、礼物、隐私和联系频率是否保留拒绝空间。',
+    boundary: '出现施压或查证行为时，优先暂停并尊重边界。',
+  },
+];
+
 export function getStageAssessmentCatalog(stage: RelationshipStageValue): StageAssessmentCatalog {
+  if (stage === 'observing') {
+    return { available: true, items: initialContactItems };
+  }
   if (stage === 'pursuing') {
     return { available: true, items: pursuitItems };
   }
