@@ -13,3 +13,4 @@ export { replyRepository } from './replyRepo';
 export { simulateHistoryRepository } from './simulateHistoryRepo';
 export { loveGuideRepository } from './loveGuideRepo';
 export { importantDateRepository } from './importantDateRepo';
+export { stageQuestionnaireRepository } from './stageQuestionnaireRepo';

@@ -6,6 +6,7 @@ import { DashboardPage } from './components/DashboardPage';
 import { ProfileSetupPage } from './components/ProfileSetupPage';
 import { MaleQuestionnairePage } from './components/MaleQuestionnairePage';
 import { FemaleQuestionnairePage } from './components/FemaleQuestionnairePage';
+import { StageQuestionnairePage } from './components/StageQuestionnairePage';
 import { RelationshipPortraitPage } from './components/RelationshipPortraitPage';
 import { ChatImportPage } from './components/ChatImportPage';
 import { ChatPreviewPage } from './components/ChatPreviewPage';
@@ -27,6 +28,7 @@ const PAGE_PATHS: Record<PageName, string> = {
   profile: '/profile',
   'male-questionnaire': '/male-questionnaire',
   'female-questionnaire': '/female-questionnaire',
+  'stage-questionnaires': '/stage-questionnaires',
   'relationship-portrait': '/relationship-portrait',
   'chat-import': '/chat-import',
   'chat-preview': '/chat-preview',
@@ -239,6 +241,8 @@ export default function App() {
         return <MaleQuestionnairePage onNavigate={navigate} />;
       case 'female-questionnaire':
         return <FemaleQuestionnairePage onNavigate={navigate} />;
+      case 'stage-questionnaires':
+        return <StageQuestionnairePage onNavigate={navigate} />;
       case 'relationship-portrait':
         return <RelationshipPortraitPage onNavigate={navigate} />;
       case 'chat-import':

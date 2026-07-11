@@ -27,6 +27,7 @@ import type {
   RelationshipPortrait,
   SimulateHistoryRecord,
   CustomLoveGuideArticle,
+  StageQuestionnaireResult,
 } from '@/types';
 
 /**
@@ -65,6 +66,8 @@ export class LumiDB extends Dexie {
   simulateHistory!: Table<SimulateHistoryRecord, string>;
   /** 恋爱法典自定义文章 */
   loveGuideArticles!: Table<CustomLoveGuideArticle, string>;
+  /** 按关系阶段拆分的专项问卷结果 */
+  stageQuestionnaireResults!: Table<StageQuestionnaireResult, string>;
 
   constructor() {
     super('LumiDB');
@@ -111,6 +114,11 @@ export class LumiDB extends Dexie {
     // v5 曾加入资料快照表，v6 迁移时删除，资料只保留当前版本。
     this.version(6).stores({
       profileSnapshots: null,
+    });
+
+    // v7：新增阶段化专项问卷结果表，旧男女问卷保持不变。
+    this.version(7).stores({
+      stageQuestionnaireResults: 'id, userId, girlId, relationshipStage, audience, completedAt',
     });
   }
 

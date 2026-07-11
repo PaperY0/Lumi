@@ -662,6 +662,20 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
         </p>
       </GlassCard>
 
+      <GlassCard style={{ marginTop: 16 }} padding="20px 24px">
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-rose)', marginBottom: 6 }}>阶段专项问卷</div>
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--text-purple)', lineHeight: 1.7, opacity: 0.8 }}>
+              追求期会分开了解你自己、互动事实与关系节奏；不会用一套题覆盖所有时期。
+            </p>
+          </div>
+          <LiquidButton variant="secondary" onClick={() => onNavigate('stage-questionnaires')}>
+            查看专项问卷 <ArrowRight size={16} />
+          </LiquidButton>
+        </div>
+      </GlassCard>
+
       {/* ✅ 老用户模式：重做问卷按钮 */}
       {onboardingCompleted && (
         <div style={{ marginTop: 24, padding: '20px 32px', borderTop: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,245,248,0.5)' }}>
