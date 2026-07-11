@@ -56,12 +56,18 @@ export function StageQuestionnairePage({ onNavigate }: Props) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
             {catalog.items.map((item) => {
               const Icon = iconForAudience[item.audience];
+              const isSelfAssessment = item.audience === 'self';
               return (
                 <GlassCard key={item.audience} hover={false} style={{ display: 'flex', flexDirection: 'column', minHeight: 246 }}>
                   <Icon size={28} color="var(--pink-primary)" />
                   <h2 style={{ margin: '16px 0 8px', fontSize: 18, color: 'var(--text-rose)' }}>{item.title}</h2>
                   <p style={{ margin: 0, fontSize: 13, color: 'var(--text-purple)', lineHeight: 1.7, flex: 1 }}>{item.description}</p>
                   <p style={{ margin: '16px 0 0', fontSize: 12, color: 'var(--champagne-gold)', lineHeight: 1.6 }}>{item.boundary}</p>
+                  {isSelfAssessment ? (
+                    <LiquidButton onClick={() => onNavigate('pursuit-self-assessment')} style={{ marginTop: 16, justifyContent: 'center' }}>开始填写</LiquidButton>
+                  ) : (
+                    <div style={{ marginTop: 16, fontSize: 12, color: 'var(--text-purple)', opacity: 0.62 }}>题库准备中</div>
+                  )}
                 </GlassCard>
               );
             })}

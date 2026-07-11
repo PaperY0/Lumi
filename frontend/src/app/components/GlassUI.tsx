@@ -7,6 +7,7 @@ export type PageName =
   | 'male-questionnaire'
     | 'female-questionnaire'
     | 'stage-questionnaires'
+    | 'pursuit-self-assessment'
   | 'relationship-portrait'
   | 'chat-import'
   | 'chat-preview'
