@@ -15,7 +15,7 @@ const stages = ['初识接触期', '追求期', '暧昧观察期', '升温期'];
 
 export function RelationshipPortraitPage({ onNavigate }: Props) {
   // ✅ 使用 AI 画像生成 hook
-  const { data, loading, error, generate, loadCached, profileStage } = useGeneratePortrait();
+  const { data, loading, error, generate, loadCached, profileStage, rhythmCard } = useGeneratePortrait();
 
   // ✅ 进页面时加载缓存
   useEffect(() => {
@@ -78,7 +78,7 @@ export function RelationshipPortraitPage({ onNavigate }: Props) {
         </p>
       </div>
 
-      <GlassCard style={{ marginBottom: 20, background: 'rgba(255,245,248,0.48)' }} padding="14px 18px">
+          <GlassCard style={{ marginBottom: 20, background: 'rgba(255,245,248,0.48)' }} padding="14px 18px">
         <p style={{ margin: 0, fontSize: 13, color: 'var(--text-purple)', lineHeight: 1.7 }}>
           已参考双方资料、问卷和最近聊天。追求期建议会保持自然、有分寸，不催促、不施压，并尊重对方拒绝或暂不回应的空间。
         </p>
@@ -213,6 +213,15 @@ export function RelationshipPortraitPage({ onNavigate }: Props) {
             </div>
 
             <HeatMeter value={getHeatValue(data.interactionHeat)} />
+          </GlassCard>
+
+          <GlassCard style={{ marginBottom: 20, background: rhythmCard.status === 'pause' ? 'rgba(255,236,218,0.72)' : 'rgba(255,245,248,0.48)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+              <span style={{ fontSize: 18 }}>{rhythmCard.status === 'pause' ? '⏸️' : rhythmCard.status === 'incomplete' ? '🧭' : '🌿'}</span>
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-rose)' }}>关系节奏卡 · {rhythmCard.title}</div>
+            </div>
+            <p style={{ margin: '0 0 8px', fontSize: 13, color: 'var(--text-purple)', lineHeight: 1.7 }}>{rhythmCard.nextAction}</p>
+            <p style={{ margin: 0, fontSize: 12, color: 'var(--champagne-gold)', lineHeight: 1.6 }}>需要避免：{rhythmCard.avoid}</p>
           </GlassCard>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>

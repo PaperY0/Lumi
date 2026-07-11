@@ -5,13 +5,22 @@ import {
   portraitRepository,
   questionnaireRepository,
   userProfileRepository,
+  stageQuestionnaireRepository,
 } from '@/lib/db';
 import { chatRepository } from '@/lib/db/repositories/chatRepo';
 import { buildPursuitContext, preparePursuitProfiles } from '@/lib/ai/profileContext';
 import { getRelationshipStageLabel, type RelationshipStageLabel } from '@/lib/relationshipStage';
+import { buildPursuitRhythmCard, type PursuitRhythmCard } from '@/lib/pursuitRhythm';
 import type { PortraitRequest, PortraitResponse } from '@/types';
 
 const MAX_PORTRAIT_CHAT_MESSAGES = 40;
+
+async function loadPursuitQuestionnaires(userId: string) {
+  const results = await Promise.all((['self', 'observation', 'relationship'] as const).map((audience) =>
+    stageQuestionnaireRepository.getLatest(userId, 'pursuing', audience),
+  ));
+  return results.filter((result): result is NonNullable<typeof result> => Boolean(result));
+}
 
 async function buildRecentChatHistory(
   userId: string,
@@ -50,6 +59,7 @@ export function useGeneratePortrait() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [profileStage, setProfileStage] = useState<RelationshipStageLabel | null>(null);
+  const [rhythmCard, setRhythmCard] = useState<PursuitRhythmCard>(() => buildPursuitRhythmCard([]));
 
   const loadCached = useCallback(async () => {
     try {
@@ -60,6 +70,7 @@ export function useGeneratePortrait() {
       const girl = girls[0];
       if (!girl) return;
       setProfileStage(getRelationshipStageLabel(girl));
+      setRhythmCard(buildPursuitRhythmCard(await loadPursuitQuestionnaires(user.id)));
 
       const cachedPortrait = await portraitRepository.getLatest(user.id, girl.id);
       if (cachedPortrait) {
@@ -97,12 +108,15 @@ export function useGeneratePortrait() {
 
       const maleQuestionnaire = await questionnaireRepository.getLatestMale(user.id);
       const femaleQuestionnaire = await questionnaireRepository.getLatestFemale(user.id);
+      const completedStageQuestionnaires = await loadPursuitQuestionnaires(user.id);
+      setRhythmCard(buildPursuitRhythmCard(completedStageQuestionnaires));
       const chatHistory = await buildRecentChatHistory(user.id, girl.id);
       const profileContext = buildPursuitContext({
         userProfile: user,
         girlProfile: girl,
         maleQuestionnaire,
         femaleQuestionnaire,
+        stageQuestionnaires: completedStageQuestionnaires,
         recentMessages: chatHistory.map((message, index) => ({
           id: `portrait-context-${index}`,
           sessionId: 'portrait-context',
@@ -166,6 +180,7 @@ export function useGeneratePortrait() {
     loading,
     error,
     profileStage,
+    rhythmCard,
     generate,
     loadCached,
   };

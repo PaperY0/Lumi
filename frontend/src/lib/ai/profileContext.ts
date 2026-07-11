@@ -6,6 +6,7 @@ import type {
   UserProfile,
 } from '@/types';
 import { getRelationshipStageLabel } from '@/lib/relationshipStage';
+import type { StageQuestionnaireResult } from '@/types';
 
 const ageRangeLabels: Record<string, string> = {
   '18-22': '18-22岁',
@@ -60,10 +61,16 @@ function list(values: string[] | undefined, fallback = '未填写'): string {
 function questionnaireSummary(
   maleQuestionnaire?: MaleQuestionnaireResult | null,
   femaleQuestionnaire?: FemaleQuestionnaireResult | null,
+  stageQuestionnaires: StageQuestionnaireResult[] = [],
 ): string {
   return [
     `男生问卷：${maleQuestionnaire ? `已完成，完成时间 ${maleQuestionnaire.completedAt}` : '未完成'}`,
     `女生观察问卷：${femaleQuestionnaire ? `已完成，完成时间 ${femaleQuestionnaire.completedAt}` : '未完成'}`,
+    ...(['self', 'observation', 'relationship'] as const).map((audience) => {
+      const result = stageQuestionnaires.find((item) => item.audience === audience);
+      const labels = { self: '追求期自我理解问卷', observation: '追求期互动观察问卷', relationship: '追求期关系节奏问卷' };
+      return `${labels[audience]}：${result ? result.summary.join('；') : '未完成'}`;
+    }),
   ].join('\n');
 }
 
@@ -72,6 +79,7 @@ export interface RelationshipProfileContextInput {
   girlProfile: GirlProfile;
   maleQuestionnaire?: MaleQuestionnaireResult | null;
   femaleQuestionnaire?: FemaleQuestionnaireResult | null;
+  stageQuestionnaires?: StageQuestionnaireResult[];
   recentMessages?: ChatMessage[];
 }
 
@@ -105,7 +113,7 @@ export function preparePursuitProfiles(userProfile: UserProfile, girlProfile: Gi
 }
 
 export function buildPursuitContext(input: RelationshipProfileContextInput): PursuitContext {
-  const { userProfile, girlProfile, maleQuestionnaire, femaleQuestionnaire, recentMessages = [] } = input;
+  const { userProfile, girlProfile, maleQuestionnaire, femaleQuestionnaire, stageQuestionnaires = [], recentMessages = [] } = input;
   const userSection = [
     `昵称：${text(userProfile.nickname)}`,
     `年龄段：${ageRangeLabels[userProfile.ageRange] ?? text(userProfile.ageRange)}`,
@@ -152,11 +160,12 @@ export function buildPursuitContext(input: RelationshipProfileContextInput): Pur
     ? `最近已保存聊天：共提供 ${recentMessages.length} 条消息，作为判断当前互动状态、热度和风险信号的依据。`
     : '最近已保存聊天：暂无。请主要基于资料和问卷生成基础判断。';
 
-  const questionnaires = questionnaireSummary(maleQuestionnaire, femaleQuestionnaire);
+  const questionnaires = questionnaireSummary(maleQuestionnaire, femaleQuestionnaire, stageQuestionnaires);
   const evidenceSources = [
     '双方资料',
     maleQuestionnaire ? '男生问卷' : '',
     femaleQuestionnaire ? '女生观察问卷' : '',
+    ...stageQuestionnaires.map(() => '追求期专项问卷'),
     recentMessages.length > 0 ? `最近聊天 ${recentMessages.length} 条` : '',
   ].filter(Boolean);
 
