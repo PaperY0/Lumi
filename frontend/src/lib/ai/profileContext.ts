@@ -5,6 +5,7 @@ import type {
   MaleQuestionnaireResult,
   UserProfile,
 } from '@/types';
+import { getRelationshipStageLabel } from '@/lib/relationshipStage';
 
 const ageRangeLabels: Record<string, string> = {
   '18-22': '18-22岁',
@@ -13,26 +14,11 @@ const ageRangeLabels: Record<string, string> = {
   '33+': '33岁以上',
 };
 
-const relationshipStatusLabels: Record<string, string> = {
-  single: '喜欢但没表白',
-  pursuing: '追求中',
-  ambiguous: '暧昧中',
-  dating: '已在一起',
-};
-
 const loveExperienceLabels: Record<string, string> = {
   none: '零经验',
   little: '有过暗恋',
   some: '恋爱过1次',
   rich: '恋爱过多次',
-};
-
-const girlStageLabels: Record<string, string> = {
-  stranger: '陌生人',
-  observing: '普通朋友/观察中',
-  ambiguous: '暧昧关系',
-  pursuing: '追求中',
-  dating: '已在一起',
 };
 
 const frequencyLabels: Record<string, string> = {
@@ -124,7 +110,6 @@ export function buildPursuitContext(input: RelationshipProfileContextInput): Pur
     `昵称：${text(userProfile.nickname)}`,
     `年龄段：${ageRangeLabels[userProfile.ageRange] ?? text(userProfile.ageRange)}`,
     `恋爱经验：${loveExperienceLabels[userProfile.loveExperience] ?? text(userProfile.loveExperience)}`,
-    `当前阶段：${relationshipStatusLabels[userProfile.relationshipStatus] ?? text(userProfile.relationshipStatus)}`,
     `主要困惑：${text(userProfile.mainConfusion)}`,
     `沟通风格：${text(userProfile.chatStyle)}`,
     `是否容易焦虑：${boolLabel(userProfile.isAnxious, '容易焦虑', '不太容易焦虑')}`,
@@ -149,7 +134,7 @@ export function buildPursuitContext(input: RelationshipProfileContextInput): Pur
     `年龄段：${ageRangeLabels[girlProfile.ageRange] ?? text(girlProfile.ageRange)}`,
     `认识渠道：${text(girlProfile.knownChannel)}`,
     `认识时长：${text(girlProfile.knownDuration)}`,
-    `当前关系阶段：${girlProfile.currentStageLabel || girlStageLabels[girlProfile.currentStage] || text(girlProfile.currentStage)}`,
+    `当前关系阶段（资料设定，优先遵循）：${getRelationshipStageLabel(girlProfile)}`,
     `联系频率：${girlProfile.interactionFrequencyLabel || frequencyLabels[girlProfile.interactionFrequency] || text(girlProfile.interactionFrequency)}`,
     `喜好/兴趣：${list(knownInterests)}`,
     `雷点/禁忌行为：${list(knownBoundaries)}`,

@@ -20,6 +20,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
   observing: '观察中',
   ambiguous: '暧昧中',
   pursuing: '追求中',
+  warming: '升温期',
   dating: '已在一起',
 };
 

@@ -53,8 +53,8 @@ export interface GirlProfile {
   knownChannel: string;
   /** 认识时长，如 '三个月' */
   knownDuration: string;
-  /** 当前关系阶段：陌生 / 观察中 / 暧昧 / 追求中 / 恋爱中 */
-  currentStage: 'stranger' | 'observing' | 'ambiguous' | 'pursuing' | 'dating';
+  /** 当前关系阶段：初识接触 / 追求 / 暧昧观察 / 升温；保留旧值以兼容已有本地数据。 */
+  currentStage: 'stranger' | 'observing' | 'ambiguous' | 'pursuing' | 'warming' | 'dating';
   /** 当前关系阶段的原始 UI 选项，用于精确回显，例如"普通朋友""熟悉朋友""追求中" */
   currentStageLabel?: string;
   /** 互动频率：低 / 中 / 高 */

@@ -15,7 +15,7 @@ const stages = ['初识接触期', '追求期', '暧昧观察期', '升温期'];
 
 export function RelationshipPortraitPage({ onNavigate }: Props) {
   // ✅ 使用 AI 画像生成 hook
-  const { data, loading, error, generate, loadCached } = useGeneratePortrait();
+  const { data, loading, error, generate, loadCached, profileStage } = useGeneratePortrait();
 
   // ✅ 进页面时加载缓存
   useEffect(() => {
@@ -176,7 +176,7 @@ export function RelationshipPortraitPage({ onNavigate }: Props) {
               }} />
 
               {stages.map((stage, i) => {
-                const currentStage = getCurrentStageIndex(data.possibleStage);
+                const currentStage = getCurrentStageIndex(profileStage ?? data.possibleStage);
                 return (
                   <div key={stage} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, position: 'relative', zIndex: 1 }}>
                     <div style={{
@@ -290,8 +290,8 @@ export function RelationshipPortraitPage({ onNavigate }: Props) {
                 )}
                 <div style={{ height: 1, background: 'rgba(255,255,255,0.4)' }} />
                 <div>
-                  <div style={{ fontSize: 11, color: 'var(--text-purple)', opacity: 0.6, marginBottom: 2, fontWeight: 600 }}>当前可能阶段</div>
-                  <StageBadge stage={data.possibleStage} active />
+                  <div style={{ fontSize: 11, color: 'var(--text-purple)', opacity: 0.6, marginBottom: 2, fontWeight: 600 }}>资料设定阶段</div>
+                  <StageBadge stage={profileStage ?? data.possibleStage} active />
                 </div>
               </div>
             </GlassCard>

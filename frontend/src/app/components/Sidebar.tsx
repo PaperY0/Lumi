@@ -2,6 +2,8 @@ import React from 'react';
 import { Home, Heart, MessageCircle, Upload, BarChart2, BookOpen, Settings, Sparkles, MessageSquare, User, ShieldAlert, CalendarDays } from 'lucide-react';
 import type { PageName } from './GlassUI';
 import { BRAND_NAME, BRAND_SUBTITLE_SHORT } from '../brand';
+import { useUserStore } from '@/stores';
+import { getRelationshipStageLabel } from '@/lib/relationshipStage';
 
 const navItems: { id: PageName; icon: React.ReactNode; label: string }[] = [
   { id: 'dashboard', icon: <Home size={18} />, label: '首页' },
@@ -22,6 +24,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
+  const currentGirl = useUserStore((state) => state.currentGirl);
   return (
     <aside
       className="sidebar-desktop glass-sidebar"
@@ -111,7 +114,9 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-rose)', lineHeight: 1.2 }}>我的档案</div>
-            <div style={{ fontSize: 11, color: 'var(--text-purple)', opacity: 0.7, marginTop: 2 }}>暧昧观察期</div>
+            <div style={{ fontSize: 11, color: 'var(--text-purple)', opacity: 0.7, marginTop: 2 }}>
+              {currentGirl ? getRelationshipStageLabel(currentGirl) : '待完善资料'}
+            </div>
           </div>
         </div>
       </div>

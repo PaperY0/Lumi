@@ -8,6 +8,7 @@ import {
 } from '@/lib/db';
 import { chatRepository } from '@/lib/db/repositories/chatRepo';
 import { buildPursuitContext, preparePursuitProfiles } from '@/lib/ai/profileContext';
+import { getRelationshipStageLabel, type RelationshipStageLabel } from '@/lib/relationshipStage';
 import type { PortraitRequest, PortraitResponse } from '@/types';
 
 const MAX_PORTRAIT_CHAT_MESSAGES = 40;
@@ -48,6 +49,7 @@ export function useGeneratePortrait() {
   const [data, setData] = useState<PortraitResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [profileStage, setProfileStage] = useState<RelationshipStageLabel | null>(null);
 
   const loadCached = useCallback(async () => {
     try {
@@ -57,6 +59,7 @@ export function useGeneratePortrait() {
       const girls = await girlProfileRepository.getByUserId(user.id);
       const girl = girls[0];
       if (!girl) return;
+      setProfileStage(getRelationshipStageLabel(girl));
 
       const cachedPortrait = await portraitRepository.getLatest(user.id, girl.id);
       if (cachedPortrait) {
@@ -90,6 +93,7 @@ export function useGeneratePortrait() {
       if (!girl) {
         throw new Error('请先添加女生资料');
       }
+      setProfileStage(getRelationshipStageLabel(girl));
 
       const maleQuestionnaire = await questionnaireRepository.getLatestMale(user.id);
       const femaleQuestionnaire = await questionnaireRepository.getLatestFemale(user.id);
@@ -161,6 +165,7 @@ export function useGeneratePortrait() {
     data,
     loading,
     error,
+    profileStage,
     generate,
     loadCached,
   };
