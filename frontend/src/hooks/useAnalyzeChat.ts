@@ -12,6 +12,7 @@ import {
   analysisRepository,
 } from '@/lib/db';
 import { chatRepository } from '@/lib/db/repositories/chatRepo';
+import { buildPursuitContext, preparePursuitProfiles } from '@/lib/ai/profileContext';
 import type { AIAnalysisReport } from '@/types';
 
 const MIN_ANALYSIS_MESSAGE_COUNT = 10;
@@ -120,14 +121,23 @@ export function useAnalyzeChat() {
         return;
       }
 
+      const profileContext = buildPursuitContext({
+        userProfile: user,
+        girlProfile: girl,
+        maleQuestionnaire: maleQ,
+        femaleQuestionnaire: femaleQ,
+        recentMessages: messages,
+      });
+      const pursuitProfiles = preparePursuitProfiles(user, girl);
+
       // 7. 调用 AI 接口
       console.log('🚀 [useAnalyzeChat.analyze] 聊天记录数量满足要求，准备调用 /api/analyze', {
         messagesCount: messages.length,
       });
 
       const report = await aiClient.analyzeChatFull({
-        userProfile: user,
-        girlProfile: girl,
+        userProfile: pursuitProfiles.userProfile,
+        girlProfile: pursuitProfiles.girlProfile,
         maleQuestionnaire: maleQ,
         femaleQuestionnaire: femaleQ,
         chatSession: session ? {
@@ -146,6 +156,7 @@ export function useAnalyzeChat() {
           content: m.content,
           timestamp: m.sentAt,
         })),
+        profileContext: profileContext.summary,
         userQuestion: options?.userQuestion,
       });
 

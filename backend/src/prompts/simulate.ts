@@ -15,6 +15,7 @@ export interface SimulateInput {
   difficulty: string;
   conversation?: Array<Record<string, any>>;
   userReply?: string;
+  profileContext?: string;
 }
 
 export function buildSimulatePrompt(input: SimulateInput): LLMMessage[] {
@@ -25,6 +26,12 @@ export function buildSimulatePrompt(input: SimulateInput): LLMMessage[] {
 2. 不夸大也不过于悲观，保持中立和现实
 3. 给出建设性的反馈，帮助用户理解这个回复意味着什么
 4. 提供下一步的建议
+
+追求期规则：
+1. 当前产品只服务追求期互动，不默认使用亲昵称呼。
+2. 不将回复慢、回复短或单次冷淡直接解释为不喜欢。
+3. 邀约和推进建议必须具体、低压力，并保留拒绝空间。
+4. 用户的观察只能作为辅助线索，必须使用“可能”“基于目前信息”等不确定表达。
 
 **必须返回严格的 JSON 格式，字段使用 camelCase 命名**，结构如下：
 {
@@ -42,6 +49,10 @@ export function buildSimulatePrompt(input: SimulateInput): LLMMessage[] {
 }`;
 
   let userContent = '';
+
+  if (input.profileContext) {
+    userContent += `## 追求期结构化上下文（优先参考）\n${input.profileContext}\n\n`;
+  }
 
   // 添加用户资料
   if (input.userProfile) {

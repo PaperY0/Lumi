@@ -13,6 +13,7 @@ export interface AnalyzeInput {
   chatSession?: Record<string, any> | null;
   messages?: Array<Record<string, any>>;
   userQuestion?: string;
+  profileContext?: string;
 }
 
 export function buildAnalyzePrompt(input: AnalyzeInput): LLMMessage[] {
@@ -26,10 +27,16 @@ export function buildAnalyzePrompt(input: AnalyzeInput): LLMMessage[] {
 5. 强调尊重对方边界
 6. 不鼓励操控、套路、道德绑架或连续轰炸
 
+追求期规则：
+1. 当前产品只服务追求期互动，不默认使用亲昵称呼。
+2. 不将回复慢、回复短或单次冷淡直接解释为不喜欢。
+3. 邀约和推进建议必须具体、低压力，并保留拒绝空间。
+4. 用户的观察只能作为辅助线索，必须使用“可能”“基于目前信息”等不确定表达。
+
 **必须返回严格的 JSON 格式，字段使用 camelCase 命名**，结构如下：
 {
   "simpleAnswer": "一句话结论，简明扼要地描述当前关系状态或回答用户问题",
-  "relationshipStage": "当前关系阶段描述（如：暧昧观察期、初步接触期、稳定发展期等）",
+  "relationshipStage": "当前关系阶段描述（只可为：初识接触期、追求期、暧昧观察期、升温期）",
   "interactionHeat": "cold 或 warm 或 hot",
   "girlEmotion": "女生当前可能的情绪状态描述",
   "positiveSignals": ["积极信号1", "积极信号2"],
@@ -45,6 +52,10 @@ export function buildAnalyzePrompt(input: AnalyzeInput): LLMMessage[] {
 }`;
 
   let userContent = '';
+
+  if (input.profileContext) {
+    userContent += `## 追求期结构化上下文（优先参考）\n${input.profileContext}\n\n`;
+  }
 
   // 添加用户资料
   if (input.userProfile) {

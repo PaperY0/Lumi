@@ -41,6 +41,19 @@ const frequencyLabels: Record<string, string> = {
   high: '联系较频繁',
 };
 
+const invitationExperienceLabels: Record<string, string> = {
+  'not-yet': '还没邀请过',
+  accepted: '接受过邀约',
+  declined: '婉拒过邀约',
+  unclear: '暂时看不出来',
+};
+
+const observationSourceLabels: Record<string, string> = {
+  explicit: '她明确说过',
+  chat: '聊天中提到',
+  observation: '我的观察',
+};
+
 function text(value: unknown, fallback = '未填写'): string {
   if (typeof value !== 'string') return fallback;
   const trimmed = value.trim();
@@ -56,14 +69,6 @@ function boolLabel(value: boolean | undefined, yes: string, no: string): string 
 function list(values: string[] | undefined, fallback = '未填写'): string {
   const filtered = values?.map((item) => item.trim()).filter(Boolean) ?? [];
   return filtered.length > 0 ? filtered.join('、') : fallback;
-}
-
-function importantDates(girl: GirlProfile): string {
-  const items = [
-    girl.birthday ? `生日：${girl.birthday}` : '',
-    ...(girl.importantDates ?? []).map((item) => `${item.name}：${item.date}`),
-  ].filter(Boolean);
-  return items.length > 0 ? items.join('；') : '未填写';
 }
 
 function questionnaireSummary(
@@ -99,7 +104,21 @@ export interface RelationshipProfileContext {
   };
 }
 
-export function buildRelationshipProfileContext(input: RelationshipProfileContextInput): RelationshipProfileContext {
+export interface PursuitContext extends RelationshipProfileContext {
+  mode: 'pursuit';
+  evidenceSources: string[];
+}
+
+export function preparePursuitProfiles(userProfile: UserProfile, girlProfile: GirlProfile) {
+  const { birthday: _birthday, importantDates: _importantDates, ...safeGirlProfile } = girlProfile;
+
+  return {
+    userProfile: { ...userProfile },
+    girlProfile: safeGirlProfile,
+  };
+}
+
+export function buildPursuitContext(input: RelationshipProfileContextInput): PursuitContext {
   const { userProfile, girlProfile, maleQuestionnaire, femaleQuestionnaire, recentMessages = [] } = input;
   const userSection = [
     `昵称：${text(userProfile.nickname)}`,
@@ -116,6 +135,15 @@ export function buildRelationshipProfileContext(input: RelationshipProfileContex
     `情绪表达方式：${text(userProfile.emotionExpression)}`,
   ].join('\n');
 
+  const knownInterests = [...new Set([
+    ...(girlProfile.likes?.length ? girlProfile.likes : girlProfile.interests ?? []),
+    ...(girlProfile.customInterests ?? []),
+  ])];
+  const knownBoundaries = [...new Set([
+    ...(girlProfile.tabooBehaviors ?? []),
+    ...(girlProfile.customBoundaries ?? []),
+  ])];
+
   const girlSection = [
     `称呼：${text(girlProfile.nickname)}`,
     `年龄段：${ageRangeLabels[girlProfile.ageRange] ?? text(girlProfile.ageRange)}`,
@@ -123,9 +151,11 @@ export function buildRelationshipProfileContext(input: RelationshipProfileContex
     `认识时长：${text(girlProfile.knownDuration)}`,
     `当前关系阶段：${girlProfile.currentStageLabel || girlStageLabels[girlProfile.currentStage] || text(girlProfile.currentStage)}`,
     `联系频率：${girlProfile.interactionFrequencyLabel || frequencyLabels[girlProfile.interactionFrequency] || text(girlProfile.interactionFrequency)}`,
-    `喜好/兴趣：${list(girlProfile.likes?.length ? girlProfile.likes : girlProfile.interests)}`,
-    `雷点/禁忌行为：${list(girlProfile.tabooBehaviors)}`,
-    `重要日子：${importantDates(girlProfile)}`,
+    `喜好/兴趣：${list(knownInterests)}`,
+    `雷点/禁忌行为：${list(knownBoundaries)}`,
+    `舒适互动方式：${list(girlProfile.interactionPreferences)}`,
+    `邀约情况：${girlProfile.invitationExperience ? invitationExperienceLabels[girlProfile.invitationExperience] : '未填写'}`,
+    `补充信息来源：${girlProfile.observationSource ? observationSourceLabels[girlProfile.observationSource] : '未填写'}`,
     `聊天风格：${text(girlProfile.chatStyle)}`,
     `是否主动：${boolLabel(girlProfile.isProactive, '偏主动', '不太主动')}`,
     `是否情绪化：${boolLabel(girlProfile.isEmotional, '情绪表达较明显', '情绪表达较稳定')}`,
@@ -138,9 +168,19 @@ export function buildRelationshipProfileContext(input: RelationshipProfileContex
     : '最近已保存聊天：暂无。请主要基于资料和问卷生成基础判断。';
 
   const questionnaires = questionnaireSummary(maleQuestionnaire, femaleQuestionnaire);
+  const evidenceSources = [
+    '双方资料',
+    maleQuestionnaire ? '男生问卷' : '',
+    femaleQuestionnaire ? '女生观察问卷' : '',
+    recentMessages.length > 0 ? `最近聊天 ${recentMessages.length} 条` : '',
+  ].filter(Boolean);
 
   return {
     summary: [
+      '## 当前模式',
+      '当前模式：追求期',
+      '规则：默认自然、有分寸；不默认使用亲昵称呼；不催促、不施压；邀约需具体且保留拒绝空间；用户观察只作辅助参考，不当作事实。',
+      '',
       '## 我的信息',
       userSection,
       '',
@@ -164,5 +204,12 @@ export function buildRelationshipProfileContext(input: RelationshipProfileContex
       girlFieldCount: girlSection.split('\n').filter((line) => !line.endsWith('未填写')).length,
       recentMessageCount: recentMessages.length,
     },
+    mode: 'pursuit',
+    evidenceSources,
   };
+}
+
+export function buildRelationshipProfileContext(input: RelationshipProfileContextInput): RelationshipProfileContext {
+  const { mode: _mode, evidenceSources: _evidenceSources, ...context } = buildPursuitContext(input);
+  return context;
 }

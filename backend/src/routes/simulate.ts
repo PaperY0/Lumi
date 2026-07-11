@@ -19,6 +19,7 @@ const SimulateInputSchema = z.object({
   conversation: z.array(z.any()).optional().default([]),
   userReply: z.string().optional().default(''),
   message: z.string().optional(),
+  profileContext: z.string().optional(),
 });
 
 router.post('/simulate', async (req, res) => {
@@ -35,6 +36,7 @@ router.post('/simulate', async (req, res) => {
       difficulty: input.difficulty,
       conversationCount: input.conversation?.length ?? 0,
       userReplyLength: input.userReply?.length ?? 0,
+      profileContextChars: input.profileContext?.length ?? 0,
     });
   } catch (error: any) {
     logRouteEvent(res, '/api/simulate', 'schema_failed', {

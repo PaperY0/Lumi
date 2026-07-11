@@ -12,6 +12,7 @@ import {
   simulateHistoryRepository,
 } from '@/lib/db';
 import { chatRepository } from '@/lib/db/repositories/chatRepo';
+import { buildPursuitContext, preparePursuitProfiles } from '@/lib/ai/profileContext';
 import type {
   SimulateMessage,
   SimulateFeedback,
@@ -88,7 +89,16 @@ export function useSimulateChat() {
       hasFemaleQuestionnaire: !!femaleQ,
     });
 
-    return { user, girl, maleQ, femaleQ, recentMessages };
+    const profileContext = buildPursuitContext({
+      userProfile: user,
+      girlProfile: girl,
+      maleQuestionnaire: maleQ,
+      femaleQuestionnaire: femaleQ,
+      recentMessages,
+    });
+    const pursuitProfiles = preparePursuitProfiles(user, girl);
+
+    return { user, girl, maleQ, femaleQ, recentMessages, profileContext, pursuitProfiles };
   }, []);
 
   /**
@@ -118,11 +128,12 @@ export function useSimulateChat() {
       console.log('🚀 [useSimulateChat.startPractice] 准备调用 /api/simulate');
 
       const result = await aiClient.simulate({
-        userProfile: ctx.user,
-        girlProfile: ctx.girl,
+        userProfile: ctx.pursuitProfiles.userProfile,
+        girlProfile: ctx.pursuitProfiles.girlProfile,
         maleQuestionnaire: ctx.maleQ ?? null,
         femaleQuestionnaire: ctx.femaleQ ?? null,
         recentMessages: ctx.recentMessages,
+        profileContext: ctx.profileContext.summary,
         scenario: nextScenario,
         difficulty: nextDifficulty,
         conversation: [],
@@ -193,11 +204,12 @@ export function useSimulateChat() {
       });
 
       const result = await aiClient.simulate({
-        userProfile: ctx.user,
-        girlProfile: ctx.girl,
+        userProfile: ctx.pursuitProfiles.userProfile,
+        girlProfile: ctx.pursuitProfiles.girlProfile,
         maleQuestionnaire: ctx.maleQ ?? null,
         femaleQuestionnaire: ctx.femaleQ ?? null,
         recentMessages: ctx.recentMessages,
+        profileContext: ctx.profileContext.summary,
         scenario,
         difficulty,
         conversation: nextConversation,

@@ -146,7 +146,7 @@ export function AIAnalysisPage({ onNavigate }: Props) {
       <div style={{ marginBottom: 28 }}>
         <BlurText text="AI 聊天分析" startDelay={60} className="gradient-text" style={{ fontSize: 28, letterSpacing: '-0.03em', fontWeight: 700, display: 'block' }} />
         <p style={{ margin: '6px 0 0', fontSize: 14, color: 'var(--text-purple)', opacity: 0.75 }}>
-          从聊天记录里提取关系信号、互动节奏和下一步建议
+          追求期模式：结合双方资料、问卷和所选聊天记录，避免过度解读单次互动。
         </p>
       </div>
 

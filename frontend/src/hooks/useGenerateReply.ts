@@ -11,7 +11,7 @@ import {
   questionnaireRepository,
   replyRepository,
 } from '@/lib/db';
-import { buildRelationshipProfileContext } from '@/lib/ai/profileContext';
+import { buildPursuitContext, preparePursuitProfiles } from '@/lib/ai/profileContext';
 import { chatRepository } from '@/lib/db/repositories/chatRepo';
 import type { ReplyResponse, ChatMessage } from '@/types';
 
@@ -88,13 +88,14 @@ export function useGenerateReply() {
           console.log('ℹ️ [useGenerateReply.generate] 未找到聊天记录，使用空 recentMessages 继续生成回复');
         }
       }
-      const profileContext = buildRelationshipProfileContext({
+      const profileContext = buildPursuitContext({
         userProfile: user,
         girlProfile: girl,
         maleQuestionnaire: maleQ,
         femaleQuestionnaire: femaleQ,
         recentMessages,
       });
+      const pursuitProfiles = preparePursuitProfiles(user, girl);
 
       // 6. 调用 AI 接口
       if (import.meta.env.DEV) {
@@ -106,8 +107,8 @@ export function useGenerateReply() {
       }
 
       const reply = await aiClient.generateReply({
-        userProfile: user,
-        girlProfile: girl,
+        userProfile: pursuitProfiles.userProfile,
+        girlProfile: pursuitProfiles.girlProfile,
         maleQuestionnaire: maleQ ?? null,
         femaleQuestionnaire: femaleQ ?? null,
         recentMessages,

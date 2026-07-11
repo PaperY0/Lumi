@@ -115,7 +115,7 @@ export function ReplyAssistPage({ onNavigate }: Props) {
         </div>
         <BlurText text="帮我回复" startDelay={60} style={{ fontSize: 26, fontWeight: 700, color: '#4A2E38', letterSpacing: '-0.04em', display: 'block' }} />
         <p style={{ margin: '5px 0 0', fontSize: 14, color: '#7B5C6E', opacity: 0.75 }}>
-          不知道怎么回时，先生成几个自然、不冒犯的表达参考
+          追求期模式：结合双方资料、问卷和最近聊天，优先生成自然、有分寸、不给对方压力的表达参考
         </p>
       </div>
 

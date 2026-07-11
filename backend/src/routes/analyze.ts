@@ -16,6 +16,7 @@ const AnalyzeInputSchema = z.object({
   chatSession: z.any().nullable().optional(),
   messages: z.array(z.any()).optional().default([]),
   userQuestion: z.string().optional(),
+  profileContext: z.string().optional(),
 });
 
 router.post('/analyze', async (req, res) => {
@@ -33,6 +34,7 @@ router.post('/analyze', async (req, res) => {
       hasChatSession: !!input.chatSession,
       messagesCount: input.messages?.length ?? 0,
       userQuestionLength: input.userQuestion?.length ?? 0,
+      profileContextChars: input.profileContext?.length ?? 0,
     });
   } catch (error: any) {
     logRouteEvent(res, '/api/analyze', 'schema_failed', {

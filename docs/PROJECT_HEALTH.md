@@ -16,6 +16,7 @@ Last updated: 2026-07-10
 - V1.1 progress: emergency manual has static searchable content; reply generation prompts/mock responses now target six styles.
 - V1.2 progress: local important-day reminders are available as a dedicated page plus Dashboard reminder card.
 - Profile archive foundation: pursuit-stage profile setup now supports custom interests/boundaries and observation fields; profiles retain only the current saved version.
+- Pursuit-stage AI baseline: portrait, chat analysis, reply assistance, and simulation now share one boundary-aware profile context; general AI requests exclude important-date fields.
 
 ## Security Checklist
 
@@ -33,6 +34,6 @@ Last updated: 2026-07-10
 - Validate real large WeChat/QQ screenshots through the full flow: image upload, MinerU markdown, LLM cleanup, A/B preview, save, then AI analysis.
 - Finish PRD V1.1: relationship portrait optimization and local Love Code article management.
 - Start PRD V1.2 with important-day reminders before gift/date-guide recommendations.
-- Connect the new pursuit-stage profile fields and independent important-date records to every AI prompt path, with explicit confidence rules for user observations.
+- Add pursuit-stage questionnaire questions and a relationship-rhythm summary card before building the date-guide and gift modules.
 - Decide whether `.claude/` is project config or personal local state before committing it.
 - Rotate any real DeepSeek API key that may have been pasted into tools, screenshots, or chat.

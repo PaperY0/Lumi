@@ -7,7 +7,7 @@ import {
   userProfileRepository,
 } from '@/lib/db';
 import { chatRepository } from '@/lib/db/repositories/chatRepo';
-import { buildRelationshipProfileContext } from '@/lib/ai/profileContext';
+import { buildPursuitContext, preparePursuitProfiles } from '@/lib/ai/profileContext';
 import type { PortraitRequest, PortraitResponse } from '@/types';
 
 const MAX_PORTRAIT_CHAT_MESSAGES = 40;
@@ -94,7 +94,7 @@ export function useGeneratePortrait() {
       const maleQuestionnaire = await questionnaireRepository.getLatestMale(user.id);
       const femaleQuestionnaire = await questionnaireRepository.getLatestFemale(user.id);
       const chatHistory = await buildRecentChatHistory(user.id, girl.id);
-      const profileContext = buildRelationshipProfileContext({
+      const profileContext = buildPursuitContext({
         userProfile: user,
         girlProfile: girl,
         maleQuestionnaire,
@@ -110,6 +110,7 @@ export function useGeneratePortrait() {
           sourceMethod: 'paste',
         })),
       });
+      const pursuitProfiles = preparePursuitProfiles(user, girl);
 
       if (import.meta.env.DEV) {
         console.log('[useGeneratePortrait] generating portrait', {
@@ -124,8 +125,8 @@ export function useGeneratePortrait() {
       }
 
       const portrait = await aiClient.generatePortrait({
-        userProfile: user,
-        girlProfile: girl,
+        userProfile: pursuitProfiles.userProfile,
+        girlProfile: pursuitProfiles.girlProfile,
         userQuestionnaire: maleQuestionnaire ?? undefined,
         girlQuestionnaire: femaleQuestionnaire ?? undefined,
         profileContext: profileContext.summary,

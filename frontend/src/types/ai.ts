@@ -82,6 +82,8 @@ export interface AnalyzeChatRequest {
     content: string;
     timestamp: string;
   }>;
+  /** 追求期结构化上下文，优先于原始资料 JSON */
+  profileContext?: string;
   userQuestion?: string;
 }
 
@@ -200,6 +202,8 @@ export interface SimulateRequest {
   femaleQuestionnaire?: FemaleQuestionnaireResult | null;
   /** 最近的聊天记录（可选） */
   recentMessages?: ChatMessage[];
+  /** 追求期结构化上下文，优先于原始资料 JSON */
+  profileContext?: string;
   /** 模拟场景 */
   scenario: SimulateScenario | string;
   /** 难度 */

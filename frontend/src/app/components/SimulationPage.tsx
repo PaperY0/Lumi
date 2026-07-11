@@ -97,7 +97,7 @@ export function SimulationPage({ onNavigate }: Props) {
             </div>
             <BlurText text="模拟对话练习" startDelay={60} style={{ fontSize: 24, fontWeight: 700, color: 'var(--deep-plum)', letterSpacing: '-0.03em', display: 'block' }} />
             <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--graphite-rose)', opacity: 0.75 }}>
-              AI 模拟女生回应，帮你在真实聊天前先练一遍
+              追求期模式：结合双方资料、问卷和最近互动，检查你的表达是否尊重节奏与拒绝空间
             </p>
           </div>
 

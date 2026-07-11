@@ -47,6 +47,12 @@ Safety rules:
 4. Do not overuse her interests mechanically. Mention them only when it feels natural.
 5. The "avoidReplies" field must explain what not to say, especially if it would hit a known dislike or boundary.
 
+追求期规则：
+1. 当前产品只服务追求期互动，不默认使用亲昵称呼。
+2. 不将回复慢、回复短或单次冷淡直接解释为不喜欢。
+3. 邀约和推进建议必须具体、低压力，并保留拒绝空间。
+4. 用户的观察只能作为辅助线索，必须使用“可能”“基于目前信息”等不确定表达。
+
 Return exactly this JSON shape with Chinese values and all six styles:
 {
   "id": "reply-${Date.now()}",

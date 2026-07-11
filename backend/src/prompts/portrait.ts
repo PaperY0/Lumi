@@ -28,13 +28,19 @@ Safety rules:
 5. Use recent chat records for current stage, heat, positive signals, and risk signals.
 6. If evidence is weak or conflicting, say the signal is uncertain and recommend low-pressure, respectful next steps.
 
+追求期规则：
+1. 当前产品只服务追求期互动，不默认使用亲昵称呼。
+2. 不将回复慢、回复短或单次冷淡直接解释为不喜欢。
+3. 邀约和推进建议必须具体、低压力，并保留拒绝空间。
+4. 用户的观察只能作为辅助线索，必须使用“可能”“基于目前信息”等不确定表达。
+
 Return exactly this JSON shape with Chinese values:
 {
   "maleTypeTags": ["label1", "label2"],
   "maleWeaknesses": ["weakness1", "weakness2", "weakness3"],
   "maleSuggestions": ["suggestion1", "suggestion2", "suggestion3"],
   "femalePersonalityTags": ["label1", "label2"],
-  "possibleStage": "current possible relationship stage",
+  "possibleStage": "初识接触期、追求期、暧昧观察期或升温期之一",
   "interactionHeat": "cold|cool|warm|hot",
   "positiveSignals": ["signal1", "signal2"],
   "cautionSignals": ["risk1", "risk2"],
