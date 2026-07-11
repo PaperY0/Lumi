@@ -12,7 +12,8 @@ import { userProfileSchema, type ProfileFormValues } from '@/lib/validation/prof
 import { userProfileRepository, girlProfileRepository, questionnaireRepository } from '@/lib/db';
 // ✅ 全局 store：用户身份 + UI 提示
 import { useUserStore, useUiStore, useSettingsStore } from '@/stores';
-import type { GirlProfile } from '@/types'; // ✅ 添加类型导入
+import type { GirlProfile, UserProfile } from '@/types'; // ✅ 添加类型导入
+import { mergeProfileTags } from '@/lib/profileArchive';
 
 interface ProfileSetupPageProps {
   onNavigate: (page: PageName) => void;
@@ -33,6 +34,18 @@ const freqOptions = ['每天聊', '隔天聊', '一周几次', '断断续续'];
 const likeOptions = ['咖啡', '猫猫', '旅行', '音乐', '电影', '美食', '健身', '读书', '游戏', '艺术'];
 const triggerOptions = ['被催促', '被忽视', '说话不算数', '敷衍回复', '爹味说教'];
 const relationOptions = ['陌生人', '普通朋友', '熟悉朋友', '暧昧关系'];
+const interactionPreferenceOptions = ['文字聊天', '语音沟通', '线下见面', '分享日常', '需要空间'];
+const invitationExperienceOptions: Array<{ label: string; value: NonNullable<GirlProfile['invitationExperience']> }> = [
+  { label: '还没邀请过', value: 'not-yet' },
+  { label: '接受过邀约', value: 'accepted' },
+  { label: '婉拒过邀约', value: 'declined' },
+  { label: '暂时看不出来', value: 'unclear' },
+];
+const observationSourceOptions: Array<{ label: string; value: NonNullable<GirlProfile['observationSource']> }> = [
+  { label: '她明确说过', value: 'explicit' },
+  { label: '聊天中提到', value: 'chat' },
+  { label: '我的观察', value: 'observation' },
+];
 
 // ✅ 「界面文字 ↔ 枚举值」映射层：UI 显示中文，存库用 schema 枚举
 const ageLabelToValue: Record<string, ProfileFormValues['ageRange']> = {
@@ -92,6 +105,11 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
   const [freq, setFreq] = useState<string[]>([]);
   const [likes, setLikes] = useState<string[]>([]);
   const [triggers, setTriggers] = useState<string[]>([]);
+  const [customLikes, setCustomLikes] = useState('');
+  const [customTriggers, setCustomTriggers] = useState('');
+  const [interactionPreferences, setInteractionPreferences] = useState<string[]>([]);
+  const [invitationExperience, setInvitationExperience] = useState<GirlProfile['invitationExperience']>();
+  const [observationSource, setObservationSource] = useState<GirlProfile['observationSource']>();
   const [notes, setNotes] = useState('');
 
   // ✅ 任务 2：女生称呼必填校验
@@ -108,6 +126,60 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
   const toggle = (arr: string[], val: string, setArr: (a: string[]) => void) =>
     setArr(arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val]);
 
+  const fillGirlProfile = (girl: GirlProfile) => {
+    setHerName(girl.nickname || '');
+    setKnowDuration(girl.knownDuration || '');
+
+    const stageToRelation: Record<string, string> = {
+      stranger: '陌生人',
+      observing: '普通朋友',
+      ambiguous: '暧昧关系',
+      pursuing: '暧昧关系',
+      dating: '熟悉朋友',
+    };
+    const relationLabel = girl.currentStageLabel || stageToRelation[girl.currentStage] || '普通朋友';
+    setRelation([relationLabel]);
+
+    const freqToLabel: Record<string, string> = {
+      high: '每天聊',
+      medium: '隔天聊',
+      low: '断断续续',
+    };
+    const freqLabel = girl.interactionFrequencyLabel || freqToLabel[girl.interactionFrequency] || '隔天聊';
+    setFreq([freqLabel]);
+
+    const storedLikes = girl.likes || girl.interests || [];
+    const storedTriggers = girl.tabooBehaviors || [];
+    const customInterestTags = girl.customInterests || storedLikes.filter((item) => !likeOptions.includes(item));
+    const customBoundaryTags = girl.customBoundaries || storedTriggers.filter((item) => !triggerOptions.includes(item));
+    setLikes(storedLikes.filter((item) => likeOptions.includes(item)));
+    setTriggers(storedTriggers.filter((item) => triggerOptions.includes(item)));
+    setCustomLikes(customInterestTags.join('、'));
+    setCustomTriggers(customBoundaryTags.join('、'));
+    setInteractionPreferences(girl.interactionPreferences || []);
+    setInvitationExperience(girl.invitationExperience);
+    setObservationSource(girl.observationSource);
+    setNotes(girl.notes || '');
+  };
+
+  const fillUserProfile = (user: UserProfile) => {
+    form.reset({
+      nickname: user.nickname,
+      ageRange: user.ageRange,
+      relationshipStatus: user.relationshipStatus,
+      loveExperience: user.loveExperience,
+      mainConfusion: user.mainConfusion,
+      mbti: user.mbti,
+      selfPersonality: user.selfPersonality,
+      communicationHabit: user.communicationHabit,
+      emotionExpression: user.emotionExpression,
+      chatStyle: user.chatStyle,
+      isAnxious: user.isAnxious,
+      isProactive: user.isProactive,
+    });
+    setAnxiousLabel(user.isAnxious === true ? '经常焦虑' : user.isAnxious === false ? '不太会' : undefined);
+  };
+
   // ✅ 任务 3：挂载时加载已有资料并回填表单
   useEffect(() => {
     async function loadExistingProfile() {
@@ -118,28 +190,7 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
 
       if (user) {
         console.log('✅ [ProfileSetupPage] 找到 userProfile，开始回显:', user);
-        // 回显男生资料
-        form.reset({
-          nickname: user.nickname,
-          ageRange: user.ageRange,
-          relationshipStatus: user.relationshipStatus,
-          loveExperience: user.loveExperience,
-          mainConfusion: user.mainConfusion,
-          mbti: user.mbti,
-          selfPersonality: user.selfPersonality,
-          communicationHabit: user.communicationHabit,
-          emotionExpression: user.emotionExpression,
-          chatStyle: user.chatStyle,
-          isAnxious: user.isAnxious,
-          isProactive: user.isProactive,
-        });
-
-        // 回填焦虑等级 label（根据 boolean 取代表性 label）
-        if (user.isAnxious === true) {
-          setAnxiousLabel('经常焦虑');
-        } else if (user.isAnxious === false) {
-          setAnxiousLabel('不太会');
-        }
+        fillUserProfile(user);
 
         console.log('✅ [ProfileSetupPage] userProfile 回显完成');
       }
@@ -150,38 +201,7 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
         if (girl) {
           console.log('✅ [ProfileSetupPage] 找到 girlProfile，开始回显:', girl);
 
-          // ✅ 任务 5：回显女生资料
-          setHerName(girl.nickname || '');
-          setKnowDuration(girl.knownDuration || '');
-
-          // currentStage → relation 反向映射（回显备选）
-          const stageToRelation: Record<string, string> = {
-            'stranger': '陌生人',
-            'observing': '普通朋友',
-            'ambiguous': '暧昧关系',
-            'pursuing': '暧昧关系',
-            'dating': '熟悉朋友',
-          };
-          // 优先使用保存时记录的 UI 标签，回退到映射
-          const relationLabel = girl.currentStageLabel || stageToRelation[girl.currentStage] || '普通朋友';
-          setRelation([relationLabel]);
-
-          // interactionFrequency → freq 反向映射（回显备选）
-          const freqToLabel: Record<string, string> = {
-            'high': '每天聊',
-            'medium': '隔天聊',
-            'low': '断断续续',
-          };
-          const freqLabel = girl.interactionFrequencyLabel || freqToLabel[girl.interactionFrequency] || '隔天聊';
-          setFreq([freqLabel]);
-
-          // likes / interests
-          setLikes(girl.likes || girl.interests || []);
-
-          // tabooBehaviors
-          setTriggers(girl.tabooBehaviors || []);
-
-          setNotes(girl.notes || '');
+          fillGirlProfile(girl);
 
           console.log('✅ [ProfileSetupPage] girlProfile 回显完成:', {
             id: girl.id,
@@ -209,6 +229,11 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
       freq,
       likes,
       triggers,
+      customLikes,
+      customTriggers,
+      interactionPreferences,
+      invitationExperience,
+      observationSource,
       notes,
     });
 
@@ -277,6 +302,10 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
         db: interactionFrequency,
       });
 
+      const customInterestTags = mergeProfileTags([], customLikes);
+      const customBoundaryTags = mergeProfileTags([], customTriggers);
+      const mergedLikes = mergeProfileTags(likes, customLikes);
+      const mergedTriggers = mergeProfileTags(triggers, customTriggers);
       const girlPayload = {
         userId: savedUser.id, // ✅ 关键：绑定到刚保存的 user.id
         nickname: herName,
@@ -287,9 +316,14 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
         currentStageLabel: selectedRelation || undefined, // ✅ 任务 3：保存原始 UI 标签
         interactionFrequency,
         interactionFrequencyLabel: selectedFreq || undefined, // ✅ 任务 3：保存原始 UI 标签
-        interests: likes,
-        likes: likes,
-        tabooBehaviors: triggers,
+        interests: mergedLikes,
+        likes: mergedLikes,
+        tabooBehaviors: mergedTriggers,
+        customInterests: customInterestTags,
+        customBoundaries: customBoundaryTags,
+        interactionPreferences,
+        invitationExperience,
+        observationSource,
         notes: notes.trim() || undefined,
       };
 
@@ -591,13 +625,38 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
             </div>
 
             <div>
-              <label style={{ fontSize: 13, color: 'var(--text-purple)', fontWeight: 500, display: 'block', marginBottom: 8, paddingLeft: 4 }}>喜好（已知的）</label>
+              <label style={{ fontSize: 13, color: 'var(--text-purple)', fontWeight: 500, display: 'block', marginBottom: 8, paddingLeft: 4 }}>喜欢与兴趣（已知的）</label>
               <PillTagSelector options={likeOptions} selected={likes} onToggle={v => toggle(likes, v, setLikes)} />
+              <GlassInput label="补充兴趣或偏好" placeholder="例如：看展、手帐、城市漫步" value={customLikes} onChange={setCustomLikes} />
             </div>
 
             <div>
               <label style={{ fontSize: 13, color: 'var(--text-purple)', fontWeight: 500, display: 'block', marginBottom: 8, paddingLeft: 4 }}>雷点（她明确表达过的）</label>
               <PillTagSelector options={triggerOptions} selected={triggers} onToggle={v => toggle(triggers, v, setTriggers)} />
+              <GlassInput label="补充边界或雷点" placeholder="例如：不喜欢临时改约、不吃香菜" value={customTriggers} onChange={setCustomTriggers} />
+            </div>
+
+            <div>
+              <label style={{ fontSize: 13, color: 'var(--text-purple)', fontWeight: 500, display: 'block', marginBottom: 8, paddingLeft: 4 }}>她更舒服的互动方式（基于观察）</label>
+              <PillTagSelector options={interactionPreferenceOptions} selected={interactionPreferences} onToggle={v => toggle(interactionPreferences, v, setInteractionPreferences)} />
+            </div>
+
+            <div>
+              <label style={{ fontSize: 13, color: 'var(--text-purple)', fontWeight: 500, display: 'block', marginBottom: 8, paddingLeft: 4 }}>邀约情况</label>
+              <PillTagSelector
+                options={invitationExperienceOptions.map((option) => option.label)}
+                selected={invitationExperience ? [invitationExperienceOptions.find((option) => option.value === invitationExperience)?.label || ''] : []}
+                onToggle={(label) => setInvitationExperience(invitationExperienceOptions.find((option) => option.label === label)?.value)}
+              />
+            </div>
+
+            <div>
+              <label style={{ fontSize: 13, color: 'var(--text-purple)', fontWeight: 500, display: 'block', marginBottom: 8, paddingLeft: 4 }}>补充信息来自哪里</label>
+              <PillTagSelector
+                options={observationSourceOptions.map((option) => option.label)}
+                selected={observationSource ? [observationSourceOptions.find((option) => option.value === observationSource)?.label || ''] : []}
+                onToggle={(label) => setObservationSource(observationSourceOptions.find((option) => option.label === label)?.value)}
+              />
             </div>
 
             <GlassTextarea label="备注" placeholder="其他想记录的信息..." value={notes} onChange={setNotes} rows={3} />
@@ -623,6 +682,13 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
           </div>
         </div>
       </div>{/* end grid */}
+
+      <GlassCard style={{ marginTop: 24 }} padding="20px 24px">
+        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-rose)', marginBottom: 6 }}>资料会如何帮助你</div>
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--text-purple)', lineHeight: 1.7, opacity: 0.8 }}>
+          这份追求期资料会作为关系画像、聊天分析、回复建议和模拟对话的参考。她明确说过的信息优先级更高；你的观察只会作为辅助参考，不会被当成事实。重要日子请在“重要日子”页面单独维护。
+        </p>
+      </GlassCard>
 
       {/* ✅ 老用户模式：重做问卷按钮 */}
       {onboardingCompleted && (

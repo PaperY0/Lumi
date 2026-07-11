@@ -90,4 +90,14 @@ export interface GirlProfile {
   likesRitual?: boolean;
   /** 其他备注：用户主动记录的非敏感补充信息 */
   notes?: string;
+  /** 未包含在预设标签内的兴趣或偏好 */
+  customInterests?: string[];
+  /** 未包含在预设标签内的边界或雷点 */
+  customBoundaries?: string[];
+  /** 她更舒适的互动方式，基于用户观察 */
+  interactionPreferences?: string[];
+  /** 追求期的邀约反馈 */
+  invitationExperience?: 'not-yet' | 'accepted' | 'declined' | 'unclear';
+  /** 补充观察的来源，供 AI 判断信息置信度 */
+  observationSource?: 'explicit' | 'chat' | 'observation';
 }

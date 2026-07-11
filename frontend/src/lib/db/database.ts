@@ -107,6 +107,11 @@ export class LumiDB extends Dexie {
     this.version(4).stores({
       loveGuideArticles: 'id, category, createdAt, updatedAt',
     });
+
+    // v5 曾加入资料快照表，v6 迁移时删除，资料只保留当前版本。
+    this.version(6).stores({
+      profileSnapshots: null,
+    });
   }
 
   /**
