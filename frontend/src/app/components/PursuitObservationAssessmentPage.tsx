@@ -4,6 +4,7 @@ import { GlassCard, LiquidButton } from './GlassUI';
 import type { PageName } from './GlassUI';
 import { evaluatePursuitObservation, pursuitObservationQuestions } from '@/data/pursuitObservationQuestions';
 import { evaluateInitialContactObservation, initialContactObservationQuestions } from '@/data/initialContactObservationQuestions';
+import { evaluateWarmingObservation, warmingObservationQuestions } from '@/data/warmingObservationQuestions';
 import { girlProfileRepository, stageQuestionnaireRepository } from '@/lib/db';
 import { useUiStore, useUserStore } from '@/stores';
 import { getRelationshipStageLabel, getRelationshipStageValue, type RelationshipStageValue } from '@/lib/relationshipStage';
@@ -17,10 +18,10 @@ export function PursuitObservationAssessmentPage({ onNavigate }: Props) {
   const [resultVisible, setResultVisible] = useState(false);
   const [saved, setSaved] = useState(false);
   const [relationshipStage, setRelationshipStage] = useState<RelationshipStageValue>('observing');
-  const questions = relationshipStage === 'observing' ? initialContactObservationQuestions : pursuitObservationQuestions;
+  const questions = relationshipStage === 'observing' ? initialContactObservationQuestions : relationshipStage === 'warming' ? warmingObservationQuestions : pursuitObservationQuestions;
   const question = questions[current];
   const selected = answers[question.id];
-  const result = useMemo(() => relationshipStage === 'observing' ? evaluateInitialContactObservation(answers) : evaluatePursuitObservation(answers), [answers, relationshipStage]);
+  const result = useMemo(() => relationshipStage === 'observing' ? evaluateInitialContactObservation(answers) : relationshipStage === 'warming' ? evaluateWarmingObservation(answers) : evaluatePursuitObservation(answers), [answers, relationshipStage]);
 
   useEffect(() => { (async () => {
     await useUserStore.getState().loadCurrentUser();
@@ -56,7 +57,7 @@ export function PursuitObservationAssessmentPage({ onNavigate }: Props) {
 
   return <div style={{ padding: 32, maxWidth: 720, margin: '0 auto' }} className="page-enter">
     <LiquidButton variant="secondary" onClick={() => onNavigate('stage-questionnaires')} style={{ marginBottom: 24 }}><ArrowLeft size={16} /> 返回专项问卷</LiquidButton>
-    <h1 style={{ margin: 0, fontSize: 26, color: 'var(--text-rose)' }}>她的互动观察</h1><p style={{ margin: '8px 0 20px', color: 'var(--text-purple)' }}>{relationshipStage === 'observing' ? '初识接触期' : '追求期'} · 第 {current + 1} / {questions.length} 题 · 只记录真实互动</p>
+    <h1 style={{ margin: 0, fontSize: 26, color: 'var(--text-rose)' }}>她的互动观察</h1><p style={{ margin: '8px 0 20px', color: 'var(--text-purple)' }}>{relationshipStage === 'observing' ? '初识接触期' : relationshipStage === 'warming' ? '升温期' : '追求期'} · 第 {current + 1} / {questions.length} 题 · 只记录真实互动</p>
     <GlassCard hover={false} style={{ marginBottom: 16 }}><h2 style={{ margin: 0, fontSize: 19, color: 'var(--text-rose)', lineHeight: 1.55 }}>{question.text}</h2></GlassCard>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>{question.options.map((option) => <button key={option.id} onClick={() => update(option.id)} style={{ textAlign: 'left', padding: '14px 17px', borderRadius: 18, cursor: 'pointer', border: selected === option.id ? '1px solid rgba(232,116,138,.65)' : '1px solid rgba(232,116,138,.16)', background: selected === option.id ? 'rgba(232,116,138,.12)' : 'rgba(255,255,255,.44)', color: 'var(--text-rose)', fontSize: 14 }}>{option.text}</button>)}</div>
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}><LiquidButton variant="secondary" disabled={current === 0} onClick={() => setCurrent((value) => Math.max(0, value - 1))}><ArrowLeft size={16} /> 上一题</LiquidButton><LiquidButton disabled={!selected} onClick={() => current === questions.length - 1 ? setResultVisible(true) : setCurrent((value) => value + 1)}>{current === questions.length - 1 ? '查看观察小结' : <>下一题 <ArrowRight size={16} /></>}</LiquidButton></div>

@@ -4,6 +4,7 @@ import { GlassCard, LiquidButton } from './GlassUI';
 import type { PageName } from './GlassUI';
 import { evaluatePursuitSelfAssessment, pursuitSelfQuestions } from '@/data/pursuitSelfQuestions';
 import { evaluateInitialContactSelf, initialContactSelfQuestions } from '@/data/initialContactSelfQuestions';
+import { evaluateWarmingSelf, warmingSelfQuestions } from '@/data/warmingSelfQuestions';
 import { girlProfileRepository, stageQuestionnaireRepository } from '@/lib/db';
 import { useUiStore, useUserStore } from '@/stores';
 import { getRelationshipStageLabel, getRelationshipStageValue, type RelationshipStageValue } from '@/lib/relationshipStage';
@@ -19,8 +20,8 @@ export function PursuitSelfAssessmentPage({ onNavigate }: Props) {
   const [saved, setSaved] = useState(false);
   const [relationshipStage, setRelationshipStage] = useState<RelationshipStageValue>('observing');
 
-  const questions = relationshipStage === 'observing' ? initialContactSelfQuestions : pursuitSelfQuestions;
-  const result = useMemo(() => relationshipStage === 'observing' ? evaluateInitialContactSelf(answers) : evaluatePursuitSelfAssessment(answers), [answers, relationshipStage]);
+  const questions = relationshipStage === 'observing' ? initialContactSelfQuestions : relationshipStage === 'warming' ? warmingSelfQuestions : pursuitSelfQuestions;
+  const result = useMemo(() => relationshipStage === 'observing' ? evaluateInitialContactSelf(answers) : relationshipStage === 'warming' ? evaluateWarmingSelf(answers) : evaluatePursuitSelfAssessment(answers), [answers, relationshipStage]);
 
   useEffect(() => {
     async function loadExistingAnswers() {
@@ -84,7 +85,7 @@ export function PursuitSelfAssessmentPage({ onNavigate }: Props) {
         <LiquidButton variant="secondary" onClick={() => setShowResult(false)} style={{ marginBottom: 24 }}>
           <ArrowLeft size={16} /> 返回题目
         </LiquidButton>
-        <h1 style={{ margin: '0 0 10px', fontSize: 28, color: 'var(--text-rose)' }}>{relationshipStage === 'observing' ? '初识接触期自我观察' : '追求期自我观察'}</h1>
+        <h1 style={{ margin: '0 0 10px', fontSize: 28, color: 'var(--text-rose)' }}>{relationshipStage === 'observing' ? '初识接触期自我观察' : relationshipStage === 'warming' ? '升温期自我观察' : '追求期自我观察'}</h1>
         <p style={{ margin: '0 0 22px', fontSize: 14, color: 'var(--text-purple)', lineHeight: 1.7 }}>
           这不是人格诊断，而是帮助你选择更尊重彼此节奏的下一步。
         </p>
@@ -129,7 +130,7 @@ export function PursuitSelfAssessmentPage({ onNavigate }: Props) {
       </LiquidButton>
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ margin: 0, fontSize: 26, color: 'var(--text-rose)' }}>我在关系中的样子</h1>
-        <p style={{ margin: '8px 0 0', fontSize: 14, color: 'var(--text-purple)', lineHeight: 1.7 }}>{relationshipStage === 'observing' ? '初识接触期自我理解' : '追求期自我理解'} · 第 {current + 1} / {questions.length} 题</p>
+        <p style={{ margin: '8px 0 0', fontSize: 14, color: 'var(--text-purple)', lineHeight: 1.7 }}>{relationshipStage === 'observing' ? '初识接触期自我理解' : relationshipStage === 'warming' ? '升温期自我理解' : '追求期自我理解'} · 第 {current + 1} / {questions.length} 题</p>
       </div>
       <div style={{ height: 5, borderRadius: 999, overflow: 'hidden', background: 'rgba(232,116,138,0.12)', marginBottom: 24 }}>
           <div style={{ width: `${((current + 1) / questions.length) * 100}%`, height: '100%', background: 'linear-gradient(90deg,#E8748A,#C5956C)', transition: 'width .25s ease' }} />

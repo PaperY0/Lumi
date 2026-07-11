@@ -55,9 +55,18 @@ const initialContactItems: StageAssessmentCatalogItem[] = [
   },
 ];
 
+const warmingItems: StageAssessmentCatalogItem[] = [
+  { audience: 'self', title: '升温期 · 我的相处方式', description: '检查期待、稳定回应、适度试探和自我节奏。', boundary: '不把一次热情当成关系确定，不用付出换承诺。' },
+  { audience: 'observation', title: '升温期 · 她的互动观察', description: '观察双方主动、时间投入、邀约回流和互动舒适度。', boundary: '只根据一段时间的实际行为判断，不猜测内心。' },
+  { audience: 'relationship', title: '升温期 · 推进边界检查', description: '检查邀约、称呼、礼物和关系沟通是否保留拒绝空间。', boundary: '试探必须轻量、有退路，出现不适就及时放慢。' },
+];
+
 export function getStageAssessmentCatalog(stage: RelationshipStageValue): StageAssessmentCatalog {
   if (stage === 'observing') {
     return { available: true, items: initialContactItems };
+  }
+  if (stage === 'warming') {
+    return { available: true, items: warmingItems };
   }
   if (stage === 'pursuing') {
     return { available: true, items: pursuitItems };

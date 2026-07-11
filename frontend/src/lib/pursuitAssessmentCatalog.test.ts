@@ -26,4 +26,11 @@ describe('getStageAssessmentCatalog', () => {
     expect(catalog.available).toBe(true);
     expect(catalog.items.every((item) => item.title.includes('初识接触期'))).toBe(true);
   });
+
+  it('offers the dedicated warming set for the warming phase', () => {
+    const catalog = getStageAssessmentCatalog('warming');
+
+    expect(catalog.available).toBe(true);
+    expect(catalog.items.every((item) => item.title.includes('升温期'))).toBe(true);
+  });
 });
