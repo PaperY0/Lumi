@@ -25,7 +25,7 @@ import { GlobalToast } from './components/GlobalToast';
 import type { PageName } from './components/GlassUI';
 import { useSettingsStore, useUserStore } from '@/stores';
 import { questionnaireRepository, stageQuestionnaireRepository } from '@/lib/db';
-import { resolveOnboardingDestination } from '@/lib/onboardingFlow';
+import { getOnboardingProgress, resolveOnboardingDestination } from '@/lib/onboardingFlow';
 import { getRelationshipStageLabel, getRelationshipStageValue } from '@/lib/relationshipStage';
 
 const PAGE_PATHS: Record<PageName, string> = {
@@ -173,11 +173,16 @@ export default function App() {
         ])
         : [];
       const stageResults = [self, observation, relationship, ...legacyResults];
-      const stageCompleted = {
-        self: stageResults.some((r) => r?.audience === 'self'),
-        observation: stageResults.some((r) => r?.audience === 'observation'),
-        relationship: stageResults.some((r) => r?.audience === 'relationship'),
-      };
+      const onboardingProgress = getOnboardingProgress({
+        profileComplete: girl.currentStage !== 'stranger',
+        maleCompleted: Boolean(_maleQ),
+        femaleCompleted: Boolean(_femaleQ && _femaleQ.girlId),
+        stageCompleted: {
+          self: stageResults.some((r) => r?.audience === 'self'),
+          observation: stageResults.some((r) => r?.audience === 'observation'),
+          relationship: stageResults.some((r) => r?.audience === 'relationship'),
+        },
+      });
 
       const destination = resolveOnboardingDestination({
         hasUser: true,
@@ -185,8 +190,8 @@ export default function App() {
         hasMaleQuestionnaire: !!_maleQ,
         hasFemaleQuestionnaire: !!_femaleQ && !!_femaleQ.girlId,
         onboardingCompleted: settings.onboardingCompleted,
-        profileComplete: girl.currentStage !== 'stranger',
-        stageCompleted,
+        profileComplete: onboardingProgress.profileComplete,
+        stageCompleted: onboardingProgress.stage,
       });
 
       if (destination === 'onboarding') {

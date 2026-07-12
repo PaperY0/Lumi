@@ -19,6 +19,8 @@ describe('resolveOnboardingDestination', () => {
     ['male-questionnaire', { profileComplete: true, hasMaleQuestionnaire: false }],
     ['female-questionnaire', { profileComplete: true, hasMaleQuestionnaire: true, hasFemaleQuestionnaire: false }],
     ['stage-questionnaires', { profileComplete: true, hasMaleQuestionnaire: true, hasFemaleQuestionnaire: true, stageCompleted: { self: false, observation: true, relationship: true } }],
+    ['stage-questionnaires', { profileComplete: true, hasMaleQuestionnaire: true, hasFemaleQuestionnaire: true, stageCompleted: { self: true, observation: false, relationship: true } }],
+    ['stage-questionnaires', { profileComplete: true, hasMaleQuestionnaire: true, hasFemaleQuestionnaire: true, stageCompleted: { self: true, observation: true, relationship: false } }],
   ] as const)('routes to the first missing %s requirement even when completion flag is stale', (expected, overrides) => {
     expect(resolveOnboardingDestination({
       hasUser: true,
