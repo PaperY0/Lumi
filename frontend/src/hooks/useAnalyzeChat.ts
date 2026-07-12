@@ -15,6 +15,7 @@ import { chatRepository } from '@/lib/db/repositories/chatRepo';
 import { buildPursuitContext, preparePursuitProfiles } from '@/lib/ai/profileContext';
 import type { AIAnalysisReport } from '@/types';
 import { loadPursuitQuestionnaires } from '@/lib/pursuitQuestionnaires';
+import { getRelationshipStageLabel, getRelationshipStageValue } from '@/lib/relationshipStage';
 
 const MIN_ANALYSIS_MESSAGE_COUNT = 10;
 
@@ -86,11 +87,12 @@ export function useAnalyzeChat() {
         throw new Error('请先完成女生资料');
       }
       console.log('📥 [useAnalyzeChat.analyze] girl:', { id: girl.id, nickname: girl.nickname });
+      const stage = getRelationshipStageValue(getRelationshipStageLabel(girl));
 
       // 3. 收集问卷
       const maleQ = await questionnaireRepository.getLatestMale(user.id);
       const femaleQ = await questionnaireRepository.getLatestFemale(user.id);
-      const stageQuestionnaires = await loadPursuitQuestionnaires(user.id, girl.id);
+      const stageQuestionnaires = await loadPursuitQuestionnaires(user.id, girl.id, stage);
 
       // 4. 收集聊天会话
       let session;

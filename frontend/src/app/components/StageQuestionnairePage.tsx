@@ -8,6 +8,7 @@ import type { RelationshipStageValue } from '@/lib/relationshipStage';
 import type { QuestionnaireCompletionState } from '@/lib/questionnaireCompletion';
 import { useUiStore } from '@/stores';
 import { loadOnboardingProgress } from '@/lib/onboardingProgress';
+import { getStageCompletionCount, stageQuestionnaireRecommendation } from '@/lib/stageQuestionnaireOverview';
 
 interface Props {
   onNavigate: (page: PageName) => void;
@@ -69,7 +70,15 @@ export function StageQuestionnairePage({ onNavigate }: Props) {
 
       {catalog.available ? (
         <>
-          <div style={{ marginBottom: 18, fontSize: 15, fontWeight: 700, color: 'var(--text-rose)' }}>追求期 · {stage ?? '当前阶段'}专项观察</div>
+          <div style={{ marginBottom: 18, fontSize: 15, fontWeight: 700, color: 'var(--text-rose)' }}>
+            追求期 · {stage ?? '当前阶段'}专项观察
+            <span style={{ marginLeft: 12, fontSize: 13, fontWeight: 600, color: 'var(--text-purple)' }}>
+              当前阶段完成度：{getStageCompletionCount(completion)}/3
+            </span>
+          </div>
+          <div style={{ marginBottom: 18, borderRadius: 14, padding: '12px 16px', background: 'rgba(232,116,138,0.08)', color: 'var(--text-purple)', fontSize: 13 }}>
+            建议填写顺序：{stageQuestionnaireRecommendation}
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
             {catalog.items.map((item) => {
               const Icon = iconForAudience[item.audience];

@@ -15,6 +15,7 @@ import { buildPursuitContext, preparePursuitProfiles } from '@/lib/ai/profileCon
 import { chatRepository } from '@/lib/db/repositories/chatRepo';
 import type { ReplyResponse, ChatMessage } from '@/types';
 import { loadPursuitQuestionnaires } from '@/lib/pursuitQuestionnaires';
+import { getRelationshipStageLabel, getRelationshipStageValue } from '@/lib/relationshipStage';
 
 const MAX_REPLY_CONTEXT_MESSAGES = 20;
 
@@ -47,7 +48,6 @@ export function useGenerateReply() {
           scene,
         });
       }
-
       // 2. 读取当前 user
       const user = await userProfileRepository.getCurrent();
       if (!user) {
@@ -70,11 +70,12 @@ export function useGenerateReply() {
       if (import.meta.env.DEV) {
         console.log('✅ [useGenerateReply.generate] girl 收集成功:', { id: girl.id });
       }
+      const stage = getRelationshipStageValue(getRelationshipStageLabel(girl));
 
       // 4. 读取问卷
       const maleQ = await questionnaireRepository.getLatestMale(user.id);
       const femaleQ = await questionnaireRepository.getLatestFemale(user.id);
-      const stageQuestionnaires = await loadPursuitQuestionnaires(user.id, girl.id);
+      const stageQuestionnaires = await loadPursuitQuestionnaires(user.id, girl.id, stage);
 
       // 5. 读取最近聊天记录（允许为空）
       let recentMessages: ChatMessage[] = [];

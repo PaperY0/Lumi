@@ -22,6 +22,7 @@ import type {
   ChatMessage,
 } from '@/types';
 import { loadPursuitQuestionnaires } from '@/lib/pursuitQuestionnaires';
+import { getRelationshipStageLabel, getRelationshipStageValue } from '@/lib/relationshipStage';
 
 function buildLocalSummary(params: {
   scenario: string;
@@ -71,10 +72,11 @@ export function useSimulateChat() {
       setError('请先完成她的资料');
       return null;
     }
+    const stage = getRelationshipStageValue(getRelationshipStageLabel(girl));
 
     const maleQ = await questionnaireRepository.getLatestMale(user.id);
     const femaleQ = await questionnaireRepository.getLatestFemale(user.id);
-    const stageQuestionnaires = await loadPursuitQuestionnaires(user.id, girl.id);
+    const stageQuestionnaires = await loadPursuitQuestionnaires(user.id, girl.id, stage);
 
     let recentMessages: ChatMessage[] = [];
     const latestSession = await chatRepository.getLatestSession(user.id, girl.id);

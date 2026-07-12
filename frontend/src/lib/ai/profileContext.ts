@@ -5,7 +5,7 @@ import type {
   MaleQuestionnaireResult,
   UserProfile,
 } from '@/types';
-import { getRelationshipStageLabel } from '@/lib/relationshipStage';
+import { getRelationshipStageLabel, type RelationshipStageLabel } from '@/lib/relationshipStage';
 import type { StageQuestionnaireResult } from '@/types';
 
 const ageRangeLabels: Record<string, string> = {
@@ -39,6 +39,12 @@ const observationSourceLabels: Record<string, string> = {
   explicit: '她明确说过',
   chat: '聊天中提到',
   observation: '我的观察',
+};
+
+const stageFocus: Record<RelationshipStageLabel, string> = {
+  初识接触期: '礼貌距离、第一印象、聊天舒适度、隐私/拒绝',
+  升温期: '双方主动、轻量试探、邀约窗口、联系节奏、压力感',
+  暧昧观察期: '双向投入、长期模糊、温和确认、降低投入、持续内耗',
 };
 
 function text(value: unknown, fallback = '未填写'): string {
@@ -156,6 +162,9 @@ export function buildPursuitContext(input: RelationshipProfileContextInput): Pur
     `备注：${text(girlProfile.notes)}`,
   ].join('\n');
 
+  const currentStage = getRelationshipStageLabel(girlProfile);
+  const stageFocusSection = `当前关系阶段重点：${stageFocus[currentStage]}`;
+
   const recentInteractionSection = recentMessages.length > 0
     ? `最近已保存聊天：共提供 ${recentMessages.length} 条消息，作为判断当前互动状态、热度和风险信号的依据。`
     : '最近已保存聊天：暂无。请主要基于资料和问卷生成基础判断。';
@@ -180,6 +189,7 @@ export function buildPursuitContext(input: RelationshipProfileContextInput): Pur
       '',
       '## 她的信息',
       girlSection,
+      stageFocusSection,
       '',
       '## 问卷状态',
       questionnaires,
@@ -189,7 +199,7 @@ export function buildPursuitContext(input: RelationshipProfileContextInput): Pur
     ].join('\n'),
     sections: {
       user: userSection,
-      girl: girlSection,
+      girl: `${girlSection}\n${stageFocusSection}`,
       questionnaires,
       recentInteraction: recentInteractionSection,
     },

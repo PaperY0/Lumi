@@ -76,4 +76,32 @@ describe('buildPursuitContext', () => {
     expect(context.summary).toContain('需要暂停复盘');
     expect(context.summary).toContain('追求期关系节奏问卷');
   });
+
+  it('includes stage-specific focus for each relationship stage', () => {
+    const focusByStage = [
+      ['observing', '礼貌距离'],
+      ['warming', '双方主动'],
+      ['ambiguous', '双向投入'],
+    ] as const;
+
+    for (const [currentStage, focus] of focusByStage) {
+      const context = buildPursuitContext({
+        userProfile,
+        girlProfile: { ...girlProfile, currentStage },
+        stageQuestionnaires: [{
+          id: `assessment-${currentStage}`,
+          userId: userProfile.id,
+          relationshipStage: currentStage,
+          audience: 'self',
+          version: 1,
+          answers: [],
+          summary: [`${currentStage} summary`],
+          completedAt: '2026-07-11T00:00:00.000Z',
+        }],
+      });
+
+      expect(context.summary).toContain(`当前关系阶段重点：${focus}`);
+      expect(context.summary).toContain(`${currentStage} summary`);
+    }
+  });
 });
