@@ -31,10 +31,19 @@ async function seedTestDataAndBypassOnboarding(page: Page) {
             userId: 'e2e-test-user',
             nickname: '测试女生',
             currentStage: 'observing',
-            currentStageLabel: '普通朋友',
+            currentStageLabel: '初识接触期',
             createdAt: now,
             updatedAt: now,
           });
+
+          const maleTx = db.transaction('maleQuestionnaireResults', 'readwrite');
+          maleTx.objectStore('maleQuestionnaireResults').put({ id: 'e2e-test-male', userId: 'e2e-test-user', answers: [], summary: [], completedAt: now });
+          const femaleTx = db.transaction('femaleQuestionnaireResults', 'readwrite');
+          femaleTx.objectStore('femaleQuestionnaireResults').put({ id: 'e2e-test-female', userId: 'e2e-test-user', girlId: 'e2e-test-girl', answers: [], summary: [], completedAt: now });
+          const stageTx = db.transaction('stageQuestionnaireResults', 'readwrite');
+          for (const audience of ['self', 'observation', 'relationship']) {
+            stageTx.objectStore('stageQuestionnaireResults').put({ id: `e2e-test-stage-${audience}`, userId: 'e2e-test-user', girlId: 'e2e-test-girl', relationshipStage: 'observing', audience, version: 1, answers: [], summary: [], completedAt: now });
+          }
 
           db.close();
           resolve(true);
