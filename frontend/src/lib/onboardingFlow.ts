@@ -14,6 +14,43 @@ export interface OnboardingProgress {
   onboardingCompleted: boolean;
 }
 
+export interface OnboardingProgressInput {
+  profileComplete: boolean;
+  maleCompleted: boolean;
+  femaleCompleted: boolean;
+  stageCompleted: {
+    self: boolean;
+    observation: boolean;
+    relationship: boolean;
+  };
+}
+
+export interface OnboardingProgressSummary {
+  profileComplete: boolean;
+  male: boolean;
+  female: boolean;
+  stage: OnboardingProgressInput['stageCompleted'];
+  isComplete: boolean;
+}
+
+export function getOnboardingProgress(input: OnboardingProgressInput): OnboardingProgressSummary {
+  const { profileComplete, maleCompleted, femaleCompleted, stageCompleted } = input;
+  const isComplete = profileComplete
+    && maleCompleted
+    && femaleCompleted
+    && stageCompleted.self
+    && stageCompleted.observation
+    && stageCompleted.relationship;
+
+  return {
+    profileComplete,
+    male: maleCompleted,
+    female: femaleCompleted,
+    stage: stageCompleted,
+    isComplete,
+  };
+}
+
 export function resolveOnboardingDestination(progress: OnboardingProgress): OnboardingDestination {
   if (progress.onboardingCompleted && progress.hasUser) return 'dashboard';
   if (!progress.hasUser) return 'onboarding';

@@ -19,6 +19,19 @@ export interface QuestionnaireCompletionState {
   stage: Record<StageQuestionnaireAudience, boolean>;
 }
 
+export type QuestionnaireAction = 'start' | 'completed' | 'rewrite';
+
+export function getQuestionnaireAction({
+  completed,
+  isReturningUser,
+}: {
+  completed: boolean;
+  isReturningUser: boolean;
+}): QuestionnaireAction {
+  if (!completed) return 'start';
+  return isReturningUser ? 'rewrite' : 'completed';
+}
+
 export function getQuestionnaireCompletionState({
   maleCompleted,
   femaleCompleted,

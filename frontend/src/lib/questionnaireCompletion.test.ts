@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getQuestionnaireCompletionState } from './questionnaireCompletion';
+import { getQuestionnaireAction, getQuestionnaireCompletionState } from './questionnaireCompletion';
 
 describe('getQuestionnaireCompletionState', () => {
   it('marks the three stage questionnaires independently', () => {
@@ -29,5 +29,17 @@ describe('getQuestionnaireCompletionState', () => {
     });
 
     expect(state.stage.observation).toBe(true);
+  });
+});
+
+describe('getQuestionnaireAction', () => {
+  it('returns start for incomplete questionnaires', () => {
+    expect(getQuestionnaireAction({ completed: false, isReturningUser: false })).toBe('start');
+    expect(getQuestionnaireAction({ completed: false, isReturningUser: true })).toBe('start');
+  });
+
+  it('uses completed for a new user and rewrite for a returning user', () => {
+    expect(getQuestionnaireAction({ completed: true, isReturningUser: false })).toBe('completed');
+    expect(getQuestionnaireAction({ completed: true, isReturningUser: true })).toBe('rewrite');
   });
 });
