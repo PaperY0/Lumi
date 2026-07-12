@@ -63,7 +63,7 @@ export function useGeneratePortrait() {
       const girl = girls[0];
       if (!girl) return;
       setProfileStage(getRelationshipStageLabel(girl));
-      setRhythmCard(buildPursuitRhythmCard(await loadPursuitQuestionnaires(user.id)));
+      setRhythmCard(buildPursuitRhythmCard(await loadPursuitQuestionnaires(user.id, girl.id)));
 
       const cachedPortrait = await portraitRepository.getLatest(user.id, girl.id);
       if (cachedPortrait) {
@@ -101,7 +101,7 @@ export function useGeneratePortrait() {
 
       const maleQuestionnaire = await questionnaireRepository.getLatestMale(user.id);
       const femaleQuestionnaire = await questionnaireRepository.getLatestFemale(user.id);
-      const completedStageQuestionnaires = await loadPursuitQuestionnaires(user.id);
+      const completedStageQuestionnaires = await loadPursuitQuestionnaires(user.id, girl.id);
       setRhythmCard(buildPursuitRhythmCard(completedStageQuestionnaires));
       const chatHistory = await buildRecentChatHistory(user.id, girl.id);
       const profileContext = buildPursuitContext({

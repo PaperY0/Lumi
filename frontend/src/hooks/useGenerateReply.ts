@@ -74,7 +74,7 @@ export function useGenerateReply() {
       // 4. 读取问卷
       const maleQ = await questionnaireRepository.getLatestMale(user.id);
       const femaleQ = await questionnaireRepository.getLatestFemale(user.id);
-      const stageQuestionnaires = await loadPursuitQuestionnaires(user.id);
+      const stageQuestionnaires = await loadPursuitQuestionnaires(user.id, girl.id);
 
       // 5. 读取最近聊天记录（允许为空）
       let recentMessages: ChatMessage[] = [];

@@ -90,7 +90,7 @@ export function useAnalyzeChat() {
       // 3. 收集问卷
       const maleQ = await questionnaireRepository.getLatestMale(user.id);
       const femaleQ = await questionnaireRepository.getLatestFemale(user.id);
-      const stageQuestionnaires = await loadPursuitQuestionnaires(user.id);
+      const stageQuestionnaires = await loadPursuitQuestionnaires(user.id, girl.id);
 
       // 4. 收集聊天会话
       let session;

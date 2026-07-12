@@ -74,7 +74,7 @@ export function useSimulateChat() {
 
     const maleQ = await questionnaireRepository.getLatestMale(user.id);
     const femaleQ = await questionnaireRepository.getLatestFemale(user.id);
-    const stageQuestionnaires = await loadPursuitQuestionnaires(user.id);
+    const stageQuestionnaires = await loadPursuitQuestionnaires(user.id, girl.id);
 
     let recentMessages: ChatMessage[] = [];
     const latestSession = await chatRepository.getLatestSession(user.id, girl.id);
