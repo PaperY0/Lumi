@@ -31,8 +31,8 @@ export function PursuitRelationshipAssessmentPage({ onNavigate }: Props) {
     const girl = (await girlProfileRepository.getByUserId(user.id))[0];
     const stage = girl ? getRelationshipStageValue(getRelationshipStageLabel(girl)) : 'observing';
     setRelationshipStage(stage);
-    const existing = await stageQuestionnaireRepository.getLatest(user.id, stage, 'relationship')
-      ?? (stage === 'observing' ? await stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'relationship') : undefined);
+    const existing = await stageQuestionnaireRepository.getLatest(user.id, stage, 'relationship', girl?.id)
+      ?? (stage === 'observing' ? await stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'relationship', girl?.id) : undefined);
     if (existing) setAnswers(Object.fromEntries(existing.answers.map((item) => [item.questionId, item.optionId])));
   })(); }, []);
 

@@ -38,15 +38,15 @@ export function StageQuestionnairePage({ onNavigate }: Props) {
       const [male, female, self, observation, relationship] = await Promise.all([
         questionnaireRepository.getLatestMale(user.id),
         questionnaireRepository.getLatestFemale(user.id),
-        stageQuestionnaireRepository.getLatest(user.id, currentStage, 'self'),
-        stageQuestionnaireRepository.getLatest(user.id, currentStage, 'observation'),
-        stageQuestionnaireRepository.getLatest(user.id, currentStage, 'relationship'),
+        stageQuestionnaireRepository.getLatest(user.id, currentStage, 'self', girl.id),
+        stageQuestionnaireRepository.getLatest(user.id, currentStage, 'observation', girl.id),
+        stageQuestionnaireRepository.getLatest(user.id, currentStage, 'relationship', girl.id),
       ]);
       const legacyResults = currentStage === 'observing'
         ? await Promise.all([
-          stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'self'),
-          stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'observation'),
-          stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'relationship'),
+          stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'self', girl.id),
+          stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'observation', girl.id),
+          stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'relationship', girl.id),
         ])
         : [];
       setCompletion(getQuestionnaireCompletionState({

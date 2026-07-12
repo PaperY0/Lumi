@@ -30,11 +30,14 @@ export const stageQuestionnaireRepository = {
     userId: string,
     relationshipStage: RelationshipStageValue,
     audience: StageQuestionnaireAudience,
+    girlId?: string,
   ): Promise<StageQuestionnaireResult | undefined> {
     const results = await db.stageQuestionnaireResults
       .where('userId')
       .equals(userId)
-      .filter((result) => result.relationshipStage === relationshipStage && result.audience === audience)
+      .filter((result) => result.relationshipStage === relationshipStage
+        && result.audience === audience
+        && (girlId === undefined || result.girlId === girlId))
       .toArray();
 
     return results.sort((a, b) => b.completedAt.localeCompare(a.completedAt))[0];
