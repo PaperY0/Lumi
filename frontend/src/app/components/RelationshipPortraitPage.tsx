@@ -1,11 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowRight, AlertTriangle, Lightbulb, RefreshCw } from 'lucide-react';
 import { GlassCard, LiquidButton, HeatMeter, StageBadge, ProgressStepper, WarningNotice } from './GlassUI';
 import { BlurText } from './BlurText';
 import { IconBadge } from './IconBadge';
 import type { PageName } from './GlassUI';
-import { useSettingsStore } from '@/stores';
+import { useSettingsStore, useUserStore } from '@/stores';
 import { useGeneratePortrait } from '@/hooks/useGeneratePortrait';
+import { questionnaireRepository, stageQuestionnaireRepository } from '@/lib/db';
+import { getRelationshipStageLabel, getRelationshipStageValue } from '@/lib/relationshipStage';
+import { resolveOnboardingDestination, getOnboardingProgress, type OnboardingProgressSummary } from '@/lib/onboardingFlow';
 
 interface Props { onNavigate: (page: PageName) => void; }
 
@@ -14,6 +17,7 @@ const steps = ['资料建档', '男生问卷', '女生问卷', '关系画像', '
 const stages = ['初识接触期', '升温期', '暧昧观察期'];
 
 export function RelationshipPortraitPage({ onNavigate }: Props) {
+  const [onboardingProgress, setOnboardingProgress] = useState<OnboardingProgressSummary | null>(null);
   // ✅ 使用 AI 画像生成 hook
   const { data, loading, error, generate, loadCached, profileStage, rhythmCard } = useGeneratePortrait();
 
@@ -22,8 +26,54 @@ export function RelationshipPortraitPage({ onNavigate }: Props) {
     loadCached();
   }, [loadCached]);
 
+  useEffect(() => {
+    async function loadProgress() {
+      const user = useUserStore.getState().currentUser;
+      const girl = useUserStore.getState().currentGirl;
+      if (!user || !girl) return;
+      const stage = getRelationshipStageValue(getRelationshipStageLabel(girl));
+      const [male, female, self, observation, relationship] = await Promise.all([
+        questionnaireRepository.getLatestMale(user.id),
+        questionnaireRepository.getLatestFemale(user.id),
+        stageQuestionnaireRepository.getLatest(user.id, stage, 'self', girl.id),
+        stageQuestionnaireRepository.getLatest(user.id, stage, 'observation', girl.id),
+        stageQuestionnaireRepository.getLatest(user.id, stage, 'relationship', girl.id),
+      ]);
+      const legacy = stage === 'observing' ? await Promise.all([
+        stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'self', girl.id),
+        stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'observation', girl.id),
+        stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'relationship', girl.id),
+      ]) : [];
+      const results = [self, observation, relationship, ...legacy];
+      setOnboardingProgress(getOnboardingProgress({
+        profileComplete: girl.currentStage !== 'stranger',
+        maleCompleted: Boolean(male),
+        femaleCompleted: Boolean(female?.girlId),
+        stageCompleted: {
+          self: results.some((r) => r?.audience === 'self'),
+          observation: results.some((r) => r?.audience === 'observation'),
+          relationship: results.some((r) => r?.audience === 'relationship'),
+        },
+      }));
+    }
+    loadProgress();
+  }, []);
+
   // ✅ 引导完成：标记 onboardingCompleted 并跳转首页
   const handleFinish = () => {
+    if (!onboardingProgress?.isComplete) {
+      const destination = resolveOnboardingDestination({
+        hasUser: true,
+        hasGirl: Boolean(onboardingProgress?.profileComplete),
+        hasMaleQuestionnaire: Boolean(onboardingProgress?.male),
+        hasFemaleQuestionnaire: Boolean(onboardingProgress?.female),
+        onboardingCompleted: false,
+        profileComplete: onboardingProgress?.profileComplete,
+        stageCompleted: onboardingProgress?.stage,
+      });
+      onNavigate(destination === 'dashboard' || destination === 'onboarding' ? 'profile' : destination);
+      return;
+    }
     useSettingsStore.getState().setOnboardingCompleted(true);
     console.log('✅ [RelationshipPortraitPage] 已标记 onboardingCompleted=true，跳转首页');
     onNavigate('dashboard');
@@ -150,6 +200,14 @@ export function RelationshipPortraitPage({ onNavigate }: Props) {
           </h3>
           <p style={{ margin: '0 0 20px', fontSize: 14, color: 'var(--text-purple)', opacity: 0.7 }}>
             点击上方按钮，AI 将基于资料、问卷和最近聊天生成关系画像
+          </p>
+        </GlassCard>
+      )}
+
+      {onboardingProgress && !onboardingProgress.isComplete && (
+        <GlassCard style={{ marginBottom: 20, background: 'rgba(255,236,218,0.72)' }}>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--text-rose)', lineHeight: 1.7 }}>
+            首次引导尚未完成，请先完成资料、基础问卷和当前阶段的三份专项问卷。
           </p>
         </GlassCard>
       )}

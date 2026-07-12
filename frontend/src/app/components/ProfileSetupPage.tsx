@@ -423,11 +423,6 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
         <Info size={14} color="var(--text-purple)" style={{ opacity: 0.6 }} />
         <span style={{ fontSize: 12, color: saveMessage ? '#4A9E6A' : 'var(--text-purple)', opacity: 0.8 }}>{saveMessage || '填写越完整，AI 分析越准确'}</span>
       </div>
-      {!onboardingCompleted && (
-        <LiquidButton variant="secondary" onClick={() => onNavigate('dashboard')}>
-          稍后补充
-        </LiquidButton>
-      )}
       <LiquidButton onClick={form.handleSubmit(onSubmit)} disabled={form.formState.isSubmitting}>
         {onboardingCompleted ? '保存资料' : '保存并继续'}
         <ArrowRight size={16} />
@@ -733,7 +728,17 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
               追求期会分开了解你自己、互动事实与关系节奏；不会用一套题覆盖所有时期。
             </p>
           </div>
-          <LiquidButton variant="secondary" onClick={() => onNavigate('stage-questionnaires')}>
+          <LiquidButton
+            variant="secondary"
+            disabled={!hasRequiredRelationshipStage(relation)}
+            onClick={() => {
+              if (!hasRequiredRelationshipStage(relation)) {
+                useUiStore.getState().showToast('请先选择当前关系阶段', 'error');
+                return;
+              }
+              onNavigate('stage-questionnaires');
+            }}
+          >
             查看专项问卷 <ArrowRight size={16} />
           </LiquidButton>
         </div>

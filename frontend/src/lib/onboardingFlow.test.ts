@@ -11,7 +11,27 @@ describe('resolveOnboardingDestination', () => {
   });
 
   it('sends a completed local user directly to the dashboard', () => {
-    expect(resolveOnboardingDestination({ hasUser: true, hasGirl: true, hasMaleQuestionnaire: true, hasFemaleQuestionnaire: true, onboardingCompleted: true })).toBe('dashboard');
+    expect(resolveOnboardingDestination({ hasUser: true, hasGirl: true, hasMaleQuestionnaire: true, hasFemaleQuestionnaire: true, onboardingCompleted: true, profileComplete: true, stageCompleted: { self: true, observation: true, relationship: true } })).toBe('dashboard');
+  });
+
+  it.each([
+    ['profile', { profileComplete: false, hasGirl: true }],
+    ['male-questionnaire', { profileComplete: true, hasMaleQuestionnaire: false }],
+    ['female-questionnaire', { profileComplete: true, hasMaleQuestionnaire: true, hasFemaleQuestionnaire: false }],
+    ['stage-questionnaires', { profileComplete: true, hasMaleQuestionnaire: true, hasFemaleQuestionnaire: true, stageCompleted: { self: false, observation: true, relationship: true } }],
+  ] as const)('routes to the first missing %s requirement even when completion flag is stale', (expected, overrides) => {
+    expect(resolveOnboardingDestination({
+      hasUser: true,
+      hasGirl: true,
+      hasMaleQuestionnaire: true,
+      hasFemaleQuestionnaire: true,
+      onboardingCompleted: true,
+      ...overrides,
+      profileComplete: overrides.profileComplete ?? true,
+      stageCompleted: 'stageCompleted' in overrides
+        ? overrides.stageCompleted
+        : { self: true, observation: true, relationship: true },
+    })).toBe(expected);
   });
 });
 

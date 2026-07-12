@@ -12,6 +12,12 @@ export interface OnboardingProgress {
   hasMaleQuestionnaire: boolean;
   hasFemaleQuestionnaire: boolean;
   onboardingCompleted: boolean;
+  profileComplete?: boolean;
+  stageCompleted?: {
+    self: boolean;
+    observation: boolean;
+    relationship: boolean;
+  };
 }
 
 export interface OnboardingProgressInput {
@@ -52,10 +58,14 @@ export function getOnboardingProgress(input: OnboardingProgressInput): Onboardin
 }
 
 export function resolveOnboardingDestination(progress: OnboardingProgress): OnboardingDestination {
-  if (progress.onboardingCompleted && progress.hasUser) return 'dashboard';
   if (!progress.hasUser) return 'onboarding';
-  if (!progress.hasGirl) return 'profile';
+  if (!(progress.profileComplete ?? progress.hasGirl)) return 'profile';
   if (!progress.hasMaleQuestionnaire) return 'male-questionnaire';
   if (!progress.hasFemaleQuestionnaire) return 'female-questionnaire';
-  return 'stage-questionnaires';
+  const stageCompleted = progress.stageCompleted;
+  if (stageCompleted && !(stageCompleted.self && stageCompleted.observation && stageCompleted.relationship)) {
+    return 'stage-questionnaires';
+  }
+  if (stageCompleted?.self && stageCompleted.observation && stageCompleted.relationship) return 'dashboard';
+  return progress.onboardingCompleted ? 'dashboard' : 'stage-questionnaires';
 }

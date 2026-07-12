@@ -8,6 +8,7 @@ import { girlProfileRepository, questionnaireRepository, stageQuestionnaireRepos
 import type { RelationshipStageLabel } from '@/lib/relationshipStage';
 import type { RelationshipStageValue } from '@/lib/relationshipStage';
 import { getQuestionnaireCompletionState, type QuestionnaireCompletionState } from '@/lib/questionnaireCompletion';
+import { useUiStore } from '@/stores';
 
 interface Props {
   onNavigate: (page: PageName) => void;
@@ -32,7 +33,11 @@ export function StageQuestionnairePage({ onNavigate }: Props) {
       const user = await userProfileRepository.getCurrent();
       if (!user) return;
       const girl = (await girlProfileRepository.getByUserId(user.id))[0];
-      if (!girl) return;
+      if (!girl || girl.currentStage === 'stranger') {
+        useUiStore.getState().showToast('请先在资料建档中选择当前关系阶段', 'error');
+        onNavigate('profile');
+        return;
+      }
       const currentStage = getRelationshipStageValue(getRelationshipStageLabel(girl));
       setStage(getRelationshipStageLabel(girl));
       const [male, female, self, observation, relationship] = await Promise.all([

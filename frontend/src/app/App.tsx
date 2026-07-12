@@ -24,8 +24,9 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { GlobalToast } from './components/GlobalToast';
 import type { PageName } from './components/GlassUI';
 import { useSettingsStore, useUserStore } from '@/stores';
-import { questionnaireRepository } from '@/lib/db';
+import { questionnaireRepository, stageQuestionnaireRepository } from '@/lib/db';
 import { resolveOnboardingDestination } from '@/lib/onboardingFlow';
+import { getRelationshipStageLabel, getRelationshipStageValue } from '@/lib/relationshipStage';
 
 const PAGE_PATHS: Record<PageName, string> = {
   dashboard: '/dashboard',
@@ -137,14 +138,6 @@ export default function App() {
         return;
       }
 
-      // 已完成引导且 user 存在，允许进入首页或当前页面
-      if (settings.onboardingCompleted && user) {
-        console.log('✅ [OnboardingGuard] 已完成引导，放行');
-        logDiag('edit', 'dashboard (pass through)');
-        setShowOnboarding(false);
-        return;
-      }
-
       // onboardingCompleted=false：按缺失步骤跳转
       if (!user) {
         console.log('🔀 [OnboardingGuard] 未找到 user，跳转欢迎页');
@@ -166,12 +159,34 @@ export default function App() {
       console.log('📥 [OnboardingGuard] maleQ:', _maleQ ? _maleQ.id : null);
       console.log('📥 [OnboardingGuard] femaleQ:', _femaleQ ? { id: _femaleQ.id, girlId: _femaleQ.girlId } : null);
 
+      const currentStage = getRelationshipStageValue(getRelationshipStageLabel(girl));
+      const [self, observation, relationship] = await Promise.all([
+        stageQuestionnaireRepository.getLatest(user.id, currentStage, 'self', girl.id),
+        stageQuestionnaireRepository.getLatest(user.id, currentStage, 'observation', girl.id),
+        stageQuestionnaireRepository.getLatest(user.id, currentStage, 'relationship', girl.id),
+      ]);
+      const legacyResults = currentStage === 'observing'
+        ? await Promise.all([
+          stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'self', girl.id),
+          stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'observation', girl.id),
+          stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'relationship', girl.id),
+        ])
+        : [];
+      const stageResults = [self, observation, relationship, ...legacyResults];
+      const stageCompleted = {
+        self: stageResults.some((r) => r?.audience === 'self'),
+        observation: stageResults.some((r) => r?.audience === 'observation'),
+        relationship: stageResults.some((r) => r?.audience === 'relationship'),
+      };
+
       const destination = resolveOnboardingDestination({
         hasUser: true,
         hasGirl: true,
         hasMaleQuestionnaire: !!_maleQ,
         hasFemaleQuestionnaire: !!_femaleQ && !!_femaleQ.girlId,
-        onboardingCompleted: false,
+        onboardingCompleted: settings.onboardingCompleted,
+        profileComplete: girl.currentStage !== 'stranger',
+        stageCompleted,
       });
 
       if (destination === 'onboarding') {
@@ -179,7 +194,12 @@ export default function App() {
         return;
       }
 
-      if (destination !== 'stage-questionnaires') {
+      if (destination === 'dashboard' && currentPage !== 'dashboard' && currentPage !== 'relationship-portrait') {
+        setShowOnboarding(false);
+        return;
+      }
+
+      if (destination !== 'stage-questionnaires' && destination !== 'dashboard') {
         console.log(`🔀 [OnboardingGuard] 新用户继续下一步：${destination}`);
         logDiag('onboarding', destination);
         navigate(destination);
@@ -189,7 +209,7 @@ export default function App() {
 
       console.log('🔀 [OnboardingGuard] 男女问卷已完成，进入阶段专项问卷');
       logDiag('onboarding', 'stage-questionnaires');
-      navigate('stage-questionnaires');
+      if (destination === 'stage-questionnaires' && currentPage !== 'stage-questionnaires') navigate('stage-questionnaires');
       setShowOnboarding(false);
     }
 
