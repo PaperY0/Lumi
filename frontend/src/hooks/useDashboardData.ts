@@ -3,12 +3,12 @@ import type { AIAnalysisReport, ImportantDate, ReplyHistory, SimulateHistoryReco
 import {
   userProfileRepository,
   girlProfileRepository,
-  questionnaireRepository,
   analysisRepository,
   replyRepository,
   simulateHistoryRepository,
   importantDateRepository,
 } from '@/lib/db/repositories';
+import { loadOnboardingProgress, type OnboardingProgressState } from '@/lib/onboardingProgress';
 
 export interface UpcomingImportantDate {
   item: ImportantDate;
@@ -31,6 +31,7 @@ export interface DashboardData {
   averageSimulateScore: number | null;
   upcomingImportantDates: UpcomingImportantDate[];
   lastActiveAt: string | null;
+  onboardingProgress: OnboardingProgressState;
 }
 
 function daysUntilNext(dateValue: string): number | null {
@@ -64,20 +65,7 @@ export function useDashboardData() {
         ? (await girlProfileRepository.getByUserId(userId))[0]
         : undefined;
 
-      // 问卷结果
-      const maleQ = userId
-        ? await questionnaireRepository.getLatestMale(userId)
-        : undefined;
-      const femaleQ = userId
-        ? await questionnaireRepository.getLatestFemale(userId)
-        : undefined;
-
-      // 资料完成度
-      let completion = 0;
-      if (user) completion += 30;
-      if (girl) completion += 30;
-      if (maleQ) completion += 20;
-      if (femaleQ) completion += 20;
+      const onboardingProgress = await loadOnboardingProgress();
 
       // 统计数据
       const analysisList = userId
@@ -137,7 +125,7 @@ export function useDashboardData() {
         girlName: girl?.nickname ?? '',
         girlStage: girl?.currentStage,
         girlStageLabel: girl?.currentStageLabel,
-        profileCompletion: completion,
+        profileCompletion: onboardingProgress.percentage,
         analysisReportCount: analysisList.length,
         replyHistoryCount: replyList.length,
         simulateHistoryCount: simulateList.length,
@@ -148,6 +136,7 @@ export function useDashboardData() {
         averageSimulateScore,
         upcomingImportantDates,
         lastActiveAt,
+        onboardingProgress,
       };
 
       setData(result);

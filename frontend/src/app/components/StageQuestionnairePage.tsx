@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, BookOpenCheck, CheckCircle2, HeartHandshake, ShieldCheck, UserRoundCheck } from 'lucide-react';
-import { GlassCard, LiquidButton } from './GlassUI';
+import { GlassCard, LiquidButton, ProgressStepper } from './GlassUI';
 import type { PageName } from './GlassUI';
 import { getStageAssessmentCatalog, type StageAssessmentCatalogItem } from '@/lib/pursuitAssessmentCatalog';
 import { getRelationshipStageLabel, getRelationshipStageValue } from '@/lib/relationshipStage';
@@ -19,6 +19,7 @@ const iconForAudience: Record<StageAssessmentCatalogItem['audience'], typeof Use
   observation: HeartHandshake,
   relationship: ShieldCheck,
 };
+const steps = ['资料建档', '男生问卷', '女生问卷', '阶段问卷', '关系画像'];
 
 export function StageQuestionnairePage({ onNavigate }: Props) {
   const [stage, setStage] = useState<RelationshipStageLabel | null>(null);
@@ -75,6 +76,9 @@ export function StageQuestionnairePage({ onNavigate }: Props) {
       <LiquidButton variant="secondary" onClick={() => onNavigate('profile')} style={{ marginBottom: 24 }}>
         <ArrowLeft size={16} /> 返回资料建档
       </LiquidButton>
+      <GlassCard hover={false} style={{ marginBottom: 28 }} padding="20px 24px">
+        <ProgressStepper steps={steps} current={3} />
+      </GlassCard>
 
       <div style={{ marginBottom: 26 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>

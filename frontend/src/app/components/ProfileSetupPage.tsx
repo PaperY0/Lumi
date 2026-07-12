@@ -12,8 +12,9 @@ import { userProfileSchema, type ProfileFormValues } from '@/lib/validation/prof
 import { userProfileRepository, girlProfileRepository, questionnaireRepository } from '@/lib/db';
 import { resolveOnboardingDestination } from '@/lib/onboardingFlow';
 import { hasRequiredRelationshipStage } from '@/lib/profileStageValidation';
+import { loadOnboardingProgress } from '@/lib/onboardingProgress';
 // ✅ 全局 store：用户身份 + UI 提示
-import { useUserStore, useUiStore, useSettingsStore } from '@/stores';
+import { useUserStore, useUiStore } from '@/stores';
 import type { GirlProfile, UserProfile } from '@/types'; // ✅ 添加类型导入
 import { mergeProfileTags } from '@/lib/profileArchive';
 import {
@@ -28,7 +29,7 @@ interface ProfileSetupPageProps {
   onNavigate: (page: PageName) => void;
 }
 
-const steps = ['资料建档', '男生问卷', '女生问卷', '关系画像', '聊天导入'];
+const steps = ['资料建档', '男生问卷', '女生问卷', '阶段问卷', '关系画像'];
 
 // ✅ 年龄段按钮改为 4 档，与 schema 的 ageRange 枚举一一对齐
 const ageOptions = ['18-22岁', '23-27岁', '28-32岁', '33岁以上'];
@@ -96,8 +97,7 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
     },
   });
 
-  // ✅ 任务 1：读取 onboardingCompleted 状态
-  const onboardingCompleted = useSettingsStore((s) => s.onboardingCompleted);
+  const [isReturningUser, setIsReturningUser] = useState(false);
 
   // ✅ 记住用户选的具体焦虑等级 label（用于正确回显）
   const [anxiousLabel, setAnxiousLabel] = useState<string | undefined>(undefined);
@@ -214,6 +214,7 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
     }
 
     loadExistingProfile();
+    loadOnboardingProgress().then((progress) => setIsReturningUser(progress.isReturningUser || progress.isComplete));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -353,7 +354,7 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
       console.log('✅ [ProfileSetupPage] 已同步 store，currentGirl:', userStore.currentGirl?.id);
 
       // ✅ 任务 1：根据 onboardingCompleted 决定跳转
-      if (onboardingCompleted) {
+      if (isReturningUser) {
         console.log('✅ [ProfileSetupPage] 老用户资料保存成功，停留当前页，不跳转问卷');
         ui.showToast('资料已保存', 'success');
         setSaveMessage('资料已保存，关系阶段和资料内容已更新');
@@ -424,8 +425,8 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
         <span style={{ fontSize: 12, color: saveMessage ? '#4A9E6A' : 'var(--text-purple)', opacity: 0.8 }}>{saveMessage || '填写越完整，AI 分析越准确'}</span>
       </div>
       <LiquidButton onClick={form.handleSubmit(onSubmit)} disabled={form.formState.isSubmitting}>
-        {onboardingCompleted ? '保存资料' : '保存并继续'}
-        <ArrowRight size={16} />
+        {isReturningUser ? '保存资料' : '保存并继续'}
+        {!isReturningUser && <ArrowRight size={16} />}
       </LiquidButton>
     </div>
   );
@@ -449,7 +450,7 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
       </div>
 
       {/* ✅ 欢迎卡片：仅新用户首次显示 */}
-      {!useSettingsStore(s => s.onboardingCompleted) && (
+      {!isReturningUser && (
         <GlassCard className="mb-6" style={{ marginBottom: 24 }} padding="20px">
           <div style={{ display: 'flex', alignItems: 'start', gap: 12 }}>
             <div style={{ fontSize: 28, flexShrink: 0 }}>👋</div>
@@ -745,7 +746,7 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
       </GlassCard>
 
       {/* ✅ 老用户模式：重做问卷按钮 */}
-      {onboardingCompleted && (
+      {isReturningUser && (
         <div style={{ marginTop: 24, padding: '20px 32px', borderTop: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,245,248,0.5)' }}>
           <div style={{ fontSize: 13, color: 'var(--text-purple)', opacity: 0.75, marginBottom: 12 }}>
             想更新关系画像？可以重新填写问卷
@@ -770,7 +771,7 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
       )}
 
       {/* 历史中心 */}
-      {onboardingCompleted && (
+      {isReturningUser && (
         <div style={{ marginTop: 28, padding: '0 32px 40px' }}>
           <HistoryCenterPanel onNavigate={onNavigate} />
         </div>

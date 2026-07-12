@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, Upload, MessageCircle, ChevronRight, Sparkles, Heart, BarChart2, AlertCircle, CalendarDays } from 'lucide-react';
+import { MessageSquare, Upload, MessageCircle, ChevronRight, Sparkles, Heart, BarChart2, AlertCircle, CalendarDays, CheckCircle2, Circle } from 'lucide-react';
 import { HeatMeter, StageBadge, AIInsightCard } from './GlassUI';
 import { AnimatedCard } from './AnimatedCard';
 import { CountUp } from './CountUp';
@@ -7,6 +7,7 @@ import { BlurText } from './BlurText';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { formatDateTime } from '@/utils/date';
 import type { PageName } from './GlassUI';
+import { getOnboardingAction, type OnboardingChecklistKey } from '@/lib/onboardingProgress';
 
 interface DashboardPageProps {
   onNavigate: (page: PageName) => void;
@@ -129,6 +130,27 @@ const hour = new Date().getHours();
           {/* Progress bar */}
           <div style={{ height: 8, borderRadius: 4, background: 'rgba(212,96,122,0.1)', overflow: 'hidden' }}>
             <div style={{ height: '100%', borderRadius: 4, width: `${d.profileCompletion}%`, background: 'linear-gradient(90deg, #D4607A, #C8A8D4)', transition: 'width 0.8s cubic-bezier(0.34,1.56,0.64,1)' }} />
+          </div>
+
+          <div style={{ marginTop: 22, display: 'grid', gap: 8 }}>
+            <div style={{ fontSize: 12, color: '#7B5C6E', fontWeight: 700 }}>引导完成度 {d.onboardingProgress.completedCount}/{d.onboardingProgress.totalCount}</div>
+            {([
+              ['profile', '我的资料', d.onboardingProgress.profileComplete],
+              ['male', '男生问卷', d.onboardingProgress.male],
+              ['female', '女生问卷', d.onboardingProgress.female],
+              ['stage-self', '我的相处方式', d.onboardingProgress.stage.self],
+              ['stage-observation', '她的互动观察', d.onboardingProgress.stage.observation],
+              ['stage-relationship', '关系节奏与边界', d.onboardingProgress.stage.relationship],
+            ] as [OnboardingChecklistKey, string, boolean][]).map(([key, label, completed]) => {
+              const action = getOnboardingAction({ key, completed, isReturningUser: d.onboardingProgress.isReturningUser });
+              const canNavigate = action.label !== '已完成';
+              return <button key={key} onClick={() => canNavigate && onNavigate(action.page)} disabled={!canNavigate} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 10px', borderRadius: 12, border: '1px solid rgba(212,96,122,0.12)', background: 'rgba(255,255,255,0.38)', cursor: canNavigate ? 'pointer' : 'default', textAlign: 'left', opacity: 1 }}>
+                {completed ? <CheckCircle2 size={16} color="#4A9E6A" /> : <Circle size={16} color="#C38A9B" />}
+                <span style={{ flex: 1, fontSize: 13, color: '#4A2E38' }}>{label}</span>
+                <span style={{ fontSize: 12, color: completed && !d.onboardingProgress.isReturningUser && key !== 'profile' ? '#4A9E6A' : '#D4607A', fontWeight: 600 }}>{action.label}</span>
+                <ChevronRight size={14} color="#C38A9B" />
+              </button>;
+            })}
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginTop: 24 }}>

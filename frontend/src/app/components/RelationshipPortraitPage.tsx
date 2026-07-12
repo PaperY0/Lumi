@@ -12,7 +12,7 @@ import { resolveOnboardingDestination, getOnboardingProgress, type OnboardingPro
 
 interface Props { onNavigate: (page: PageName) => void; }
 
-const steps = ['资料建档', '男生问卷', '女生问卷', '关系画像', '聊天导入'];
+const steps = ['资料建档', '男生问卷', '女生问卷', '阶段问卷', '关系画像'];
 
 const stages = ['初识接触期', '升温期', '暧昧观察期'];
 
@@ -113,7 +113,7 @@ export function RelationshipPortraitPage({ onNavigate }: Props) {
   return (
     <div style={{ padding: '32px', maxWidth: 900, margin: '0 auto' }} className="page-enter">
       <GlassCard hover={false} style={{ marginBottom: 32 }} padding="20px 24px">
-        <ProgressStepper steps={steps} current={3} />
+        <ProgressStepper steps={steps} current={4} />
       </GlassCard>
 
       <div style={{ marginBottom: 28 }}>

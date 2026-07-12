@@ -12,7 +12,7 @@ import type { FemaleQuestionAnswer, FemaleQuestionnaireResult } from '@/types/qu
 
 interface Props { onNavigate: (page: PageName) => void; }
 
-const steps = ['资料建档', '男生问卷', '女生问卷', '关系画像', '聊天导入'];
+const steps = ['资料建档', '男生问卷', '女生问卷', '阶段问卷', '关系画像'];
 
 // ✅ 使用题库数据
 const questions = femaleQuestions;
