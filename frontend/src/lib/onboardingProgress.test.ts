@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getOnboardingChecklist, getOnboardingProgressPercent, getOnboardingAction, getReturningUserState, readPersistedOnboardingCompleted } from './onboardingProgress';
+import { getOnboardingChecklist, getOnboardingProgressPercent, getOnboardingAction, getReturningUserState, readPersistedOnboardingCompleted, normalizeCurrentStageLabel } from './onboardingProgress';
 
 describe('onboarding progress checklist', () => {
   it('counts six requirements including current-stage questionnaires', () => {
@@ -38,5 +38,10 @@ describe('onboarding progress checklist', () => {
     expect(readPersistedOnboardingCompleted({ getItem: () => JSON.stringify({ state: { onboardingCompleted: true } }) })).toBe(true);
     expect(readPersistedOnboardingCompleted({ getItem: () => 'true' })).toBe(false);
     expect(readPersistedOnboardingCompleted({ getItem: () => null })).toBe(false);
+  });
+
+  it('derives a stage label for legacy records without currentStageLabel', () => {
+    expect(normalizeCurrentStageLabel('warming')).toBe('升温期');
+    expect(normalizeCurrentStageLabel('ambiguous')).toBe('暧昧观察期');
   });
 });

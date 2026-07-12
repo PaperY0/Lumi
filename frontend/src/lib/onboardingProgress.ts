@@ -1,4 +1,5 @@
 import type { PageName } from '@/app/components/GlassUI';
+import type { GirlProfile } from '@/types';
 import { getRelationshipStageLabel, getRelationshipStageValue, type RelationshipStageValue } from './relationshipStage';
 import { getQuestionnaireCompletionState } from './questionnaireCompletion';
 import {
@@ -53,6 +54,10 @@ export function readPersistedOnboardingCompleted(storage: Pick<Storage, 'getItem
   }
 }
 
+export function normalizeCurrentStageLabel(currentStage: GirlProfile['currentStage'], currentStageLabel?: string): string {
+  return getRelationshipStageLabel({ currentStage, currentStageLabel: currentStageLabel as GirlProfile['currentStageLabel'] });
+}
+
 export function getOnboardingChecklist(input: OnboardingChecklistInput): OnboardingProgressState {
   const stage = input.stageCompleted;
   const completedCount = [input.profileComplete, input.maleCompleted, input.femaleCompleted, stage.self, stage.observation, stage.relationship]
@@ -105,5 +110,10 @@ export async function loadOnboardingProgress(): Promise<OnboardingProgressState>
   const state = getOnboardingChecklist({ profileComplete, maleCompleted: Boolean(male), femaleCompleted: Boolean(female), stageCompleted, isReturningUser: false });
   const persistedFlag = readPersistedOnboardingCompleted(typeof localStorage === 'undefined' ? undefined : localStorage);
   state.isReturningUser = getReturningUserState(state.isComplete, persistedFlag);
-  return { ...state, girlId: girl?.id, currentStage, currentStageLabel: girl?.currentStageLabel };
+  return {
+    ...state,
+    girlId: girl?.id,
+    currentStage,
+    currentStageLabel: girl ? normalizeCurrentStageLabel(girl.currentStage, girl.currentStageLabel) : undefined,
+  };
 }
