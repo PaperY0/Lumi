@@ -3,8 +3,6 @@ import { ArrowLeft, BookOpenCheck, CheckCircle2, HeartHandshake, ShieldCheck, Us
 import { GlassCard, LiquidButton, ProgressStepper } from './GlassUI';
 import type { PageName } from './GlassUI';
 import { getStageAssessmentCatalog, type StageAssessmentCatalogItem } from '@/lib/pursuitAssessmentCatalog';
-import { getRelationshipStageLabel, getRelationshipStageValue } from '@/lib/relationshipStage';
-import { userProfileRepository, girlProfileRepository } from '@/lib/db';
 import type { RelationshipStageLabel } from '@/lib/relationshipStage';
 import type { RelationshipStageValue } from '@/lib/relationshipStage';
 import type { QuestionnaireCompletionState } from '@/lib/questionnaireCompletion';
@@ -34,17 +32,13 @@ export function StageQuestionnairePage({ onNavigate }: Props) {
   useEffect(() => {
     async function loadStage() {
       const progress = await loadOnboardingProgress();
-      setIsReturningUser(progress.isReturningUser || progress.isComplete);
-      const user = await userProfileRepository.getCurrent();
-      if (!user) return;
-      const girl = (await girlProfileRepository.getByUserId(user.id))[0];
-      if (!girl || girl.currentStage === 'stranger') {
+      setIsReturningUser(progress.isReturningUser);
+      if (!progress.currentStage || !progress.currentStageLabel) {
         useUiStore.getState().showToast('请先在资料建档中选择当前关系阶段', 'error');
         onNavigate('profile');
         return;
       }
-      const currentStage = getRelationshipStageValue(getRelationshipStageLabel(girl));
-      setStage(getRelationshipStageLabel(girl));
+      setStage(progress.currentStageLabel as RelationshipStageLabel);
       setCompletion({ male: progress.male, female: progress.female, stage: progress.stage });
     }
 
@@ -97,11 +91,11 @@ export function StageQuestionnairePage({ onNavigate }: Props) {
                   <p style={{ margin: 0, fontSize: 13, color: 'var(--text-purple)', lineHeight: 1.7, flex: 1 }}>{item.description}</p>
                   <p style={{ margin: '16px 0 0', fontSize: 12, color: 'var(--champagne-gold)', lineHeight: 1.6 }}>{item.boundary}</p>
                   {isSelfAssessment ? (
-                    <LiquidButton onClick={() => onNavigate('pursuit-self-assessment')} style={{ marginTop: 16, justifyContent: 'center' }}>{isCompleted ? (isReturningUser ? '重新填写' : '已完成') : '开始填写'}</LiquidButton>
+                    <LiquidButton disabled={isCompleted && !isReturningUser} onClick={() => onNavigate('pursuit-self-assessment')} style={{ marginTop: 16, justifyContent: 'center' }}>{isCompleted ? (isReturningUser ? '重新填写' : '已完成') : '开始填写'}</LiquidButton>
                   ) : isObservationAssessment ? (
-                    <LiquidButton onClick={() => onNavigate('pursuit-observation-assessment')} style={{ marginTop: 16, justifyContent: 'center' }}>{isCompleted ? (isReturningUser ? '重新填写' : '已完成') : '开始填写'}</LiquidButton>
+                    <LiquidButton disabled={isCompleted && !isReturningUser} onClick={() => onNavigate('pursuit-observation-assessment')} style={{ marginTop: 16, justifyContent: 'center' }}>{isCompleted ? (isReturningUser ? '重新填写' : '已完成') : '开始填写'}</LiquidButton>
                   ) : isRelationshipAssessment ? (
-                    <LiquidButton onClick={() => onNavigate('pursuit-relationship-assessment')} style={{ marginTop: 16, justifyContent: 'center' }}>{isCompleted ? (isReturningUser ? '重新填写' : '已完成') : '开始填写'}</LiquidButton>
+                    <LiquidButton disabled={isCompleted && !isReturningUser} onClick={() => onNavigate('pursuit-relationship-assessment')} style={{ marginTop: 16, justifyContent: 'center' }}>{isCompleted ? (isReturningUser ? '重新填写' : '已完成') : '开始填写'}</LiquidButton>
                   ) : (
                     <div style={{ marginTop: 16, fontSize: 12, color: 'var(--text-purple)', opacity: 0.62 }}>题库准备中</div>
                   )}

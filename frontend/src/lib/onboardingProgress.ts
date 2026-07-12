@@ -20,6 +20,7 @@ export interface OnboardingProgressState {
   percentage: number;
   girlId?: string;
   currentStage?: RelationshipStageValue;
+  currentStageLabel?: string;
 }
 
 export interface OnboardingChecklistInput {
@@ -38,7 +39,18 @@ export function getOnboardingProgressPercent(completedCount: number, totalCount 
 }
 
 export function getReturningUserState(isComplete: boolean, persistedFlag: boolean): boolean {
-  return isComplete || persistedFlag;
+  return persistedFlag;
+}
+
+export function readPersistedOnboardingCompleted(storage: Pick<Storage, 'getItem'> | undefined): boolean {
+  if (!storage) return false;
+  try {
+    const raw = storage.getItem('lumi-settings');
+    const parsed = raw ? JSON.parse(raw) as { state?: { onboardingCompleted?: boolean } } : null;
+    return parsed?.state?.onboardingCompleted === true;
+  } catch {
+    return false;
+  }
 }
 
 export function getOnboardingChecklist(input: OnboardingChecklistInput): OnboardingProgressState {
@@ -91,7 +103,7 @@ export async function loadOnboardingProgress(): Promise<OnboardingProgressState>
     stageCompleted = getQuestionnaireCompletionState({ maleCompleted: Boolean(male), femaleCompleted: Boolean(female), currentStage, stageResults: [...results, ...legacy].filter(Boolean).map((result) => ({ relationshipStage: result!.relationshipStage, audience: result!.audience })).filter(Boolean) }).stage;
   }
   const state = getOnboardingChecklist({ profileComplete, maleCompleted: Boolean(male), femaleCompleted: Boolean(female), stageCompleted, isReturningUser: false });
-  const persistedFlag = typeof localStorage !== 'undefined' && localStorage.getItem('onboardingCompleted') === 'true';
+  const persistedFlag = readPersistedOnboardingCompleted(typeof localStorage === 'undefined' ? undefined : localStorage);
   state.isReturningUser = getReturningUserState(state.isComplete, persistedFlag);
-  return { ...state, girlId: girl?.id, currentStage };
+  return { ...state, girlId: girl?.id, currentStage, currentStageLabel: girl?.currentStageLabel };
 }

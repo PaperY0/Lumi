@@ -214,7 +214,7 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
     }
 
     loadExistingProfile();
-    loadOnboardingProgress().then((progress) => setIsReturningUser(progress.isReturningUser || progress.isComplete));
+    loadOnboardingProgress().then((progress) => setIsReturningUser(progress.isReturningUser));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

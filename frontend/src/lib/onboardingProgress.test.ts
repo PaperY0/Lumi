@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getOnboardingChecklist, getOnboardingProgressPercent, getOnboardingAction, getReturningUserState } from './onboardingProgress';
+import { getOnboardingChecklist, getOnboardingProgressPercent, getOnboardingAction, getReturningUserState, readPersistedOnboardingCompleted } from './onboardingProgress';
 
 describe('onboarding progress checklist', () => {
   it('counts six requirements including current-stage questionnaires', () => {
@@ -29,8 +29,14 @@ describe('onboarding progress checklist', () => {
   });
 
   it('treats a complete IndexedDB state as returning even without a persisted flag', () => {
-    expect(getReturningUserState(true, false)).toBe(true);
+    expect(getReturningUserState(true, false)).toBe(false);
     expect(getReturningUserState(false, true)).toBe(true);
     expect(getReturningUserState(false, false)).toBe(false);
+  });
+
+  it('reads the Zustand persisted key instead of a loose localStorage flag', () => {
+    expect(readPersistedOnboardingCompleted({ getItem: () => JSON.stringify({ state: { onboardingCompleted: true } }) })).toBe(true);
+    expect(readPersistedOnboardingCompleted({ getItem: () => 'true' })).toBe(false);
+    expect(readPersistedOnboardingCompleted({ getItem: () => null })).toBe(false);
   });
 });
