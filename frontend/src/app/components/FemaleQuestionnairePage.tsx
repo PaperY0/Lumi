@@ -175,10 +175,10 @@ export function FemaleQuestionnairePage({ onNavigate }: Props) {
         console.log('🔀 [FemaleQuestionnaire] 老用户重做问卷完成，跳转 relationship-portrait');
       } else {
         ui.showToast('女生问卷已完成', 'success');
-        console.log('[FemaleQuestionnaire] 准备跳转到 relationship-portrait');
+        console.log('[FemaleQuestionnaire] 准备跳转到 stage-questionnaires');
       }
 
-      onNavigate('relationship-portrait');
+      onNavigate(onboardingCompleted ? 'relationship-portrait' : 'stage-questionnaires');
 
       console.log('[FemaleQuestionnaire] 跳转调用完成');
 

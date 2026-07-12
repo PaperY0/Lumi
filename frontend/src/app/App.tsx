@@ -25,6 +25,7 @@ import { GlobalToast } from './components/GlobalToast';
 import type { PageName } from './components/GlassUI';
 import { useSettingsStore, useUserStore } from '@/stores';
 import { questionnaireRepository } from '@/lib/db';
+import { resolveOnboardingDestination } from '@/lib/onboardingFlow';
 
 const PAGE_PATHS: Record<PageName, string> = {
   dashboard: '/dashboard',
@@ -161,38 +162,35 @@ export default function App() {
       }
 
       _maleQ = await questionnaireRepository.getLatestMale(user.id);
-      console.log('📥 [OnboardingGuard] maleQ:', _maleQ ? _maleQ.id : null);
-
-      if (!_maleQ) {
-        console.log('🔀 [OnboardingGuard] 未完成男生问卷，跳转 male-questionnaire');
-        logDiag('onboarding', 'male-questionnaire (no maleQ)');
-        navigate('male-questionnaire');
-        setShowOnboarding(false);
-        return;
-      }
-
       _femaleQ = await questionnaireRepository.getLatestFemale(user.id);
+      console.log('📥 [OnboardingGuard] maleQ:', _maleQ ? _maleQ.id : null);
       console.log('📥 [OnboardingGuard] femaleQ:', _femaleQ ? { id: _femaleQ.id, girlId: _femaleQ.girlId } : null);
 
-      if (!_femaleQ || !_femaleQ.girlId) {
-        console.log('🔀 [OnboardingGuard] 未完成女生问卷或 girlId 缺失，跳转 female-questionnaire');
-        logDiag('onboarding', 'female-questionnaire (no femaleQ or girlId)');
-        navigate('female-questionnaire');
+      const destination = resolveOnboardingDestination({
+        hasUser: true,
+        hasGirl: true,
+        hasMaleQuestionnaire: !!_maleQ,
+        hasFemaleQuestionnaire: !!_femaleQ && !!_femaleQ.girlId,
+        onboardingCompleted: false,
+      });
+
+      if (destination === 'onboarding') {
+        setShowOnboarding(true);
+        return;
+      }
+
+      if (destination !== 'stage-questionnaires') {
+        console.log(`🔀 [OnboardingGuard] 新用户继续下一步：${destination}`);
+        logDiag('onboarding', destination);
+        navigate(destination);
         setShowOnboarding(false);
         return;
       }
 
-      // ✅ 完整旧用户兼容：所有数据都存在，说明是老用户
-      // 无论 onboardingCompleted 是否为 true（localStorage 可能丢失），直接修复并放行
-      if (!useSettingsStore.getState().onboardingCompleted) {
-        useSettingsStore.getState().setOnboardingCompleted(true);
-        console.log('🛠️ [OnboardingGuard] 检测到完整旧用户数据，已自动修复 onboardingCompleted=true');
-      } else {
-        console.log('✅ [OnboardingGuard] 完整旧用户，onboardingCompleted 已为 true');
-      }
-      logDiag('edit', 'dashboard (complete old user)');
+      console.log('🔀 [OnboardingGuard] 男女问卷已完成，进入阶段专项问卷');
+      logDiag('onboarding', 'stage-questionnaires');
+      navigate('stage-questionnaires');
       setShowOnboarding(false);
-      // currentPage 默认就是 'dashboard'，无需额外设置
     }
 
     checkOnboarding().finally(() => setIsCheckingOnboarding(false));

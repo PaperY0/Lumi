@@ -13,11 +13,11 @@ describe('getStageAssessmentCatalog', () => {
     ]);
   });
 
-  it('does not present unfinished assessments as available for other stages', () => {
+  it('offers the dedicated ambiguous-observation set for the ambiguous phase', () => {
     const catalog = getStageAssessmentCatalog('ambiguous');
 
-    expect(catalog.available).toBe(false);
-    expect(catalog.items).toEqual([]);
+    expect(catalog.available).toBe(true);
+    expect(catalog.items.every((item) => item.title.includes('暧昧观察期'))).toBe(true);
   });
 
   it('offers the dedicated initial-contact set for the initial-contact phase', () => {

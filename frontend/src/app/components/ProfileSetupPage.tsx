@@ -10,6 +10,8 @@ import { HistoryCenterPanel } from './HistoryCenterPanel';
 import { userProfileSchema, type ProfileFormValues } from '@/lib/validation/profileSchema';
 // ✅ 数据库 repository（真正落库）
 import { userProfileRepository, girlProfileRepository, questionnaireRepository } from '@/lib/db';
+import { resolveOnboardingDestination } from '@/lib/onboardingFlow';
+import { hasRequiredRelationshipStage } from '@/lib/profileStageValidation';
 // ✅ 全局 store：用户身份 + UI 提示
 import { useUserStore, useUiStore, useSettingsStore } from '@/stores';
 import type { GirlProfile, UserProfile } from '@/types'; // ✅ 添加类型导入
@@ -116,6 +118,8 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
 
   // ✅ 任务 2：女生称呼必填校验
   const [girlNameError, setGirlNameError] = useState<string | null>(null);
+  const [relationError, setRelationError] = useState<string | null>(null);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   // ✅ 任务 2：单选函数
   const selectSingle = (
@@ -123,6 +127,7 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
     setter: React.Dispatch<React.SetStateAction<string[]>>
   ) => {
     setter([value]);
+    if (setter === setRelation) setRelationError(null);
   };
 
   const toggle = (arr: string[], val: string, setArr: (a: string[]) => void) =>
@@ -238,11 +243,18 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
       return;
     }
 
+    if (!hasRequiredRelationshipStage(relation)) {
+      setRelationError('请选择当前关系阶段');
+      useUiStore.getState().showToast('请选择当前关系阶段', 'error');
+      return;
+    }
+
     const ui = useUiStore.getState();
     const userStore = useUserStore.getState();
     try {
       ui.showLoading('保存中...');
-      const selectedRelation = (relation[0] || '初识接触期') as RelationshipStageLabel;
+      const selectedRelation = relation[0] as RelationshipStageLabel;
+      setSaveMessage(null);
       const synchronizedData: ProfileFormValues = {
         ...data,
         relationshipStatus: getUserRelationshipStatus(selectedRelation),
@@ -344,6 +356,7 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
       if (onboardingCompleted) {
         console.log('✅ [ProfileSetupPage] 老用户资料保存成功，停留当前页，不跳转问卷');
         ui.showToast('资料已保存', 'success');
+        setSaveMessage('资料已保存，关系阶段和资料内容已更新');
         ui.hideLoading();
         return;
       }
@@ -355,6 +368,7 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
       if (!maleQ) {
         console.log('🔀 [ProfileSetupPage] 新手引导：未完成男生问卷，跳转 male-questionnaire');
         ui.showToast('资料已保存', 'success');
+        setSaveMessage('资料已保存，正在进入男生问卷');
         onNavigate('male-questionnaire');
         return;
       }
@@ -362,20 +376,64 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
       if (!femaleQ || !femaleQ.girlId) {
         console.log('🔀 [ProfileSetupPage] 新手引导：未完成女生问卷，跳转 female-questionnaire');
         ui.showToast('资料已保存', 'success');
+        setSaveMessage('资料已保存，正在进入女生问卷');
         onNavigate('female-questionnaire');
         return;
       }
 
-      console.log('🔀 [ProfileSetupPage] 新手引导：问卷已完成，跳转 relationship-portrait');
+      const nextPage = resolveOnboardingDestination({
+        hasUser: true,
+        hasGirl: true,
+        hasMaleQuestionnaire: !!maleQ,
+        hasFemaleQuestionnaire: !!femaleQ.girlId,
+        onboardingCompleted: false,
+      });
+      console.log(`🔀 [ProfileSetupPage] 新手引导：问卷已完成，跳转 ${nextPage}`);
       ui.showToast('资料已保存', 'success');
-      onNavigate('relationship-portrait');
+      setSaveMessage('资料已保存，正在进入阶段专项问卷');
+      if (nextPage === 'stage-questionnaires') onNavigate(nextPage);
     } catch (e) {
       console.error('❌ [ProfileSetupPage] 保存失败:', e);
+      setSaveMessage('保存失败，请检查填写内容后重试');
       ui.showToast('保存失败：' + (e as Error).message, 'error');
     } finally {
       ui.hideLoading();
     }
   };
+
+  const actionBar = (
+    <div
+      className="profile-actionbar"
+      style={{
+        gridColumn: '1 / -1',
+        marginTop: 16,
+        padding: '18px 24px',
+        background: 'rgba(255,245,248,0.85)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderTop: '1px solid rgba(255,255,255,0.4)',
+        borderRadius: 20,
+        display: 'flex',
+        gap: 12,
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 180 }}>
+        <Info size={14} color="var(--text-purple)" style={{ opacity: 0.6 }} />
+        <span style={{ fontSize: 12, color: saveMessage ? '#4A9E6A' : 'var(--text-purple)', opacity: 0.8 }}>{saveMessage || '填写越完整，AI 分析越准确'}</span>
+      </div>
+      {!onboardingCompleted && (
+        <LiquidButton variant="secondary" onClick={() => onNavigate('dashboard')}>
+          稍后补充
+        </LiquidButton>
+      )}
+      <LiquidButton onClick={form.handleSubmit(onSubmit)} disabled={form.formState.isSubmitting}>
+        {onboardingCompleted ? '保存资料' : '保存并继续'}
+        <ArrowRight size={16} />
+      </LiquidButton>
+    </div>
+  );
 
   const errors = form.formState.errors;
 
@@ -580,8 +638,11 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
                   selectSingle(v, setRelation);
                 }}
               />
+              {relationError && (
+                <p style={{ margin: '7px 4px 0', fontSize: 13, color: '#e5484d' }}>{relationError}</p>
+              )}
               <p style={{ margin: '8px 4px 0', fontSize: 12, color: 'var(--text-purple)', opacity: 0.66, lineHeight: 1.6 }}>
-                保存后，关系画像和 AI 建议都会以这里的阶段为准。
+                必须选择一个阶段；保存后，关系画像和 AI 建议都会以这里的阶段为准。
               </p>
             </div>
 
@@ -634,6 +695,8 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
             <GlassTextarea label="备注" placeholder="其他想记录的信息..." value={notes} onChange={setNotes} rows={3} />
           </div>
         </GlassCard>
+
+        {actionBar}
 
         {/* Notice — grid-column: 1/-1 spans both cards exactly, INSIDE the grid */}
         <div style={{ gridColumn: '1 / -1' }}>
@@ -700,40 +763,6 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
           </div>
         </div>
       )}
-
-      {/* 保存资料操作区 */}
-      <div
-        className="profile-actionbar"
-        style={{
-          marginTop: 24,
-          padding: '20px 32px',
-          background: 'rgba(255,245,248,0.85)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          borderTop: '1px solid rgba(255,255,255,0.4)',
-          borderRadius: 20,
-          display: 'flex',
-          gap: 12,
-          justifyContent: 'flex-end',
-          alignItems: 'center',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
-          <Info size={14} color="var(--text-purple)" style={{ opacity: 0.6 }} />
-          <span style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.65 }}>填写越完整，AI 分析越准确</span>
-        </div>
-        {/* onboarding 模式才显示"稍后补充" */}
-        {!onboardingCompleted && (
-          <LiquidButton variant="secondary" onClick={() => onNavigate('dashboard')}>
-            稍后补充
-          </LiquidButton>
-        )}
-        {/* 按钮文案根据状态变化 */}
-        <LiquidButton onClick={form.handleSubmit(onSubmit)} disabled={form.formState.isSubmitting}>
-          {onboardingCompleted ? '保存资料' : '保存并继续'}
-          <ArrowRight size={16} />
-        </LiquidButton>
-      </div>
 
       {/* 历史中心 */}
       {onboardingCompleted && (

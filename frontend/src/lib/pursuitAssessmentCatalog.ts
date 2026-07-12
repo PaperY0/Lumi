@@ -61,12 +61,21 @@ const warmingItems: StageAssessmentCatalogItem[] = [
   { audience: 'relationship', title: '升温期 · 推进边界检查', description: '检查邀约、称呼、礼物和关系沟通是否保留拒绝空间。', boundary: '试探必须轻量、有退路，出现不适就及时放慢。' },
 ];
 
+const ambiguousItems: StageAssessmentCatalogItem[] = [
+  { audience: 'self', title: '暧昧观察期 · 我的相处方式', description: '识别不确定中的期待、焦虑、投入和自我保护，避免用猜测替代沟通。', boundary: '不把一次亲密互动当成承诺，也不把对方的选择等同于你的价值。' },
+  { audience: 'observation', title: '暧昧观察期 · 她的互动观察', description: '观察长期的双向投入、交流深度、边界表达和真实回流。', boundary: '只整理可观察事实，不替她下结论，不把模糊当成默认同意。' },
+  { audience: 'relationship', title: '暧昧观察期 · 关系节奏与边界', description: '检查确认关系、降低投入、表达期待和接受结果的方式。', boundary: '沟通要有退路；明确拒绝、持续回避或不适出现时，优先停止推进。' },
+];
+
 export function getStageAssessmentCatalog(stage: RelationshipStageValue): StageAssessmentCatalog {
   if (stage === 'observing') {
     return { available: true, items: initialContactItems };
   }
   if (stage === 'warming') {
     return { available: true, items: warmingItems };
+  }
+  if (stage === 'ambiguous') {
+    return { available: true, items: ambiguousItems };
   }
   if (stage === 'pursuing') {
     return { available: true, items: pursuitItems };

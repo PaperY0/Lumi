@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, BookOpenCheck, HeartHandshake, ShieldCheck, UserRoundCheck } from 'lucide-react';
+import { ArrowLeft, BookOpenCheck, CheckCircle2, HeartHandshake, ShieldCheck, UserRoundCheck } from 'lucide-react';
 import { GlassCard, LiquidButton } from './GlassUI';
 import type { PageName } from './GlassUI';
 import { getStageAssessmentCatalog, type StageAssessmentCatalogItem } from '@/lib/pursuitAssessmentCatalog';
-import { getRelationshipStageLabel } from '@/lib/relationshipStage';
-import { girlProfileRepository, userProfileRepository } from '@/lib/db';
+import { getRelationshipStageLabel, getRelationshipStageValue } from '@/lib/relationshipStage';
+import { girlProfileRepository, questionnaireRepository, stageQuestionnaireRepository, userProfileRepository } from '@/lib/db';
 import type { RelationshipStageLabel } from '@/lib/relationshipStage';
+import type { RelationshipStageValue } from '@/lib/relationshipStage';
+import { getQuestionnaireCompletionState, type QuestionnaireCompletionState } from '@/lib/questionnaireCompletion';
 
 interface Props {
   onNavigate: (page: PageName) => void;
@@ -19,13 +21,42 @@ const iconForAudience: Record<StageAssessmentCatalogItem['audience'], typeof Use
 
 export function StageQuestionnairePage({ onNavigate }: Props) {
   const [stage, setStage] = useState<RelationshipStageLabel | null>(null);
+  const [completion, setCompletion] = useState<QuestionnaireCompletionState>({
+    male: false,
+    female: false,
+    stage: { self: false, observation: false, relationship: false },
+  });
 
   useEffect(() => {
     async function loadStage() {
       const user = await userProfileRepository.getCurrent();
       if (!user) return;
       const girl = (await girlProfileRepository.getByUserId(user.id))[0];
-      if (girl) setStage(getRelationshipStageLabel(girl));
+      if (!girl) return;
+      const currentStage = getRelationshipStageValue(getRelationshipStageLabel(girl));
+      setStage(getRelationshipStageLabel(girl));
+      const [male, female, self, observation, relationship] = await Promise.all([
+        questionnaireRepository.getLatestMale(user.id),
+        questionnaireRepository.getLatestFemale(user.id),
+        stageQuestionnaireRepository.getLatest(user.id, currentStage, 'self'),
+        stageQuestionnaireRepository.getLatest(user.id, currentStage, 'observation'),
+        stageQuestionnaireRepository.getLatest(user.id, currentStage, 'relationship'),
+      ]);
+      const legacyResults = currentStage === 'observing'
+        ? await Promise.all([
+          stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'self'),
+          stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'observation'),
+          stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'relationship'),
+        ])
+        : [];
+      setCompletion(getQuestionnaireCompletionState({
+        maleCompleted: Boolean(male),
+        femaleCompleted: Boolean(female),
+        currentStage,
+        stageResults: [self, observation, relationship, ...legacyResults]
+          .filter((result): result is NonNullable<typeof result> => Boolean(result))
+          .map((result) => ({ relationshipStage: result.relationshipStage, audience: result.audience })),
+      }));
     }
 
     loadStage();
@@ -59,18 +90,26 @@ export function StageQuestionnairePage({ onNavigate }: Props) {
               const isSelfAssessment = item.audience === 'self';
               const isObservationAssessment = item.audience === 'observation';
               const isRelationshipAssessment = item.audience === 'relationship';
+              const isCompleted = item.audience === 'self'
+                ? completion.stage.self
+                : item.audience === 'observation'
+                  ? completion.stage.observation
+                  : completion.stage.relationship;
               return (
                 <GlassCard key={item.audience} hover={false} style={{ display: 'flex', flexDirection: 'column', minHeight: 246 }}>
-                  <Icon size={28} color="var(--pink-primary)" />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+                    <Icon size={28} color="var(--pink-primary)" />
+                    {isCompleted && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: '#4A9E6A', fontSize: 12, fontWeight: 700 }}><CheckCircle2 size={15} /> 已完成</span>}
+                  </div>
                   <h2 style={{ margin: '16px 0 8px', fontSize: 18, color: 'var(--text-rose)' }}>{item.title}</h2>
                   <p style={{ margin: 0, fontSize: 13, color: 'var(--text-purple)', lineHeight: 1.7, flex: 1 }}>{item.description}</p>
                   <p style={{ margin: '16px 0 0', fontSize: 12, color: 'var(--champagne-gold)', lineHeight: 1.6 }}>{item.boundary}</p>
                   {isSelfAssessment ? (
-                    <LiquidButton onClick={() => onNavigate('pursuit-self-assessment')} style={{ marginTop: 16, justifyContent: 'center' }}>开始填写</LiquidButton>
+                    <LiquidButton onClick={() => onNavigate('pursuit-self-assessment')} style={{ marginTop: 16, justifyContent: 'center' }}>{isCompleted ? '重新填写' : '开始填写'}</LiquidButton>
                   ) : isObservationAssessment ? (
-                    <LiquidButton onClick={() => onNavigate('pursuit-observation-assessment')} style={{ marginTop: 16, justifyContent: 'center' }}>开始填写</LiquidButton>
+                    <LiquidButton onClick={() => onNavigate('pursuit-observation-assessment')} style={{ marginTop: 16, justifyContent: 'center' }}>{isCompleted ? '重新填写' : '开始填写'}</LiquidButton>
                   ) : isRelationshipAssessment ? (
-                    <LiquidButton onClick={() => onNavigate('pursuit-relationship-assessment')} style={{ marginTop: 16, justifyContent: 'center' }}>开始填写</LiquidButton>
+                    <LiquidButton onClick={() => onNavigate('pursuit-relationship-assessment')} style={{ marginTop: 16, justifyContent: 'center' }}>{isCompleted ? '重新填写' : '开始填写'}</LiquidButton>
                   ) : (
                     <div style={{ marginTop: 16, fontSize: 12, color: 'var(--text-purple)', opacity: 0.62 }}>题库准备中</div>
                   )}
