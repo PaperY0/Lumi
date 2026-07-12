@@ -37,6 +37,10 @@ export function getOnboardingProgressPercent(completedCount: number, totalCount 
   return Math.round((completedCount / totalCount) * 100);
 }
 
+export function getReturningUserState(isComplete: boolean, persistedFlag: boolean): boolean {
+  return isComplete || persistedFlag;
+}
+
 export function getOnboardingChecklist(input: OnboardingChecklistInput): OnboardingProgressState {
   const stage = input.stageCompleted;
   const completedCount = [input.profileComplete, input.maleCompleted, input.femaleCompleted, stage.self, stage.observation, stage.relationship]
@@ -86,6 +90,8 @@ export async function loadOnboardingProgress(): Promise<OnboardingProgressState>
       : [];
     stageCompleted = getQuestionnaireCompletionState({ maleCompleted: Boolean(male), femaleCompleted: Boolean(female), currentStage, stageResults: [...results, ...legacy].filter(Boolean).map((result) => ({ relationshipStage: result!.relationshipStage, audience: result!.audience })).filter(Boolean) }).stage;
   }
-  const state = getOnboardingChecklist({ profileComplete, maleCompleted: Boolean(male), femaleCompleted: Boolean(female), stageCompleted, isReturningUser: Boolean(localStorage.getItem('onboardingCompleted') === 'true') });
+  const state = getOnboardingChecklist({ profileComplete, maleCompleted: Boolean(male), femaleCompleted: Boolean(female), stageCompleted, isReturningUser: false });
+  const persistedFlag = typeof localStorage !== 'undefined' && localStorage.getItem('onboardingCompleted') === 'true';
+  state.isReturningUser = getReturningUserState(state.isComplete, persistedFlag);
   return { ...state, girlId: girl?.id, currentStage };
 }

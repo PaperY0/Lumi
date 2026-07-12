@@ -4,11 +4,12 @@ import { GlassCard, LiquidButton, ProgressStepper } from './GlassUI';
 import type { PageName } from './GlassUI';
 import { getStageAssessmentCatalog, type StageAssessmentCatalogItem } from '@/lib/pursuitAssessmentCatalog';
 import { getRelationshipStageLabel, getRelationshipStageValue } from '@/lib/relationshipStage';
-import { girlProfileRepository, questionnaireRepository, stageQuestionnaireRepository, userProfileRepository } from '@/lib/db';
+import { userProfileRepository, girlProfileRepository } from '@/lib/db';
 import type { RelationshipStageLabel } from '@/lib/relationshipStage';
 import type { RelationshipStageValue } from '@/lib/relationshipStage';
-import { getQuestionnaireCompletionState, type QuestionnaireCompletionState } from '@/lib/questionnaireCompletion';
+import type { QuestionnaireCompletionState } from '@/lib/questionnaireCompletion';
 import { useUiStore } from '@/stores';
+import { loadOnboardingProgress } from '@/lib/onboardingProgress';
 
 interface Props {
   onNavigate: (page: PageName) => void;
@@ -28,9 +29,12 @@ export function StageQuestionnairePage({ onNavigate }: Props) {
     female: false,
     stage: { self: false, observation: false, relationship: false },
   });
+  const [isReturningUser, setIsReturningUser] = useState(false);
 
   useEffect(() => {
     async function loadStage() {
+      const progress = await loadOnboardingProgress();
+      setIsReturningUser(progress.isReturningUser || progress.isComplete);
       const user = await userProfileRepository.getCurrent();
       if (!user) return;
       const girl = (await girlProfileRepository.getByUserId(user.id))[0];
@@ -41,28 +45,7 @@ export function StageQuestionnairePage({ onNavigate }: Props) {
       }
       const currentStage = getRelationshipStageValue(getRelationshipStageLabel(girl));
       setStage(getRelationshipStageLabel(girl));
-      const [male, female, self, observation, relationship] = await Promise.all([
-        questionnaireRepository.getLatestMale(user.id),
-        questionnaireRepository.getLatestFemale(user.id),
-        stageQuestionnaireRepository.getLatest(user.id, currentStage, 'self', girl.id),
-        stageQuestionnaireRepository.getLatest(user.id, currentStage, 'observation', girl.id),
-        stageQuestionnaireRepository.getLatest(user.id, currentStage, 'relationship', girl.id),
-      ]);
-      const legacyResults = currentStage === 'observing'
-        ? await Promise.all([
-          stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'self', girl.id),
-          stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'observation', girl.id),
-          stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'relationship', girl.id),
-        ])
-        : [];
-      setCompletion(getQuestionnaireCompletionState({
-        maleCompleted: Boolean(male),
-        femaleCompleted: Boolean(female),
-        currentStage,
-        stageResults: [self, observation, relationship, ...legacyResults]
-          .filter((result): result is NonNullable<typeof result> => Boolean(result))
-          .map((result) => ({ relationshipStage: result.relationshipStage, audience: result.audience })),
-      }));
+      setCompletion({ male: progress.male, female: progress.female, stage: progress.stage });
     }
 
     loadStage();
@@ -114,11 +97,11 @@ export function StageQuestionnairePage({ onNavigate }: Props) {
                   <p style={{ margin: 0, fontSize: 13, color: 'var(--text-purple)', lineHeight: 1.7, flex: 1 }}>{item.description}</p>
                   <p style={{ margin: '16px 0 0', fontSize: 12, color: 'var(--champagne-gold)', lineHeight: 1.6 }}>{item.boundary}</p>
                   {isSelfAssessment ? (
-                    <LiquidButton onClick={() => onNavigate('pursuit-self-assessment')} style={{ marginTop: 16, justifyContent: 'center' }}>{isCompleted ? '重新填写' : '开始填写'}</LiquidButton>
+                    <LiquidButton onClick={() => onNavigate('pursuit-self-assessment')} style={{ marginTop: 16, justifyContent: 'center' }}>{isCompleted ? (isReturningUser ? '重新填写' : '已完成') : '开始填写'}</LiquidButton>
                   ) : isObservationAssessment ? (
-                    <LiquidButton onClick={() => onNavigate('pursuit-observation-assessment')} style={{ marginTop: 16, justifyContent: 'center' }}>{isCompleted ? '重新填写' : '开始填写'}</LiquidButton>
+                    <LiquidButton onClick={() => onNavigate('pursuit-observation-assessment')} style={{ marginTop: 16, justifyContent: 'center' }}>{isCompleted ? (isReturningUser ? '重新填写' : '已完成') : '开始填写'}</LiquidButton>
                   ) : isRelationshipAssessment ? (
-                    <LiquidButton onClick={() => onNavigate('pursuit-relationship-assessment')} style={{ marginTop: 16, justifyContent: 'center' }}>{isCompleted ? '重新填写' : '开始填写'}</LiquidButton>
+                    <LiquidButton onClick={() => onNavigate('pursuit-relationship-assessment')} style={{ marginTop: 16, justifyContent: 'center' }}>{isCompleted ? (isReturningUser ? '重新填写' : '已完成') : '开始填写'}</LiquidButton>
                   ) : (
                     <div style={{ marginTop: 16, fontSize: 12, color: 'var(--text-purple)', opacity: 0.62 }}>题库准备中</div>
                   )}

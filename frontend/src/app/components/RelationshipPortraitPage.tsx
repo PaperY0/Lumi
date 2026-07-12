@@ -4,11 +4,10 @@ import { GlassCard, LiquidButton, HeatMeter, StageBadge, ProgressStepper, Warnin
 import { BlurText } from './BlurText';
 import { IconBadge } from './IconBadge';
 import type { PageName } from './GlassUI';
-import { useSettingsStore, useUserStore } from '@/stores';
+import { useSettingsStore } from '@/stores';
 import { useGeneratePortrait } from '@/hooks/useGeneratePortrait';
-import { questionnaireRepository, stageQuestionnaireRepository } from '@/lib/db';
-import { getRelationshipStageLabel, getRelationshipStageValue } from '@/lib/relationshipStage';
-import { resolveOnboardingDestination, getOnboardingProgress, type OnboardingProgressSummary } from '@/lib/onboardingFlow';
+import { resolveOnboardingDestination, type OnboardingProgressSummary } from '@/lib/onboardingFlow';
+import { loadOnboardingProgress } from '@/lib/onboardingProgress';
 
 interface Props { onNavigate: (page: PageName) => void; }
 
@@ -28,33 +27,8 @@ export function RelationshipPortraitPage({ onNavigate }: Props) {
 
   useEffect(() => {
     async function loadProgress() {
-      const user = useUserStore.getState().currentUser;
-      const girl = useUserStore.getState().currentGirl;
-      if (!user || !girl) return;
-      const stage = getRelationshipStageValue(getRelationshipStageLabel(girl));
-      const [male, female, self, observation, relationship] = await Promise.all([
-        questionnaireRepository.getLatestMale(user.id),
-        questionnaireRepository.getLatestFemale(user.id),
-        stageQuestionnaireRepository.getLatest(user.id, stage, 'self', girl.id),
-        stageQuestionnaireRepository.getLatest(user.id, stage, 'observation', girl.id),
-        stageQuestionnaireRepository.getLatest(user.id, stage, 'relationship', girl.id),
-      ]);
-      const legacy = stage === 'observing' ? await Promise.all([
-        stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'self', girl.id),
-        stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'observation', girl.id),
-        stageQuestionnaireRepository.getLatest(user.id, 'pursuing', 'relationship', girl.id),
-      ]) : [];
-      const results = [self, observation, relationship, ...legacy];
-      setOnboardingProgress(getOnboardingProgress({
-        profileComplete: girl.currentStage !== 'stranger',
-        maleCompleted: Boolean(male),
-        femaleCompleted: Boolean(female?.girlId),
-        stageCompleted: {
-          self: results.some((r) => r?.audience === 'self'),
-          observation: results.some((r) => r?.audience === 'observation'),
-          relationship: results.some((r) => r?.audience === 'relationship'),
-        },
-      }));
+      const progress = await loadOnboardingProgress();
+      setOnboardingProgress(progress);
     }
     loadProgress();
   }, []);

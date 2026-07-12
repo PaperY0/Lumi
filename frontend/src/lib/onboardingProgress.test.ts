@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getOnboardingChecklist, getOnboardingProgressPercent, getOnboardingAction } from './onboardingProgress';
+import { getOnboardingChecklist, getOnboardingProgressPercent, getOnboardingAction, getReturningUserState } from './onboardingProgress';
 
 describe('onboarding progress checklist', () => {
   it('counts six requirements including current-stage questionnaires', () => {
@@ -26,5 +26,11 @@ describe('onboarding progress checklist', () => {
   it('rounds percentage from six requirements', () => {
     expect(getOnboardingProgressPercent(1, 6)).toBe(17);
     expect(getOnboardingProgressPercent(6, 6)).toBe(100);
+  });
+
+  it('treats a complete IndexedDB state as returning even without a persisted flag', () => {
+    expect(getReturningUserState(true, false)).toBe(true);
+    expect(getReturningUserState(false, true)).toBe(true);
+    expect(getReturningUserState(false, false)).toBe(false);
   });
 });
