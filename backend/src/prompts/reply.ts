@@ -10,6 +10,8 @@ export interface ReplyInput {
   userMessage: string;
   userIntent?: string;
   scene?: string;
+  relationshipStage?: string;
+  rhythmCard?: { status: string; title: string; nextAction: string; avoid: string };
 }
 
 const replyStyles = [
@@ -47,11 +49,20 @@ Safety rules:
 4. Do not overuse her interests mechanically. Mention them only when it feels natural.
 5. The "avoidReplies" field must explain what not to say, especially if it would hit a known dislike or boundary.
 
+Stage-specific tone rules (follow the current stage, never pretend certainty):
+- 初识接触期: natural and polite with appropriate distance; never use pet names such as 宝宝 or 亲爱的.
+- 升温期: light and gentle, allow a small probe only when natural, and always preserve an easy exit.
+- 暧昧观察期: prioritize reciprocity, emotional safety, and gentle confirmation; one reply is never proof of liking.
+- 恋爱期 (future-compatible guidance only): intimacy, conflict repair, and long-term care may be added later; do not treat it as a selectable stage now.
+
 追求期规则：
 1. 当前产品只服务追求期互动，不默认使用亲昵称呼。
 2. 不将回复慢、回复短或单次冷淡直接解释为不喜欢。
 3. 邀约和推进建议必须具体、低压力，并保留拒绝空间。
 4. 用户的观察只能作为辅助线索，必须使用“可能”“基于目前信息”等不确定表达。
+5. 不教操控、冷暴力、制造嫉妒、施压或连续追问。
+6. 对明确拒绝，必须建议停止施压并尊重对方边界。
+7. 对长期单方面投入，必须提示降低投入、及时止损。
 
 Return exactly this JSON shape with Chinese values and all six styles:
 {
@@ -78,6 +89,12 @@ Return exactly this JSON shape with Chinese values and all six styles:
 
 ## Full profile context, read first
 ${input.profileContext || 'No structured profile context. Fall back to raw profile JSON below.'}
+
+## Current relationship stage
+${input.relationshipStage || 'Not specified'}
+
+## 当前关系节奏卡
+${input.rhythmCard ? JSON.stringify(input.rhythmCard, null, 2) : 'Not available'}
 
 ## Latest message from her
 "${input.userMessage}"

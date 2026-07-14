@@ -74,43 +74,59 @@ export function mockAnalyze() {
   };
 }
 
-export function mockReply() {
+export function mockReply(input?: { relationshipStage?: string; userMessage?: string; rhythmCard?: { status: string; nextAction: string; avoid: string } }) {
+  const pause = input?.rhythmCard?.status === 'pause';
+  const stage = input?.relationshipStage;
+  const explicitRejection = /不用了|不想聊|别联系|不方便|拒绝|不要再/.test(input?.userMessage ?? '');
+  const stageGuidance = stage === 'observing'
+    ? '初识接触期保持自然礼貌和距离，不使用亲昵称呼。'
+    : stage === 'warming'
+      ? '升温期可以轻量试探，但要保留随时退出的空间。'
+      : stage === 'ambiguous'
+        ? '暧昧观察期优先关注双向投入和情绪安全，不把单次回复当成确定喜欢。'
+        : '根据当前阶段保持低压力、尊重边界的互动。';
+  const recommendedReplies = explicitRejection || pause
+    ? [
+      { style: '自然真诚型', text: '好的，明白了。我先不打扰你，祝你一切顺利。' },
+      { style: '轻松幽默型', text: '收到，那就先到这里，不给你添压力。' },
+      { style: '稳重关心型', text: '我尊重你的想法，你不用急着回复。' },
+      { style: '暧昧升温型', text: '那我先暂停推进，祝你接下来顺利。' },
+      { style: '道歉修复型', text: '如果刚才让你感到有压力，抱歉，我会停下来。' },
+      { style: '边界尊重型', text: '好的，我会尊重你的边界，不再继续追问。' },
+    ]
+    : stage === 'observing'
+      ? [
+        { style: '自然真诚型', text: '听起来还不错，你方便的话再和我分享。' },
+        { style: '轻松幽默型', text: '那我先把好奇心收好，改天再聊。' },
+        { style: '稳重关心型', text: '你按自己的节奏就好，有空再聊。' },
+        { style: '暧昧升温型', text: '和你聊天挺轻松的，之后想聊时随时说。' },
+        { style: '道歉修复型', text: '如果我刚才问得多了些，你不用有压力。' },
+        { style: '边界尊重型', text: '如果你现在不方便回复，完全没关系。' },
+      ]
+      : [
+        { style: '自然真诚型', text: '那你先好好休息，等你有精神了我们再聊。' },
+        { style: '轻松幽默型', text: '收到，今天先给你放个假，改天再继续营业。' },
+        { style: '稳重关心型', text: '辛苦了，好好休息。如果想聊我在，不想说也没关系。' },
+        { style: '暧昧升温型', text: '那我先不打扰你啦，你按自己的节奏就好。' },
+        { style: '道歉修复型', text: '如果我刚刚问太多让你更累了，抱歉。我先收一收。' },
+        { style: '边界尊重型', text: '好，我尊重你现在想安静一下，你不用急着回。' },
+      ];
+
   return {
     id: `reply-${Date.now()}`,
     createdAt: new Date().toISOString(),
-    simpleAnswer: '先接住她的状态，降低压力，再给她一个轻松回到对话的入口。',
-    recommendedReplies: [
-      {
-        style: '自然真诚型',
-        text: '那你先好好休息，今天就别太累了。等你有精神了我们再聊。',
-      },
-      {
-        style: '轻松幽默型',
-        text: '收到，今天先给你放个假。早点休息，明天再继续营业。',
-      },
-      {
-        style: '稳重关心型',
-        text: '辛苦了，好好休息。如果想聊我在，不想说也没关系。',
-      },
-      {
-        style: '暧昧升温型',
-        text: '那我先不打扰你啦。你休息好一点，我还想听你慢慢跟我说今天发生了什么。',
-      },
-      {
-        style: '道歉修复型',
-        text: '如果我刚刚问太多让你更累了，抱歉。我先收一收，你好好休息。',
-      },
-      {
-        style: '边界尊重型',
-        text: '好，我尊重你现在想安静一下。你不用急着回，等你愿意说的时候我在。',
-      },
-    ],
-    avoidReplies: [
-      '你是不是不想理我了？',
-      '你怎么又这样？',
-      '那算了。',
-    ],
-    analysis: '对方表达疲惫时，重点不是立刻推进聊天，而是让她感到被理解、被尊重。回复宜短、稳、低压力。',
+    simpleAnswer: explicitRejection || pause
+      ? '当前节奏卡建议先暂停推进，尊重对方边界，不要连续追问。'
+      : stage === 'observing'
+        ? '先接住她的状态，保持礼貌距离，用低压力方式确认是否愿意继续聊。'
+        : '先接住她的状态，降低压力，再给她一个轻松回到对话的入口。',
+    recommendedReplies,
+    avoidReplies: explicitRejection || pause
+      ? ['不要继续追问或劝说。', '不要用委屈、嫉妒或冷淡施压。', '尊重明确拒绝，及时停止推进。']
+      : ['你是不是不想理我了？', '你怎么又这样？', '那算了。'],
+    analysis: explicitRejection || pause
+      ? `对方已经表达拒绝或节奏卡要求暂停，应停止施压并尊重边界。${input?.rhythmCard?.avoid ?? ''}`
+      : `对方表达疲惫时，重点不是立刻推进聊天，而是让她感到被理解、被尊重。回复宜短、稳、低压力。${stageGuidance}`,
   };
 }
 

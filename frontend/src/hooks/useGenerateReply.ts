@@ -16,6 +16,7 @@ import { chatRepository } from '@/lib/db/repositories/chatRepo';
 import type { ReplyResponse, ChatMessage } from '@/types';
 import { loadPursuitQuestionnaires } from '@/lib/pursuitQuestionnaires';
 import { getRelationshipStageLabel, getRelationshipStageValue } from '@/lib/relationshipStage';
+import { buildPursuitRhythmCard } from '@/lib/pursuitRhythm';
 
 const MAX_REPLY_CONTEXT_MESSAGES = 20;
 
@@ -76,6 +77,7 @@ export function useGenerateReply() {
       const maleQ = await questionnaireRepository.getLatestMale(user.id);
       const femaleQ = await questionnaireRepository.getLatestFemale(user.id);
       const stageQuestionnaires = await loadPursuitQuestionnaires(user.id, girl.id, stage);
+      const rhythmCard = buildPursuitRhythmCard(stageQuestionnaires);
 
       // 5. 读取最近聊天记录（允许为空）
       let recentMessages: ChatMessage[] = [];
@@ -120,6 +122,8 @@ export function useGenerateReply() {
         userMessage: trimmedUserMessage,
         userIntent,
         scene,
+        relationshipStage: stage,
+        rhythmCard,
       });
 
       if (import.meta.env.DEV) {

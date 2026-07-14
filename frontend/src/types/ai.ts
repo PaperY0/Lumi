@@ -2,6 +2,7 @@ import type { AIAnalysisReport } from './analysis';
 import type { UserProfile, GirlProfile } from './profile';
 import type { MaleQuestionnaireResult, FemaleQuestionnaireResult } from './questionnaire';
 import type { ChatMessage } from './chat';
+import type { RelationshipStageValue } from '@/lib/relationshipStage';
 
 /**
  * 回复助手支持的回复风格：真诚 / 幽默 / 关心。
@@ -124,6 +125,15 @@ export interface ReplyRequest {
   userIntent?: string;
   /** 当前场景，如"邀约""道歉""日常聊天"（可选） */
   scene?: string;
+  /** 当前关系阶段 */
+  relationshipStage?: RelationshipStageValue;
+  /** 当前关系节奏卡，供回复安全策略使用 */
+  rhythmCard?: {
+    status: 'incomplete' | 'continue' | 'pause';
+    title: string;
+    nextAction: string;
+    avoid: string;
+  };
 }
 
 /**

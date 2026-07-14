@@ -18,6 +18,8 @@ const ReplyInputSchema = z.object({
   userMessage: z.string().optional(),
   userIntent: z.string().optional(),
   scene: z.string().optional(),
+  relationshipStage: z.string().optional(),
+  rhythmCard: z.object({ status: z.string(), title: z.string(), nextAction: z.string(), avoid: z.string() }).optional(),
   message: z.string().optional(),
 }).transform((input) => ({
   ...input,
@@ -32,6 +34,8 @@ const ReplyInputSchema = z.object({
   userMessage: z.string().min(1, 'userMessage 不能为空'),
   userIntent: z.string().optional(),
   scene: z.string().optional(),
+  relationshipStage: z.string().optional(),
+  rhythmCard: z.object({ status: z.string(), title: z.string(), nextAction: z.string(), avoid: z.string() }).optional(),
   message: z.string().optional(),
 }));
 
@@ -75,14 +79,14 @@ router.post('/reply', async (req, res) => {
     let raw: any;
 
     if (mockMode) {
-      raw = mockReply();
+      raw = mockReply(input);
     } else {
       try {
         const messages = buildReplyPrompt(input);
         raw = await callLLM(messages);
       } catch (llmError: any) {
         logRouteEvent(res, '/api/reply', 'llm_failed_fallback_mock', { message: llmError?.message });
-        raw = mockReply();
+        raw = mockReply(input);
       }
     }
 
