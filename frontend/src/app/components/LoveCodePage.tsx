@@ -16,8 +16,8 @@ import { IconBadge } from './IconBadge';
 import { AnimatedCard } from './AnimatedCard';
 import { articles as defaultArticles, categories } from '@/data/loveGuideArticles';
 import { girlProfileRepository, loveGuideRepository, userProfileRepository } from '@/lib/db/repositories';
-import { filterLoveGuideArticlesByStage } from '@/lib/loveGuideStage';
-import { getRelationshipStageLabel, getRelationshipStageValue, relationshipStageOptions, type RelationshipStageValue } from '@/lib/relationshipStage';
+import { filterLoveGuideArticlesByStage, loveGuideStageGroups } from '@/lib/loveGuideStage';
+import { getRelationshipStageDisplay, getRelationshipStageLabel, getRelationshipStageValue, relationshipStageOptions, type RelationshipStageValue } from '@/lib/relationshipStage';
 import type { CustomLoveGuideArticle, LoveGuideArticle, LoveGuideCategory } from '@/types/loveGuide';
 
 const READ_KEY = 'lumi_love_guide_read_article_ids';
@@ -272,7 +272,25 @@ export function LoveCodePage() {
       </div>
 
       <div style={{ marginBottom: 18, padding: '12px 16px', borderRadius: 16, border: '1px solid rgba(232,116,138,0.18)', background: 'rgba(255,245,248,0.5)', color: 'var(--text-purple)', fontSize: 13 }}>
-        当前法典：<strong style={{ color: 'var(--pink-primary)' }}>{getRelationshipStageLabel({ currentStage, currentStageLabel: undefined })}</strong>。阶段专属文章会随资料页中的关系阶段自动切换，旧文章仍作为通用指南保留。
+        当前法典：<strong style={{ color: 'var(--pink-primary)' }}>{getRelationshipStageDisplay({ currentStage, currentStageLabel: undefined })}</strong>。阶段专属文章会随资料页中的关系阶段自动切换，旧文章仍作为通用指南保留。
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 18 }} aria-label="法典阶段分组">
+        {loveGuideStageGroups.map((group) => (
+          <span
+            key={group.key}
+            aria-disabled={group.disabled}
+            style={{
+              padding: '7px 12px', borderRadius: 999, fontSize: 12,
+              border: '1px solid rgba(232,116,138,0.18)',
+              background: group.disabled ? 'rgba(160,155,165,0.12)' : 'rgba(255,245,248,0.6)',
+              color: group.disabled ? 'rgba(95,86,105,0.45)' : 'var(--text-purple)',
+              cursor: group.disabled ? 'not-allowed' : 'default',
+            }}
+          >
+            {group.label}{group.disabled ? ` · ${group.status}` : ` · ${group.key === currentStage ? '当前阶段' : '阶段指南'}`}
+          </span>
+        ))}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 1fr) auto', gap: 12, marginBottom: 18 }}>

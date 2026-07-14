@@ -40,7 +40,7 @@ Return exactly this JSON shape with Chinese values:
   "maleWeaknesses": ["weakness1", "weakness2", "weakness3"],
   "maleSuggestions": ["suggestion1", "suggestion2", "suggestion3"],
   "femalePersonalityTags": ["label1", "label2"],
-  "possibleStage": "初识接触期、追求期、暧昧观察期或升温期之一",
+  "possibleStage": "初识接触期、升温期或暧昧观察期之一",
   "interactionHeat": "cold|cool|warm|hot",
   "positiveSignals": ["signal1", "signal2"],
   "cautionSignals": ["risk1", "risk2"],

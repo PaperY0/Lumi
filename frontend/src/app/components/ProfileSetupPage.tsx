@@ -634,6 +634,11 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
                   selectSingle(v, setRelation);
                 }}
               />
+              {relation[0] && (
+                <p style={{ margin: '8px 4px 0', fontSize: 13, color: 'var(--pink-primary)', fontWeight: 600 }}>
+                  当前处于追求期 · {relation[0]}
+                </p>
+              )}
               {relationError && (
                 <p style={{ margin: '7px 4px 0', fontSize: 13, color: '#e5484d' }}>{relationError}</p>
               )}

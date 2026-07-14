@@ -36,7 +36,7 @@ export function buildAnalyzePrompt(input: AnalyzeInput): LLMMessage[] {
 **必须返回严格的 JSON 格式，字段使用 camelCase 命名**，结构如下：
 {
   "simpleAnswer": "一句话结论，简明扼要地描述当前关系状态或回答用户问题",
-  "relationshipStage": "当前关系阶段描述（只可为：初识接触期、追求期、暧昧观察期、升温期）",
+    "relationshipStage": "当前关系阶段描述（只可为：初识接触期、升温期、暧昧观察期；追求期仅作为总称）",
   "interactionHeat": "cold 或 warm 或 hot",
   "girlEmotion": "女生当前可能的情绪状态描述",
   "positiveSignals": ["积极信号1", "积极信号2"],

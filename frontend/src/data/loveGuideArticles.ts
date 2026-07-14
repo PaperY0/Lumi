@@ -1,4 +1,5 @@
 import type { LoveGuideArticle, LoveGuideCategory } from '@/types/loveGuide';
+import { stageArticles } from './loveGuideStageArticles';
 
 export interface CategoryMeta {
   key: LoveGuideCategory | 'all';
@@ -390,3 +391,6 @@ export const articles: LoveGuideArticle[] = [
     difficulty: '入门',
   },
 ];
+
+// Legacy built-ins remain foundation content; append the new stage-specific originals.
+articles.push(...stageArticles);
