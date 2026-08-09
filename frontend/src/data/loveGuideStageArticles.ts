@@ -1,4 +1,4 @@
-import type { LoveGuideArticle } from '@/types/loveGuide';
+import type { LoveGuideArticle, LoveGuideEvidence, LoveGuideSourceId } from '@/types/loveGuide';
 
 type StageArticleInput = Pick<LoveGuideArticle, 'id' | 'title' | 'subtitle' | 'summary' | 'category' | 'tags' | 'readTimeMinutes' | 'difficulty'> & {
   stage?: LoveGuideArticle['stage'];
@@ -11,17 +11,60 @@ type StageArticleInput = Pick<LoveGuideArticle, 'id' | 'title' | 'subtitle' | 's
   pause: string;
 };
 
-const makeArticle = (article: StageArticleInput): LoveGuideArticle => ({
-  ...article,
-  content: `## 适用阶段\n${article.stage === 'observing' ? '初识接触期' : article.stage === 'warming' ? '升温期' : article.stage === 'ambiguous' ? '暧昧观察期' : '通用基础'}\n\n## 你可能遇到的情况\n${article.situation}\n\n## 先观察什么\n${article.observe}\n\n## 推荐做法\n${article.recommendation}\n\n## 示例话术\n${article.example}\n\n## 不建议做什么\n${article.avoid}\n\n## 什么时候应该暂停\n${article.pause}`,
-});
+const sourceIdsByArticle: Record<string, readonly LoveGuideSourceId[]> = {
+  'foundation-refusal': ['healthy-relationship', 'warning-signs'],
+  'foundation-privacy': ['healthy-relationship', 'warning-signs'],
+  'foundation-communication': ['healthy-relationship', 'communication'],
+  'foundation-danger': ['warning-signs'],
+  'initial-opening': ['healthy-relationship', 'communication'],
+  'initial-distance': ['healthy-relationship', 'warning-signs'],
+  'initial-meeting': ['healthy-relationship', 'warning-signs'],
+  'initial-boundary': ['healthy-relationship', 'warning-signs'],
+  'warming-window': ['healthy-relationship', 'communication'],
+  'warming-probe': ['healthy-relationship', 'communication'],
+  'warming-shared': ['healthy-relationship', 'communication'],
+  'warming-rhythm': ['healthy-relationship', 'communication', 'personality-traits'],
+  'ambiguous-signals': ['healthy-relationship', 'communication'],
+  'ambiguous-confirm': ['healthy-relationship', 'communication'],
+  'ambiguous-rumination': ['healthy-relationship', 'personality-traits'],
+  'ambiguous-stop-loss': ['healthy-relationship', 'warning-signs', 'communication'],
+};
+
+const scopeByStage = (stage?: LoveGuideArticle['stage']) =>
+  stage === 'observing' ? '追求期 · 初识接触期' : stage === 'warming' ? '追求期 · 升温期' : stage === 'ambiguous' ? '追求期 · 暧昧观察期' : '通用基础 · 所有阶段';
+
+const nonInferenceByStage = (stage?: LoveGuideArticle['stage']) =>
+  stage === 'observing'
+    ? '一次回复、礼貌互动、已读或未读，都不足以证明好感、拒绝或人格特质；只把它们当作当下的信息。'
+    : stage === 'warming'
+      ? '一次积极回应、一次见面或一次亲密表达，都不等于关系已确定；需要看一段时间内双方是否持续、自愿地回流。'
+      : stage === 'ambiguous'
+        ? '暧昧、亲密称呼、一次深聊或一次沉默都不能替代明确沟通；不要用猜测填补事实空白。'
+        : '不从单次行为推断动机、人格或感情；优先区分可观察事实、自己的感受和仍未证实的解释。';
+
+const riskByArticle = (article: StageArticleInput) =>
+  `绿：双方都有选择、能自由表达不愿意。黄：互动长期失衡、对方回避或出现压力时，放慢并观察趋势。红：出现明确拒绝后仍施压、控制、窥探、威胁、跟踪、强迫或恐惧时，停止推进并优先安全。与本主题相关的暂停信号：${article.pause}`;
+
+const makeArticle = (article: StageArticleInput): LoveGuideArticle => {
+  const evidence: LoveGuideEvidence = {
+    principle: article.focus,
+    evidenceBoundary: 'Lumi 提供基于行为与情境的决策辅助，不诊断人格、不读取动机，也不从单次互动判断感情。',
+    sources: sourceIdsByArticle[article.id] ?? ['healthy-relationship'],
+  };
+
+  return {
+    ...article,
+    evidence,
+    content: `## 适用范围\n${scopeByStage(article.stage)}。${article.situation}\n\n## 依据原则\n${article.focus}\n\n## 可观察事实\n${article.observe}\n\n## 不要擅自推断\n${nonInferenceByStage(article.stage)}\n\n## 风险分级\n${riskByArticle(article)}\n\n## 可执行步骤\n1. 先确认你掌握的是事实，而不是猜测。2. ${article.recommendation} 3. 给对方拒绝、改期或暂不回应的空间。4. 之后根据持续回流调整投入。\n\n## 话术示例\n${article.example}\n\n## 不建议做什么\n${article.avoid}\n\n## 停止与求助\n${article.pause} 若出现威胁、控制、跟踪、强迫、身体伤害或明显恐惧，停止把它当作普通沟通问题，优先联系可信任的人和当地专业/紧急支持。`,
+  };
+};
 
 const common = (id: string, title: string, focus: string, situation: string, observe: string, recommendation: string, example: string, avoid: string, pause: string): StageArticleInput => ({
   id, title, subtitle: focus, summary: situation, category: 'relationship', tags: ['健康关系', '边界', '沟通'], readTimeMinutes: 4, difficulty: '入门', focus, situation, observe, recommendation, example, avoid, pause,
 });
 
 export const stageArticles: LoveGuideArticle[] = [
-  makeArticle(common('foundation-refusal', '尊重拒绝，先让关系安全', '把“不”当作完整信息，而不是待破解的信号', '对方明确拒绝邀约或继续聊天，你可能想再解释一次。', '是否已经表达得足够清楚、对方是否需要空间。', '简短确认、停止推进，并把选择权交还给对方。', '“收到，谢谢你说清楚。我会尊重你的决定，之后如果你愿意再联系就好。”', '反复追问理由、讨价还价、用付出换改变。', '对方重复拒绝、表现不安或要求停止联系时。')),
+  makeArticle(common('foundation-refusal', '尊重拒绝，先让关系安全', '把“不”当作完整信息，而不是待破解的信号', '对方明确拒绝邀约或继续聊天，你可能想再解释一次。', '对方是否已经明确表达不愿意，以及是否要求你停止联系。', '简短确认、停止推进，不要求解释，也不保留等待对方改变主意的压力。', '“收到，谢谢你明确说明。我会尊重这个决定，不再继续推进。”', '反复追问理由、讨价还价、用付出换改变，或暗示会一直等对方回头。', '对方重复拒绝、表现不安或要求停止联系时。')),
   makeArticle(common('foundation-privacy', '隐私边界不是神秘', '信任来自自愿分享，而不是不断查证', '你想了解住址、行程、社交账号或过去经历。', '对方是否主动分享、是否回避或明确说不想聊。', '先征得同意，只问与当下相处真正相关的内容。', '“这个问题如果你不方便回答可以跳过，我只是想确认你是否舒服。”', '翻看设备、追问隐私、通过朋友打听。', '对方表现紧张、沉默或明确要求不要再问时。')),
   makeArticle(common('foundation-communication', '温和沟通，先理解再回应', '用具体观察和感受开场，避免把猜测当事实', '一次回复变慢就引发不安，双方开始互相指责。', '事实、感受、需要是否被区分。', '用“我注意到…我感到…”表达，再邀请对方补充。', '“我注意到这两天联系少了，我有点不确定。你现在更需要空间还是方便聊聊？”', '贴标签、逼问、冷暴力、把沉默当惩罚。', '对话持续升级、对方要求暂停或感到不安全时。')),
   makeArticle(common('foundation-danger', '识别危险信号，优先保护自己', '控制、窥探、强迫和极端嫉妒不是关心', '相处中出现监控行踪、限制社交、威胁或情绪勒索。', '行为是否反复、是否让你感到害怕和失去选择。', '记录事实、寻求可信任的人帮助，必要时保持距离。', '“我不接受被检查手机或被限制和谁来往。如果继续发生，我会暂停这段接触。”', '为危险行为找借口、独自承担、用更多付出来换安全。', '出现威胁、跟踪、强迫或人身安全风险时。')),

@@ -10,6 +10,9 @@ import {
   Save,
   X,
   Search,
+  ShieldCheck,
+  ChevronDown,
+  ExternalLink,
 } from 'lucide-react';
 import { GlassCard, LiquidButton } from './GlassUI';
 import { IconBadge } from './IconBadge';
@@ -18,6 +21,7 @@ import { articles as defaultArticles, categories } from '@/data/loveGuideArticle
 import { girlProfileRepository, loveGuideRepository, userProfileRepository } from '@/lib/db/repositories';
 import { filterLoveGuideArticlesByStage, loveGuideStageGroups } from '@/lib/loveGuideStage';
 import { getRelationshipStageDisplay, getRelationshipStageLabel, getRelationshipStageValue, relationshipStageOptions, type RelationshipStageValue } from '@/lib/relationshipStage';
+import { getLoveGuideSources, loveGuideMethodology } from '@/data/loveGuideMethodology';
 import type { CustomLoveGuideArticle, LoveGuideArticle, LoveGuideCategory } from '@/types/loveGuide';
 
 const READ_KEY = 'lumi_love_guide_read_article_ids';
@@ -100,6 +104,7 @@ export function LoveCodePage() {
   const [form, setForm] = useState<ArticleFormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [currentStage, setCurrentStage] = useState<RelationshipStageValue>('pursuing');
+  const [showMethodology, setShowMethodology] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -292,6 +297,34 @@ export function LoveCodePage() {
           </span>
         ))}
       </div>
+
+      <GlassCard hover={false} style={{ marginBottom: 18 }} padding="0">
+        <button
+          type="button"
+          onClick={() => setShowMethodology((visible) => !visible)}
+          aria-expanded={showMethodology}
+          style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', padding: '15px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, textAlign: 'left', color: 'var(--text-rose)' }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 14, fontWeight: 600 }}><ShieldCheck size={17} color="var(--pink-primary)" />内容原则与来源</span>
+          <ChevronDown size={17} style={{ transform: showMethodology ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s ease' }} />
+        </button>
+        {showMethodology && (
+          <div style={{ padding: '0 16px 16px', color: 'var(--text-purple)', fontSize: 13, lineHeight: 1.75 }}>
+            <p style={{ margin: '0 0 10px' }}>{loveGuideMethodology.summary}</p>
+            <ul style={{ margin: '0 0 12px', paddingLeft: 20 }}>
+              {loveGuideMethodology.boundaries.map((boundary) => <li key={boundary} style={{ marginBottom: 5 }}>{boundary}</li>)}
+            </ul>
+            <div style={{ display: 'grid', gap: 8 }}>
+              {loveGuideMethodology.sources.map((source) => (
+                <a key={source.id} href={source.url} target="_blank" rel="noreferrer" style={{ color: 'var(--pink-primary)', textDecoration: 'none', display: 'flex', alignItems: 'flex-start', gap: 7 }}>
+                  <ExternalLink size={14} style={{ marginTop: 3, flexShrink: 0 }} />
+                  <span><strong>{source.organization}</strong> · {source.summary}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+      </GlassCard>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 1fr) auto', gap: 12, marginBottom: 18 }}>
         <div style={{ position: 'relative' }}>
@@ -683,6 +716,20 @@ function ArticleDetail({
 
         <div style={{ height: 1, background: 'rgba(232,116,138,0.15)', marginBottom: 24 }} />
         <div>{renderContent(article.content)}</div>
+        {article.evidence && (
+          <div style={{ marginTop: 24, padding: '16px', borderRadius: 16, border: '1px solid rgba(232,116,138,0.2)', background: 'rgba(255,245,248,0.58)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, color: 'var(--text-rose)', fontSize: 14, fontWeight: 600, marginBottom: 8 }}><ShieldCheck size={16} color="var(--pink-primary)" />依据与边界</div>
+            <p style={{ margin: '0 0 8px', fontSize: 13, color: 'var(--text-purple)', lineHeight: 1.7 }}><strong>依据原则：</strong>{article.evidence.principle}</p>
+            <p style={{ margin: '0 0 10px', fontSize: 13, color: 'var(--text-purple)', lineHeight: 1.7 }}><strong>使用边界：</strong>{article.evidence.evidenceBoundary}</p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {getLoveGuideSources(article.evidence.sources).map((source) => (
+                <a key={source.id} href={source.url} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--pink-primary)' }}>
+                  {source.organization}<ExternalLink size={12} />
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
       </GlassCard>
     </div>
   );

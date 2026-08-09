@@ -34,9 +34,14 @@ describe('love guide stage filtering', () => {
   });
 
   it('keeps every new article in the seven-section format', () => {
-    const headings = ['适用阶段', '你可能遇到的情况', '先观察什么', '推荐做法', '示例话术', '不建议做什么', '什么时候应该暂停'];
+    const headings = ['适用范围', '依据原则', '可观察事实', '不要擅自推断', '风险分级', '可执行步骤', '话术示例', '停止与求助'];
     for (const article of stageArticles) {
       for (const heading of headings) expect(article.content).toContain(`## ${heading}`);
+      expect(article.evidence).toMatchObject({
+        principle: expect.any(String),
+        evidenceBoundary: expect.any(String),
+      });
+      expect(article.evidence?.sources.length).toBeGreaterThan(0);
     }
   });
 });
