@@ -12,3 +12,4 @@ export * from './chatImport';
 export * from './minerUChatImport';
 export * from './loveGuide';
 export * from './stageQuestionnaire';
+export * from './zhihu';
