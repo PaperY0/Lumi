@@ -27,6 +27,7 @@ import type { CustomLoveGuideArticle, LoveGuideArticle, LoveGuideCategory } from
 import type { ZhihuCategory } from '@/types';
 import { ZhihuContentCard } from './ZhihuContentCard';
 import { ZhihuSearchPanel } from './ZhihuSearchPanel';
+import { getLoveCodeZhihuReadings } from '@/lib/zhihu/loveCodeRecommendations';
 
 const READ_KEY = 'lumi_love_guide_read_article_ids';
 
@@ -61,14 +62,6 @@ const emptyForm: ArticleFormState = {
   difficulty: '入门',
   stage: 'pursuing',
 };
-
-function zhihuCategoryForLoveGuide(category: LoveGuideCategory): ZhihuCategory {
-  if (category === 'conflict') return 'repair';
-  if (category === 'date') return 'interestConnection';
-  if (category === 'confession') return 'action';
-  if (category === 'selfGrowth') return 'science';
-  return 'communication';
-}
 
 function loadReadIds(): Set<string> {
   try {
@@ -680,9 +673,7 @@ function ArticleDetail({
   onDelete?: () => void;
 }) {
   const catMeta = categories.find((c) => c.key === article.category);
-  const relatedZhihuArticles = curatedZhihuArticles
-    .filter((item) => item.category === zhihuCategoryForLoveGuide(article.category))
-    .slice(0, 2);
+  const relatedZhihuReading = getLoveCodeZhihuReadings(article, curatedZhihuArticles);
 
   const renderContent = (text: string) => {
     const lines = text.split('\n').filter(Boolean);
@@ -761,12 +752,12 @@ function ArticleDetail({
 
         <div style={{ height: 1, background: 'rgba(232,116,138,0.15)', marginBottom: 24 }} />
         <div>{renderContent(article.content)}</div>
-        {relatedZhihuArticles.length > 0 && (
+        {relatedZhihuReading.items.length > 0 && (
           <section aria-label="知乎延伸阅读" style={{ marginTop: 28 }}>
             <h2 style={{ margin: '0 0 12px', color: 'var(--text-rose)', fontSize: 17 }}>知乎延伸阅读</h2>
-            <p style={{ margin: '0 0 14px', color: 'var(--text-purple)', fontSize: 13, lineHeight: 1.7 }}>以下是与当前主题相关的公开讨论。Lumi 的建议与知乎原文彼此独立。</p>
+            <p style={{ margin: '0 0 14px', color: 'var(--text-purple)', fontSize: 13, lineHeight: 1.7 }}><strong>为什么推荐：</strong>{relatedZhihuReading.reason}</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 14 }}>
-              {relatedZhihuArticles.map((item) => <ZhihuContentCard key={item.id} item={item} />)}
+              {relatedZhihuReading.items.map((item) => <ZhihuContentCard key={item.id} item={item} />)}
             </div>
           </section>
         )}
