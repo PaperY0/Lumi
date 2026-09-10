@@ -16,7 +16,14 @@ function numberFromEnv(name: string, fallback: number): number {
 
 export function getAllowedOrigins(): string[] {
   const raw = process.env.ALLOWED_ORIGINS;
-  if (!raw) return ['http://localhost:5173', 'http://localhost:5174'];
+  if (!raw) {
+    return [
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:5174',
+    ];
+  }
   return raw
     .split(',')
     .map((origin) => origin.trim())
