@@ -18,15 +18,21 @@ import { GlassCard, LiquidButton } from './GlassUI';
 import { IconBadge } from './IconBadge';
 import { AnimatedCard } from './AnimatedCard';
 import { articles as defaultArticles, categories } from '@/data/loveGuideArticles';
+import { curatedZhihuArticles, zhihuCategories } from '@/data/zhihuCuratedArticles';
 import { girlProfileRepository, loveGuideRepository, userProfileRepository } from '@/lib/db/repositories';
 import { filterLoveGuideArticlesByStage, loveGuideStageGroups } from '@/lib/loveGuideStage';
 import { getRelationshipStageDisplay, getRelationshipStageLabel, getRelationshipStageValue, relationshipStageOptions, type RelationshipStageValue } from '@/lib/relationshipStage';
 import { getLoveGuideSources, loveGuideMethodology } from '@/data/loveGuideMethodology';
 import type { CustomLoveGuideArticle, LoveGuideArticle, LoveGuideCategory } from '@/types/loveGuide';
+import type { ZhihuCategory } from '@/types';
+import { ZhihuContentCard } from './ZhihuContentCard';
+import { ZhihuSearchPanel } from './ZhihuSearchPanel';
+import { getLoveCodeZhihuReadings } from '@/lib/zhihu/loveCodeRecommendations';
 
 const READ_KEY = 'lumi_love_guide_read_article_ids';
 
 type ArticleSource = 'default' | 'custom';
+type ContentMode = 'curated' | 'search';
 type ManagedArticle = LoveGuideArticle & {
   source: ArticleSource;
   createdAt?: string;
@@ -93,6 +99,8 @@ function parseTags(input: string): string[] {
 }
 
 export function LoveCodePage() {
+  const [contentMode, setContentMode] = useState<ContentMode>('curated');
+  const [activeZhihuCategory, setActiveZhihuCategory] = useState<ZhihuCategory | 'all'>('all');
   const [activeCategory, setActiveCategory] = useState<LoveGuideCategory | 'all'>('all');
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
   const [readIds, setReadIds] = useState<Set<string>>(loadReadIds);
@@ -254,6 +262,9 @@ export function LoveCodePage() {
 
   const currentCat = categories.find((c) => c.key === activeCategory);
   const customCount = customArticles.length;
+  const visibleZhihuArticles = activeZhihuCategory === 'all'
+    ? curatedZhihuArticles
+    : curatedZhihuArticles.filter((item) => item.category === activeZhihuCategory);
 
   return (
     <div style={{ padding: '32px', maxWidth: 1100, margin: '0 auto' }} className="page-enter">
@@ -275,6 +286,16 @@ export function LoveCodePage() {
           新增文章
         </LiquidButton>
       </div>
+
+      <div role="tablist" aria-label="法典内容入口" style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        <button type="button" role="tab" aria-selected={contentMode === 'curated'} onClick={() => setContentMode('curated')} style={{ border: contentMode === 'curated' ? 'none' : '1px solid rgba(232,116,138,0.22)', borderRadius: 999, padding: '9px 15px', background: contentMode === 'curated' ? 'linear-gradient(135deg,#E8748A,#C5956C)' : 'rgba(255,245,248,0.55)', color: contentMode === 'curated' ? 'white' : 'var(--text-purple)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>精选浏览</button>
+        <button type="button" role="tab" aria-selected={contentMode === 'search'} onClick={() => setContentMode('search')} style={{ border: contentMode === 'search' ? 'none' : '1px solid rgba(232,116,138,0.22)', borderRadius: 999, padding: '9px 15px', background: contentMode === 'search' ? 'linear-gradient(135deg,#E8748A,#C5956C)' : 'rgba(255,245,248,0.55)', color: contentMode === 'search' ? 'white' : 'var(--text-purple)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>搜索知乎</button>
+      </div>
+
+      {contentMode === 'search' ? (
+        <ZhihuSearchPanel />
+      ) : (
+        <>
 
       <div style={{ marginBottom: 18, padding: '12px 16px', borderRadius: 16, border: '1px solid rgba(232,116,138,0.18)', background: 'rgba(255,245,248,0.5)', color: 'var(--text-purple)', fontSize: 13 }}>
         当前法典：<strong style={{ color: 'var(--pink-primary)' }}>{getRelationshipStageDisplay({ currentStage, currentStageLabel: undefined })}</strong>。阶段专属文章会随资料页中的关系阶段自动切换，旧文章仍作为通用指南保留。
@@ -489,6 +510,20 @@ export function LoveCodePage() {
           </p>
         </div>
       )}
+
+      <section aria-label="知乎精选" style={{ marginTop: 36, paddingTop: 26, borderTop: '1px solid rgba(232,116,138,0.16)' }}>
+        <h2 style={{ margin: 0, color: 'var(--text-rose)', fontSize: 20 }}>知乎精选</h2>
+        <p style={{ margin: '8px 0 16px', color: 'var(--text-purple)', fontSize: 13, lineHeight: 1.7 }}>已按关系主题筛选的公开内容。Lumi 推荐理由是独立说明，点击可前往知乎阅读完整讨论。</p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+          <button type="button" onClick={() => setActiveZhihuCategory('all')} style={{ border: activeZhihuCategory === 'all' ? 'none' : '1px solid rgba(232,116,138,0.22)', borderRadius: 999, padding: '7px 12px', background: activeZhihuCategory === 'all' ? 'linear-gradient(135deg,#E8748A,#C5956C)' : 'rgba(255,245,248,0.55)', color: activeZhihuCategory === 'all' ? 'white' : 'var(--text-purple)', cursor: 'pointer', fontSize: 12 }}>全部</button>
+          {zhihuCategories.map((category) => <button key={category.key} type="button" onClick={() => setActiveZhihuCategory(category.key)} style={{ border: activeZhihuCategory === category.key ? 'none' : '1px solid rgba(232,116,138,0.22)', borderRadius: 999, padding: '7px 12px', background: activeZhihuCategory === category.key ? 'linear-gradient(135deg,#E8748A,#C5956C)' : 'rgba(255,245,248,0.55)', color: activeZhihuCategory === category.key ? 'white' : 'var(--text-purple)', cursor: 'pointer', fontSize: 12 }}>{category.label}</button>)}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+          {visibleZhihuArticles.map((item) => <ZhihuContentCard key={item.id} item={item} />)}
+        </div>
+      </section>
+        </>
+      )}
     </div>
   );
 }
@@ -638,6 +673,7 @@ function ArticleDetail({
   onDelete?: () => void;
 }) {
   const catMeta = categories.find((c) => c.key === article.category);
+  const relatedZhihuReading = getLoveCodeZhihuReadings(article, curatedZhihuArticles);
 
   const renderContent = (text: string) => {
     const lines = text.split('\n').filter(Boolean);
@@ -716,6 +752,15 @@ function ArticleDetail({
 
         <div style={{ height: 1, background: 'rgba(232,116,138,0.15)', marginBottom: 24 }} />
         <div>{renderContent(article.content)}</div>
+        {relatedZhihuReading.items.length > 0 && (
+          <section aria-label="知乎延伸阅读" style={{ marginTop: 28 }}>
+            <h2 style={{ margin: '0 0 12px', color: 'var(--text-rose)', fontSize: 17 }}>知乎延伸阅读</h2>
+            <p style={{ margin: '0 0 14px', color: 'var(--text-purple)', fontSize: 13, lineHeight: 1.7 }}><strong>为什么推荐：</strong>{relatedZhihuReading.reason}</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 14 }}>
+              {relatedZhihuReading.items.map((item) => <ZhihuContentCard key={item.id} item={item} />)}
+            </div>
+          </section>
+        )}
         {article.evidence && (
           <div style={{ marginTop: 24, padding: '16px', borderRadius: 16, border: '1px solid rgba(232,116,138,0.2)', background: 'rgba(255,245,248,0.58)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 7, color: 'var(--text-rose)', fontSize: 14, fontWeight: 600, marginBottom: 8 }}><ShieldCheck size={16} color="var(--pink-primary)" />依据与边界</div>

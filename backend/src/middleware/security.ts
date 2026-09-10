@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 const DEFAULT_WINDOW_MS = 15 * 60 * 1000;
 const DEFAULT_GLOBAL_MAX = 100;
 const DEFAULT_AI_MAX = 30;
+const DEFAULT_ZHIHU_SEARCH_MAX = 12;
 
 function numberFromEnv(name: string, fallback: number): number {
   const raw = process.env[name];
@@ -15,7 +16,14 @@ function numberFromEnv(name: string, fallback: number): number {
 
 export function getAllowedOrigins(): string[] {
   const raw = process.env.ALLOWED_ORIGINS;
-  if (!raw) return ['http://localhost:5173', 'http://localhost:5174'];
+  if (!raw) {
+    return [
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:5174',
+    ];
+  }
   return raw
     .split(',')
     .map((origin) => origin.trim())
@@ -43,6 +51,18 @@ export const aiRateLimiter = rateLimit({
     success: false,
     error: 'AI_RATE_LIMITED',
     message: 'AI 请求过于频繁，请稍后再试',
+  },
+});
+
+export const zhihuSearchRateLimiter = rateLimit({
+  windowMs: 60_000,
+  limit: numberFromEnv('ZHIHU_SEARCH_RATE_LIMIT_MAX', DEFAULT_ZHIHU_SEARCH_MAX),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: 'ZHIHU_RATE_LIMITED',
+    message: '知乎搜索过于频繁，请稍后再试',
   },
 });
 

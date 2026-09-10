@@ -8,12 +8,14 @@ import simulateRouter from './routes/simulate.js';
 import minerUChatRouter from './routes/minerUChat.js';
 import minerUImageRouter from './routes/minerUImage.js';
 import minerUProxyRouter from './routes/minerUProxy.js';
+import zhihuRouter from './routes/zhihu.js';
 import {
   aiRateLimiter,
   attachRequestId,
   getAllowedOrigins,
   getRequestId,
   globalRateLimiter,
+  zhihuSearchRateLimiter,
 } from './middleware/security.js';
 
 const app = express();
@@ -34,6 +36,7 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use('/api', aiRateLimiter, minerUImageRouter);
+app.use('/api/zhihu', zhihuSearchRateLimiter, zhihuRouter);
 app.use('/api', minerUProxyRouter);
 app.use('/api', aiRateLimiter, analyzeRouter);
 app.use('/api', aiRateLimiter, replyRouter);
@@ -69,6 +72,7 @@ Routes:
   POST /api/analyze
   POST /api/reply
   POST /api/simulate
+  GET  /api/zhihu/search
   POST /api/parse-mineru-chat
   POST /api/mineru/parse-image-chat
   POST /api/mineru/upload-to-oss  (compat only; frontend should not call)

@@ -5,6 +5,30 @@
 
 import { z } from 'zod';
 
+export const ZhihuSearchItemSchema = z.object({
+  title: z.string(),
+  contentType: z.string(),
+  contentId: z.string(),
+  contentText: z.string(),
+  url: z.string().url(),
+  commentCount: z.number().int().nonnegative(),
+  voteUpCount: z.number().int().nonnegative(),
+  authorName: z.string(),
+  editTime: z.number().int().nonnegative(),
+  authorityLevel: z.string(),
+  rankingScore: z.number(),
+});
+
+export const ZhihuSearchResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    hasMore: z.boolean(),
+    searchHashId: z.string(),
+    items: z.array(ZhihuSearchItemSchema),
+    emptyReason: z.string().optional(),
+  }),
+});
+
 // 关系画像响应结构
 export const PortraitResponseSchema = z.object({
   maleTypeTags: z.array(z.string()),
