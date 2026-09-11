@@ -25,3 +25,4 @@ jobs:
       - run: pnpm test
       - run: pnpm build
       - run: pnpm --registry=https://registry.npmjs.org audit --prod --audit-level moderate
+      - run: docker build --tag lumi:ci .
