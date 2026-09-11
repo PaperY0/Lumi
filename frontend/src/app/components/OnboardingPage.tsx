@@ -202,16 +202,16 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
   });
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 48px', position: 'relative' }}>
+    <div className="onboarding-shell" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 48px', position: 'relative' }}>
       {/* Decorative 3D rings */}
-      <div style={{ position: 'absolute', top: '10%', right: '5%', width: 180, height: 180, borderRadius: '50%', border: '1px solid rgba(212,96,122,0.12)', animation: 'floatSlow 8s ease-in-out infinite', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', bottom: '15%', left: '8%', width: 120, height: 120, borderRadius: '50%', border: '1px solid rgba(200,168,212,0.15)', animation: 'floatSlow 10s ease-in-out 2s infinite', pointerEvents: 'none' }} />
+      <div className="onboarding-ring onboarding-ring-top" style={{ position: 'absolute', top: '10%', right: '5%', width: 180, height: 180, borderRadius: '50%', border: '1px solid rgba(212,96,122,0.12)', animation: 'floatSlow 8s ease-in-out infinite', pointerEvents: 'none' }} />
+      <div className="onboarding-ring onboarding-ring-bottom" style={{ position: 'absolute', bottom: '15%', left: '8%', width: 120, height: 120, borderRadius: '50%', border: '1px solid rgba(200,168,212,0.15)', animation: 'floatSlow 10s ease-in-out 2s infinite', pointerEvents: 'none' }} />
 
-      <div style={{ maxWidth: 1120, width: '100%', display: 'flex', alignItems: 'center', gap: 80 }}>
+      <div className="onboarding-layout" style={{ maxWidth: 1120, width: '100%', display: 'flex', alignItems: 'center', gap: 80 }}>
         {/* Left: Content */}
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="onboarding-copy" style={{ flex: 1, minWidth: 0 }}>
           {/* Brand */}
-          <div style={{ ...anim(100), marginBottom: 32, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="onboarding-brand" style={{ ...anim(100), marginBottom: 32, display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{
               width: 48, height: 48, borderRadius: 16,
               background: 'linear-gradient(135deg, #D4607A, #BF8E6E)',
@@ -230,7 +230,7 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
               wrapping it in BlurText's inline-block spans made the glyphs
               transparent (background-clip:text can't reach child boxes). */}
           <div style={anim(260)}>
-            <h1 style={{
+            <h1 className="onboarding-title" style={{
               margin: 0, marginBottom: 20,
               fontSize: 'clamp(34px, 5vw, 54px)',
               fontWeight: 800,
@@ -246,13 +246,13 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
 
           {/* Subtitle */}
           <div style={anim(400)}>
-            <p style={{ margin: 0, marginBottom: 28, fontSize: 17, color: '#5E4A60', lineHeight: 1.7, opacity: 0.85 }}>
+            <p className="onboarding-subtitle" style={{ margin: 0, marginBottom: 28, fontSize: 17, color: '#5E4A60', lineHeight: 1.7, opacity: 0.85 }}>
               从追求、暧昧到恋爱，帮你理解表达、尊重边界、减少误解。
             </p>
           </div>
 
           {/* Brand tagline */}
-          <div style={{ ...anim(480), marginBottom: 36 }}>
+          <div className="onboarding-tagline" style={{ ...anim(480), marginBottom: 36 }}>
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
               padding: '10px 18px', borderRadius: 999,
@@ -268,7 +268,7 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
           </div>
 
           {/* Feature tags */}
-          <div style={{ ...anim(560), display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 36 }}>
+          <div className="onboarding-features" style={{ ...anim(560), display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 36 }}>
             {['理解表达', '尊重边界', 'AI 分析', '模拟对话', '回复建议'].map((tag) => (
               <span key={tag} style={{ padding: '5px 14px', borderRadius: 999, fontSize: 12, background: 'rgba(242,189,204,0.3)', border: '1px solid rgba(212,96,122,0.2)', color: '#5E4A60' }}>
                 {tag}
@@ -277,7 +277,7 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
           </div>
 
           {/* Privacy notice */}
-          <div style={{ ...anim(620), marginBottom: 28 }}>
+          <div className="onboarding-privacy" style={{ ...anim(620), marginBottom: 28 }}>
             <div className="privacy-notice" style={{ borderRadius: 18, padding: '12px 16px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
               <Lock size={13} color="#BF8E6E" style={{ marginTop: 1, flexShrink: 0 }} />
               <p style={{ margin: 0, fontSize: 12, color: '#5E4A60', lineHeight: 1.65 }}>
@@ -287,7 +287,7 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
           </div>
 
           {/* Agreement */}
-          <div style={{ ...anim(680), marginBottom: 32, display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }} onClick={() => setAgreed(!agreed)}>
+          <div className="onboarding-agreement" style={{ ...anim(680), marginBottom: 32, display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }} onClick={() => setAgreed(!agreed)}>
             <div style={{
               width: 20, height: 20, borderRadius: 7, flexShrink: 0, marginTop: 1,
               border: `1.5px solid ${agreed ? '#D4607A' : 'rgba(200,150,180,0.35)'}`,
@@ -304,7 +304,7 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
           </div>
 
           {/* CTA Buttons */}
-          <div style={{ ...anim(740), display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <div className="onboarding-actions" style={{ ...anim(740), display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <button
               className="btn-primary"
               onClick={() => {
@@ -339,7 +339,7 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
         </div>
 
         {/* Right: 3D Mockup */}
-        <div style={{ ...anim(300), flexShrink: 0, position: 'relative' }}>
+        <div className="onboarding-preview" style={{ ...anim(300), flexShrink: 0, position: 'relative' }}>
           <AppMockup />
         </div>
       </div>

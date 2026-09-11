@@ -397,6 +397,79 @@ body {
 }
 
 /* ─── Stable onboarding questionnaires ────────────────────── */
+
+@media (max-width: 768px) {
+  .onboarding-shell {
+    min-height: 100svh !important;
+    align-items: flex-start !important;
+    padding: 28px 20px 36px !important;
+    overflow-x: hidden;
+  }
+
+  .onboarding-layout {
+    display: block !important;
+    width: min(100%, 520px) !important;
+    margin: 0 auto;
+  }
+
+  .onboarding-copy {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .onboarding-brand {
+    margin-bottom: 28px !important;
+  }
+
+  .onboarding-title {
+    font-size: clamp(34px, 11vw, 44px) !important;
+    line-height: 1.08 !important;
+    margin-bottom: 18px !important;
+  }
+
+  .onboarding-subtitle {
+    font-size: 15px !important;
+    line-height: 1.65 !important;
+    margin-bottom: 22px !important;
+  }
+
+  .onboarding-tagline,
+  .onboarding-features {
+    margin-bottom: 24px !important;
+  }
+
+  .onboarding-privacy {
+    margin-bottom: 20px !important;
+  }
+
+  .onboarding-agreement {
+    margin-bottom: 24px !important;
+  }
+
+  .onboarding-actions {
+    display: grid !important;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .onboarding-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .onboarding-preview,
+  .onboarding-ring-bottom {
+    display: none !important;
+  }
+
+  .onboarding-ring-top {
+    width: 120px !important;
+    height: 120px !important;
+    top: 3% !important;
+    right: -42px !important;
+  }
+}
+
 .core-questionnaire {
   width: min(100%, 880px);
   margin: 0 auto;
