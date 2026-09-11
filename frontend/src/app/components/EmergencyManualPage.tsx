@@ -83,7 +83,7 @@ export function EmergencyManualPage() {
                   key={item}
                   onClick={() => setCategory(item)}
                   style={{
-                    border: active ? 'none' : '1px solid rgba(212,96,122,0.22)',
+                    border: active ? '1px solid transparent' : '1px solid rgba(212,96,122,0.22)',
                     background: active ? 'linear-gradient(135deg,#D4607A,#C5956C)' : 'rgba(255,248,252,0.55)',
                     color: active ? 'white' : '#7B5C6E',
                     borderRadius: 999,

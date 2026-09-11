@@ -304,7 +304,7 @@ function AIAnalysisReportView({ report }: { report: AIAnalysisReport }) {
         </div>
       </GlassCard>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
+      <div className="responsive-two-column" style={{ gap: 20, marginBottom: 20 }}>
         {/* 关系阶段 & 互动热度 */}
         <GlassCard>
           <div style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.65, marginBottom: 14, textTransform: 'uppercase', letterSpacing: '0.08em' }}>关系阶段</div>
@@ -327,7 +327,7 @@ function AIAnalysisReportView({ report }: { report: AIAnalysisReport }) {
       </div>
 
       {/* 信号 */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+      <div className="responsive-two-column" style={{ gap: 16, marginBottom: 16 }}>
         <AIInsightCard
           icon="✅"
           title="积极信号"
@@ -380,7 +380,7 @@ function AIAnalysisReportView({ report }: { report: AIAnalysisReport }) {
       )}
 
       {/* 下一步 & 避免 */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 16, marginBottom: 16 }}>
+      <div className="responsive-two-column" style={{ gap: 16, marginTop: 16, marginBottom: 16 }}>
         <GlassCard>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-rose)', marginBottom: 12, display: 'flex', gap: 6, alignItems: 'center' }}>
             <Lightbulb size={14} color="var(--champagne-gold)" /> 下一步建议

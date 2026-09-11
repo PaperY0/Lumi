@@ -219,6 +219,17 @@ export const maleQuestions: MaleQuestion[] = [
 ];
 
 /**
+ * 首次体验只保留六个最能影响即时沟通建议的维度。
+ * 完整 30 题仍供用户在首页主动完善，不丢失原题库和历史能力。
+ */
+export const quickStartMaleQuestionIds = ['m1', 'm7', 'm10', 'm13', 'm16', 'm28'] as const;
+export const quickStartMaleQuestions = quickStartMaleQuestionIds.map((id) => {
+  const question = maleQuestions.find((item) => item.id === id);
+  if (!question) throw new Error(`缺少快速问卷题目：${id}`);
+  return question;
+});
+
+/**
  * 男生类型标签生成：每个维度均分 ≥2 算"健康"，≤1 算"短板"
  * 输出：typeTags（健康维度的中文标签）+ weaknesses（短板维度）+ suggestions（针对短板的建议）
  */

@@ -212,8 +212,8 @@ export default function App() {
         return;
       }
 
-      console.log('🔀 [OnboardingGuard] 男女问卷已完成，进入阶段专项问卷');
-      logDiag('onboarding', 'stage-questionnaires');
+      console.log('🔀 [OnboardingGuard] 核心引导已完成，进入可用主页或初始画像');
+      logDiag('onboarding', destination);
       if (destination === 'stage-questionnaires' && currentPage !== 'stage-questionnaires') navigate('stage-questionnaires');
       setShowOnboarding(false);
     }
@@ -320,14 +320,14 @@ export default function App() {
         {/* Sidebar (desktop) */}
         <Sidebar currentPage={currentPage} onNavigate={navigate} />
 
-        {/* Main content — simulation page gets overflow:hidden so it can fill 100% height */}
+        {/* Viewport workspaces keep their own content regions inside the visible app height. */}
         <main
-          className={currentPage === 'reply-assist' ? 'hide-scrollbar' : undefined}
+          className={currentPage === 'reply-assist' ? 'reply-assist-main hide-scrollbar' : undefined}
           style={{
             flex: 1,
-            overflowY: currentPage === 'simulation' ? 'hidden' : 'auto',
+            overflowY: currentPage === 'simulation' || currentPage === 'reply-assist' ? 'hidden' : 'auto',
             overflowX: 'hidden',
-            paddingBottom: currentPage === 'simulation' ? 0 : 80,
+            paddingBottom: currentPage === 'simulation' || currentPage === 'reply-assist' ? 0 : 80,
             display: 'flex',
             flexDirection: 'column',
             height: '100%',

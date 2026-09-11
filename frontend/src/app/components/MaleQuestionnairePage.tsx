@@ -3,20 +3,19 @@ import { ArrowLeft, ArrowRight, PartyPopper, Lightbulb } from 'lucide-react';
 import { GlassCard, LiquidButton, ProgressStepper, StageBadge } from './GlassUI';
 import { CountUp } from './CountUp';
 import { BlurText } from './BlurText';
+import { CoreQuestionnaireQuestion } from './CoreQuestionnaireQuestion';
 import { IconBadge } from './IconBadge';
 import type { PageName } from './GlassUI';
 // ✅ 接入题库
-import { maleQuestions, maleDimensionMeta, type MaleDimension } from '@/data/maleQuestions';
+import { maleQuestions, quickStartMaleQuestions, maleDimensionMeta, type MaleDimension } from '@/data/maleQuestions';
 import { questionnaireRepository } from '@/lib/db';
 import { useUserStore, useUiStore, useSettingsStore } from '@/stores';
 import type { MaleQuestionAnswer, MaleQuestionnaireResult } from '@/types/questionnaire';
 
 interface Props { onNavigate: (page: PageName) => void; }
 
-const steps = ['资料建档', '男生问卷', '女生问卷', '阶段问卷', '关系画像'];
-
-// ✅ 使用题库数据
-const questions = maleQuestions;
+const fullSteps = ['资料建档', '男生问卷', '女生问卷', '阶段问卷', '关系画像'];
+const quickStartSteps = ['简单建档', '快速了解', '初始画像'];
 
 // ✅ 计分函数
 function computeMaleResult(userPicks: { questionId: string; option: { label: string; score: number; }; dimension: MaleDimension }[]) {
@@ -42,6 +41,10 @@ function computeMaleResult(userPicks: { questionId: string; option: { label: str
 }
 
 export function MaleQuestionnairePage({ onNavigate }: Props) {
+  const onboardingCompleted = useSettingsStore((state) => state.onboardingCompleted);
+  const isQuickStart = !onboardingCompleted;
+  const questions = isQuickStart ? quickStartMaleQuestions : maleQuestions;
+  const steps = isQuickStart ? quickStartSteps : fullSteps;
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [showResult, setShowResult] = useState(false);
@@ -119,17 +122,14 @@ export function MaleQuestionnairePage({ onNavigate }: Props) {
       console.log('[MaleQuestionnaire] 保存成功，显示 toast');
 
       // ✅ 任务 4：根据 onboardingCompleted 决定跳转
-      const onboardingCompleted = useSettingsStore.getState().onboardingCompleted;
-
       if (onboardingCompleted) {
         ui.showToast('男生问卷已更新', 'success');
         console.log('🔀 [MaleQuestionnaire] 老用户重做问卷完成，跳转 relationship-portrait');
         onNavigate('relationship-portrait');
       } else {
-        ui.showToast('男生问卷已完成', 'success');
-        console.log('[MaleQuestionnaire] 准备跳转到 female-questionnaire');
-        // ✅ 跳转到女生问卷
-        onNavigate('female-questionnaire');
+        ui.showToast('快速了解已完成', 'success');
+        console.log('[MaleQuestionnaire] 快速问卷完成，准备生成初始画像');
+        onNavigate('relationship-portrait');
       }
 
       console.log('[MaleQuestionnaire] 跳转调用完成');
@@ -152,14 +152,14 @@ export function MaleQuestionnairePage({ onNavigate }: Props) {
     const { typeTags } = computeMaleResult(userPicks);
 
     return (
-      <div style={{ padding: '32px', maxWidth: 600, margin: '0 auto' }} className="page-enter">
+      <div style={{ padding: '32px' }} className="core-questionnaire page-enter">
         <GlassCard hover={false} style={{ marginBottom: 24 }} padding="20px 24px">
           <ProgressStepper steps={steps} current={1} />
         </GlassCard>
 
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <IconBadge icon={PartyPopper} size={56} tone="rose" style={{ margin: '0 auto 16px' }} />
-          <BlurText text="问卷完成！" startDelay={60} style={{ fontSize: 22, fontWeight: 600, color: 'var(--text-rose)', display: 'block' }} />
+          <BlurText text={isQuickStart ? '快速了解完成！' : '问卷完成！'} startDelay={60} style={{ fontSize: 22, fontWeight: 600, color: 'var(--text-rose)', display: 'block' }} />
           <p style={{ margin: '8px 0 0', fontSize: 14, color: 'var(--text-purple)', opacity: 0.75 }}>已回答 <CountUp from={0} to={Object.keys(answers).length} duration={0.9} style={{ color: 'var(--soft-rose)', fontWeight: 600 }} /> / {questions.length} 题</p>
         </div>
 
@@ -187,9 +187,9 @@ export function MaleQuestionnairePage({ onNavigate }: Props) {
             重新作答
           </LiquidButton>
           <LiquidButton onClick={handleFinish} style={{ flex: 1, justifyContent: 'center' }}>
-            {useSettingsStore.getState().onboardingCompleted
+            {onboardingCompleted
               ? '保存问卷结果'
-              : <>继续：她的观察问卷 <ArrowRight size={16} /></>
+              : <>生成初始画像 <ArrowRight size={16} /></>
             }
           </LiquidButton>
         </div>
@@ -201,84 +201,19 @@ export function MaleQuestionnairePage({ onNavigate }: Props) {
   const selectedAnswer = answers[current];
 
   return (
-    <div style={{ padding: '32px', maxWidth: 640, margin: '0 auto' }} className="page-enter">
-      <GlassCard hover={false} style={{ marginBottom: 32 }} padding="20px 24px">
-        <ProgressStepper steps={steps} current={1} />
-      </GlassCard>
-
-      <div style={{ textAlign: 'center', marginBottom: 32 }}>
-        <BlurText text="先了解你的沟通方式" startDelay={60} style={{ fontSize: 22, fontWeight: 600, color: 'var(--text-rose)', letterSpacing: '-0.02em', display: 'block' }} />
-        <p style={{ margin: '8px 0 0', fontSize: 14, color: 'var(--text-purple)', opacity: 0.75 }}>
-          这不是打分，而是帮你发现自己的表达习惯。
-        </p>
-      </div>
-
-      {/* Progress bar */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, alignItems: 'center' }}>
-          <span style={{ fontSize: 13, color: 'var(--text-purple)', opacity: 0.7 }}>第 {current + 1} / {questions.length} 题</span>
-          <span style={{ fontSize: 13, color: 'var(--pink-primary)', fontWeight: 500 }}>{Math.round(((current + 1) / questions.length) * 100)}%</span>
-        </div>
-        <div style={{ height: 4, borderRadius: 999, background: 'rgba(249,200,213,0.3)', overflow: 'hidden' }}>
-          <div style={{ width: `${((current + 1) / questions.length) * 100}%`, height: '100%', background: 'linear-gradient(90deg, #E8748A, #C5956C)', borderRadius: 999, transition: 'width 0.4s ease' }} />
-        </div>
-      </div>
-
-      {/* Question Card */}
-      <GlassCard style={{ marginBottom: 16 }}>
-        <p style={{ margin: 0, fontSize: 18, fontWeight: 600, color: 'var(--text-rose)', lineHeight: 1.5, letterSpacing: '-0.01em' }}>
-          {q.text}
-        </p>
-      </GlassCard>
-
-      {/* Options */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 32 }}>
-        {q.options.map((opt) => {
-          const isSelected = selectedAnswer === opt.label;
-          return (
-            <div
-              key={opt.label}
-              className={`option-card ${isSelected ? 'option-card-selected' : ''}`}
-              onClick={() => handleSelect(opt.label)}
-              style={{
-                borderRadius: 20,
-                padding: '16px 20px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 14,
-              }}
-            >
-              <div
-                style={{
-                  width: 32, height: 32, borderRadius: 999,
-                  background: isSelected ? 'linear-gradient(135deg,#E8748A,#C5956C)' : 'rgba(255,245,248,0.7)',
-                  border: isSelected ? 'none' : '1px solid rgba(232,116,138,0.25)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0, fontSize: 13, fontWeight: 600,
-                  color: isSelected ? 'white' : 'var(--pink-primary)',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                {opt.label}
-              </div>
-              <span style={{ fontSize: 14, color: 'var(--text-rose)', lineHeight: 1.5, fontWeight: isSelected ? 500 : 400 }}>
-                {opt.text}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Navigation */}
-      <div style={{ display: 'flex', gap: 12, justifyContent: 'space-between' }}>
-        <LiquidButton variant="secondary" onClick={handlePrev} style={{ opacity: current === 0 ? 0.4 : 1 }}>
-          <ArrowLeft size={16} /> 上一题
-        </LiquidButton>
-        <LiquidButton onClick={handleNext} disabled={!selectedAnswer} style={{ opacity: selectedAnswer ? 1 : 0.5 }}>
-          {current === questions.length - 1 ? '查看结果' : '下一题'}
-          <ArrowRight size={16} />
-        </LiquidButton>
-      </div>
-    </div>
+    <CoreQuestionnaireQuestion
+      steps={steps}
+      step={1}
+      title={isQuickStart ? '用 1 分钟了解你的沟通方式' : '深入了解你的沟通方式'}
+      subtitle={isQuickStart ? '先回答 6 个核心问题，其他资料可以进入主页后再完善。' : '这不是打分，而是帮你更完整地发现自己的表达习惯。'}
+      current={current}
+      total={questions.length}
+      question={q.text}
+      options={q.options}
+      selected={selectedAnswer}
+      onSelect={handleSelect}
+      onPrevious={handlePrev}
+      onNext={handleNext}
+    />
   );
 }

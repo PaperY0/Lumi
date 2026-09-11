@@ -166,7 +166,7 @@ export function SettingsPage({ onNavigate }: Props) {
   // ── 渲染 ──
 
   return (
-    <div style={{ padding: '32px', maxWidth: 700, margin: '0 auto' }} className="page-enter">
+    <div style={{ padding: '32px' }} className="page-canvas page-canvas--focus page-enter">
 
       {/* 页面标题 */}
       <div style={{ marginBottom: 28 }}>
@@ -402,7 +402,7 @@ export function SettingsPage({ onNavigate }: Props) {
           <p style={{ margin: '0 0 16px', fontSize: 14, color: 'var(--text-rose)', lineHeight: 1.65 }}>
             {BRAND_NAME}建立在以下原则之上，这也是我们对每位用户的期待：
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div className="responsive-two-column" style={{ gap: 10 }}>
             {([
               { token: 'no-control' as IconToken, text: '不操控' },
               { token: 'no-pressure' as IconToken, text: '不施压' },

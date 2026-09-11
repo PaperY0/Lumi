@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, AlertCircle, BarChart3 } from 'lucide-react';
 import { GlassCard, LiquidButton, ProgressStepper, WarningNotice } from './GlassUI';
 import { CountUp } from './CountUp';
-import { BlurText } from './BlurText';
+import { CoreQuestionnaireQuestion } from './CoreQuestionnaireQuestion';
 import type { PageName } from './GlassUI';
 // ✅ 接入题库
 import { femaleQuestions, femaleDimensionMeta, inferStage, type FemaleDimension } from '@/data/femaleQuestions';
@@ -217,7 +217,7 @@ export function FemaleQuestionnairePage({ onNavigate }: Props) {
     const confidence = total > 0 ? Math.round((positive / total) * 100) : 50;
 
     return (
-      <div style={{ padding: '32px', maxWidth: 600, margin: '0 auto' }} className="page-enter">
+      <div style={{ padding: '32px' }} className="core-questionnaire page-enter">
         <GlassCard hover={false} style={{ marginBottom: 24 }} padding="20px 24px">
           <ProgressStepper steps={steps} current={2} />
         </GlassCard>
@@ -270,68 +270,21 @@ export function FemaleQuestionnairePage({ onNavigate }: Props) {
   const selectedAnswer = answers[current];
 
   return (
-    <div style={{ padding: '32px', maxWidth: 640, margin: '0 auto' }} className="page-enter">
-      <GlassCard hover={false} style={{ marginBottom: 32 }} padding="20px 24px">
-        <ProgressStepper steps={steps} current={2} />
-      </GlassCard>
-
-      <div style={{ textAlign: 'center', marginBottom: 24 }}>
-        <BlurText text="基于观察，了解她的互动方式" startDelay={60} style={{ fontSize: 22, fontWeight: 600, color: 'var(--text-rose)', letterSpacing: '-0.02em', display: 'block' }} />
-        <p style={{ margin: '8px 0 0', fontSize: 14, color: 'var(--text-purple)', opacity: 0.75 }}>
-          请根据真实互动填写，不要猜测过度。
-        </p>
-      </div>
-
-      <WarningNotice text="这是基于你已知信息的辅助判断，不代表对方真实想法的绝对结论。" />
-
-      <div style={{ marginTop: 24, marginBottom: 8 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-          <span style={{ fontSize: 13, color: 'var(--text-purple)', opacity: 0.7 }}>第 {current + 1} / {questions.length} 题</span>
-          <span style={{ fontSize: 13, color: 'var(--pink-primary)', fontWeight: 500 }}>{Math.round(((current + 1) / questions.length) * 100)}%</span>
-        </div>
-        <div style={{ height: 4, borderRadius: 999, background: 'rgba(212,165,201,0.25)', overflow: 'hidden' }}>
-          <div style={{
-            width: `${((current + 1) / questions.length) * 100}%`, height: '100%',
-            background: 'linear-gradient(90deg, #D4A5C9, #E8748A)',
-            borderRadius: 999, transition: 'width 0.4s ease',
-          }} />
-        </div>
-      </div>
-
-      <GlassCard style={{ marginBottom: 12, marginTop: 20 }}>
-        <p style={{ margin: 0, fontSize: 18, fontWeight: 600, color: 'var(--text-rose)', lineHeight: 1.5 }}>{q.text}</p>
-        {q.hint && <p style={{ margin: '10px 0 0', fontSize: 13, color: 'var(--text-purple)', opacity: 0.65, lineHeight: 1.5 }}>{q.hint}</p>}
-      </GlassCard>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 32 }}>
-        {q.options.map((opt) => {
-          const isSelected = selectedAnswer === opt.label;
-          return (
-            <div
-              key={opt.label}
-              className={`option-card ${isSelected ? 'option-card-selected' : ''}`}
-              onClick={() => handleSelect(opt.label)}
-              style={{
-                borderRadius: 20,
-                padding: '20px',
-                textAlign: 'center',
-                background: isSelected ? 'rgba(232,116,138,0.12)' : undefined,
-              }}
-            >
-              <div style={{ fontSize: 15, fontWeight: isSelected ? 600 : 400, color: 'var(--text-rose)' }}>{opt.text}</div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div style={{ display: 'flex', gap: 12, justifyContent: 'space-between' }}>
-        <LiquidButton variant="secondary" onClick={handlePrev} style={{ opacity: current === 0 ? 0.4 : 1 }}>
-          <ArrowLeft size={16} /> 上一题
-        </LiquidButton>
-        <LiquidButton onClick={handleNext} disabled={!selectedAnswer} style={{ opacity: selectedAnswer ? 1 : 0.5 }}>
-          {current === questions.length - 1 ? '查看结果' : '下一题'} <ArrowRight size={16} />
-        </LiquidButton>
-      </div>
-    </div>
+    <CoreQuestionnaireQuestion
+      steps={steps}
+      step={2}
+      title="基于观察，了解她的互动方式"
+      subtitle="请根据真实互动填写，不要猜测过度。"
+      notice="这是基于你已知信息的辅助判断，不代表对方真实想法的绝对结论。"
+      current={current}
+      total={questions.length}
+      question={q.text}
+      hint={q.hint}
+      options={q.options}
+      selected={selectedAnswer}
+      onSelect={handleSelect}
+      onPrevious={handlePrev}
+      onNext={handleNext}
+    />
   );
 }

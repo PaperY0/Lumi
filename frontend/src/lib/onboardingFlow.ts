@@ -2,6 +2,7 @@ export type OnboardingDestination =
   | 'onboarding'
   | 'profile'
   | 'male-questionnaire'
+  | 'relationship-portrait'
   | 'female-questionnaire'
   | 'stage-questionnaires'
   | 'dashboard';
@@ -61,11 +62,5 @@ export function resolveOnboardingDestination(progress: OnboardingProgress): Onbo
   if (!progress.hasUser) return 'onboarding';
   if (!(progress.profileComplete ?? progress.hasGirl)) return 'profile';
   if (!progress.hasMaleQuestionnaire) return 'male-questionnaire';
-  if (!progress.hasFemaleQuestionnaire) return 'female-questionnaire';
-  const stageCompleted = progress.stageCompleted;
-  if (stageCompleted && !(stageCompleted.self && stageCompleted.observation && stageCompleted.relationship)) {
-    return 'stage-questionnaires';
-  }
-  if (stageCompleted?.self && stageCompleted.observation && stageCompleted.relationship) return 'dashboard';
-  return progress.onboardingCompleted ? 'dashboard' : 'stage-questionnaires';
+  return progress.onboardingCompleted ? 'dashboard' : 'relationship-portrait';
 }

@@ -152,7 +152,7 @@ export function ImportantDatesPage() {
   };
 
   return (
-    <div style={{ padding: '32px', maxWidth: 800, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+    <div style={{ padding: '32px' }} className="page-canvas page-canvas--focus page-enter">
       <div style={{ marginBottom: 24 }}>
         <div style={{ marginBottom: 12 }}>
           <PageBackButton />
@@ -187,7 +187,7 @@ export function ImportantDatesPage() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 180px', gap: 12, marginBottom: 12 }}>
+        <div className="responsive-form-grid" style={{ marginBottom: 12 }}>
           <input
             className="glass-input"
             placeholder="名称，例如：她的生日、第一次见面"

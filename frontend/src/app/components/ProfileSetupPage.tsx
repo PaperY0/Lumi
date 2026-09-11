@@ -10,7 +10,6 @@ import { HistoryCenterPanel } from './HistoryCenterPanel';
 import { userProfileSchema, type ProfileFormValues } from '@/lib/validation/profileSchema';
 // ✅ 数据库 repository（真正落库）
 import { userProfileRepository, girlProfileRepository, questionnaireRepository } from '@/lib/db';
-import { resolveOnboardingDestination } from '@/lib/onboardingFlow';
 import { hasRequiredRelationshipStage } from '@/lib/profileStageValidation';
 import { loadOnboardingProgress } from '@/lib/onboardingProgress';
 // ✅ 全局 store：用户身份 + UI 提示
@@ -29,7 +28,7 @@ interface ProfileSetupPageProps {
   onNavigate: (page: PageName) => void;
 }
 
-const steps = ['资料建档', '男生问卷', '女生问卷', '阶段问卷', '关系画像'];
+const quickStartSteps = ['简单建档', '快速了解', '初始画像'];
 
 // ✅ 年龄段按钮改为 4 档，与 schema 的 ageRange 枚举一一对齐
 const ageOptions = ['18-22岁', '23-27岁', '28-32岁', '33岁以上'];
@@ -362,9 +361,8 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
         return;
       }
 
-      // ✅ 新手引导阶段：只跳到缺失的下一步
+      // 首次体验只要求资料和快速问卷；其余问卷在主页按需完善。
       const maleQ = await questionnaireRepository.getLatestMale(savedUser.id);
-      const femaleQ = await questionnaireRepository.getLatestFemale(savedUser.id);
 
       if (!maleQ) {
         console.log('🔀 [ProfileSetupPage] 新手引导：未完成男生问卷，跳转 male-questionnaire');
@@ -374,25 +372,10 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
         return;
       }
 
-      if (!femaleQ || !femaleQ.girlId) {
-        console.log('🔀 [ProfileSetupPage] 新手引导：未完成女生问卷，跳转 female-questionnaire');
-        ui.showToast('资料已保存', 'success');
-        setSaveMessage('资料已保存，正在进入女生问卷');
-        onNavigate('female-questionnaire');
-        return;
-      }
-
-      const nextPage = resolveOnboardingDestination({
-        hasUser: true,
-        hasGirl: true,
-        hasMaleQuestionnaire: !!maleQ,
-        hasFemaleQuestionnaire: !!femaleQ.girlId,
-        onboardingCompleted: false,
-      });
-      console.log(`🔀 [ProfileSetupPage] 新手引导：问卷已完成，跳转 ${nextPage}`);
+      console.log('🔀 [ProfileSetupPage] 快速问卷已完成，进入初始画像');
       ui.showToast('资料已保存', 'success');
-      setSaveMessage('资料已保存，正在进入阶段专项问卷');
-      if (nextPage === 'stage-questionnaires') onNavigate(nextPage);
+      setSaveMessage('资料已保存，正在生成初始画像');
+      onNavigate('relationship-portrait');
     } catch (e) {
       console.error('❌ [ProfileSetupPage] 保存失败:', e);
       setSaveMessage('保存失败，请检查填写内容后重试');
@@ -436,9 +419,11 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
   return (
     <div style={{ padding: '32px 32px 40px', maxWidth: 960, margin: '0 auto' }} className="page-enter">
       {/* Stepper */}
-      <GlassCard hover={false} style={{ marginBottom: 32 }} padding="20px 24px">
-        <ProgressStepper steps={steps} current={0} />
-      </GlassCard>
+      {!isReturningUser && (
+        <GlassCard hover={false} style={{ marginBottom: 32 }} padding="20px 24px">
+          <ProgressStepper steps={quickStartSteps} current={0} />
+        </GlassCard>
+      )}
 
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ margin: 0, fontSize: 26, fontWeight: 600, color: 'var(--text-rose)', letterSpacing: '-0.03em' }}>
@@ -457,7 +442,7 @@ export function ProfileSetupPage({ onNavigate }: ProfileSetupPageProps) {
             <div style={{ flex: 1 }}>
               <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--pink-primary)', marginBottom: 8, marginTop: 0 }}>先来做一份你的小档案吧</h3>
               <p style={{ fontSize: 14, color: 'var(--text-rose)', lineHeight: 1.6, marginBottom: 10, marginTop: 0 }}>
-                接下来会用几步帮你建立关系画像：填资料 → 做两份问卷 → 生成关系画像。大约 3 分钟。
+                只需简单建档和 6 个核心问题，就能先生成一份初始画像。大约 1 分钟。
               </p>
               <p style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.75, lineHeight: 1.65, marginTop: 0, marginBottom: 0 }}>
                 🔒 所有信息优先保存在你的浏览器本地，你可以随时清空。

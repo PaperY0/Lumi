@@ -1,9 +1,17 @@
 {
   "name": "lumi",
   "private": true,
+  "packageManager": "pnpm@11.13.0",
   "scripts": {
     "dev": "pnpm --filter @figma/my-make-file dev",
-    "build": "pnpm --filter @figma/my-make-file build",
-    "dev:server": "pnpm --filter lumi-server dev"
+    "dev:server": "pnpm --filter lumi-server dev",
+    "build": "pnpm run build:frontend && pnpm run build:backend",
+    "build:frontend": "pnpm --filter @figma/my-make-file build",
+    "build:backend": "pnpm --filter lumi-server build",
+    "test": "pnpm run test:frontend && pnpm run test:backend",
+    "test:frontend": "pnpm --filter @figma/my-make-file test",
+    "test:backend": "pnpm --filter lumi-server exec node --test --import tsx \"src/**/*.test.ts\"",
+    "deploy:local": "powershell -ExecutionPolicy Bypass -File scripts/deploy-local.ps1",
+    "deploy:docker": "docker compose -f docker-compose.prod.yml up --build -d"
   }
 }

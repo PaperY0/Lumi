@@ -88,7 +88,7 @@ export function SimulationPage({ onNavigate }: Props) {
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div style={{ flex: 1, overflowY: 'auto', padding: '32px' }}>
-        <div style={{ maxWidth: 800, margin: '0 auto' }}>
+        <div className="page-canvas page-canvas--content">
 
           {/* ── Header ──────────────────────────────────────────── */}
           <div style={{ marginBottom: 20 }}>
@@ -117,7 +117,7 @@ export function SimulationPage({ onNavigate }: Props) {
                     display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px',
                     borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: active ? 600 : 400,
                     background: active ? 'linear-gradient(135deg,#C8607A,#C4A070)' : 'rgba(255,250,252,0.6)',
-                    border: active ? 'none' : '1px solid rgba(200,96,122,0.18)',
+                    border: active ? '1px solid transparent' : '1px solid rgba(200,96,122,0.18)',
                     color: active ? 'white' : 'var(--graphite-rose)',
                     transition: 'all 0.22s ease',
                     boxShadow: active ? '0 3px 12px rgba(200,96,122,0.3)' : undefined,
@@ -141,7 +141,7 @@ export function SimulationPage({ onNavigate }: Props) {
               {/* Scene grid */}
               <div className="glass-card hoverable-card" style={{ borderRadius: 28, padding: '22px', marginBottom: 16 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--deep-plum)', marginBottom: 14 }}>选择练习场景</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                <div className="responsive-three-column" style={{ gap: 10 }}>
                   {scenarios.map(s => {
                     const active = selectedScenario === s.id;
                     return (
@@ -178,7 +178,7 @@ export function SimulationPage({ onNavigate }: Props) {
                         onClick={() => setSelectedDifficulty(d)}
                         style={{
                           flex: 1, padding: '11px', borderRadius: 14, cursor: 'pointer',
-                          border: active ? 'none' : '1px solid rgba(200,96,122,0.18)',
+                          border: active ? '1px solid transparent' : '1px solid rgba(200,96,122,0.18)',
                           background: active ? 'linear-gradient(135deg,#C8607A,#C4A070)' : 'rgba(255,250,252,0.6)',
                           color: active ? 'white' : 'var(--graphite-rose)',
                           fontSize: 13, fontWeight: active ? 600 : 400,
@@ -461,7 +461,7 @@ export function SimulationPage({ onNavigate }: Props) {
                     <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--deep-plum)' }}>练习已保存</div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+                  <div className="responsive-two-column" style={{ gap: 10, marginBottom: 14 }}>
                     <div style={{ fontSize: 12, color: 'var(--graphite-rose)' }}>
                       <span style={{ opacity: 0.6 }}>场景：</span>{savedRecord.scenario}
                     </div>

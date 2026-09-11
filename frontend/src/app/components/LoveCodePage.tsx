@@ -267,7 +267,7 @@ export function LoveCodePage() {
     : curatedZhihuArticles.filter((item) => item.category === activeZhihuCategory);
 
   return (
-    <div style={{ padding: '32px', maxWidth: 1100, margin: '0 auto' }} className="page-enter">
+    <main className="love-code-page page-enter">
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', marginBottom: 28 }}>
         <div>
           <h1 className="gradient-text" style={{ margin: 0, fontSize: 28, letterSpacing: '-0.03em' }}>
@@ -287,15 +287,21 @@ export function LoveCodePage() {
         </LiquidButton>
       </div>
 
-      <div role="tablist" aria-label="法典内容入口" style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-        <button type="button" role="tab" aria-selected={contentMode === 'curated'} onClick={() => setContentMode('curated')} style={{ border: contentMode === 'curated' ? 'none' : '1px solid rgba(232,116,138,0.22)', borderRadius: 999, padding: '9px 15px', background: contentMode === 'curated' ? 'linear-gradient(135deg,#E8748A,#C5956C)' : 'rgba(255,245,248,0.55)', color: contentMode === 'curated' ? 'white' : 'var(--text-purple)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>精选浏览</button>
-        <button type="button" role="tab" aria-selected={contentMode === 'search'} onClick={() => setContentMode('search')} style={{ border: contentMode === 'search' ? 'none' : '1px solid rgba(232,116,138,0.22)', borderRadius: 999, padding: '9px 15px', background: contentMode === 'search' ? 'linear-gradient(135deg,#E8748A,#C5956C)' : 'rgba(255,245,248,0.55)', color: contentMode === 'search' ? 'white' : 'var(--text-purple)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>搜索知乎</button>
+      <div role="tablist" aria-label="法典内容入口" className="love-code-mode-switch">
+        <button type="button" role="tab" id="love-code-curated-tab" aria-controls="love-code-mode-panel" aria-selected={contentMode === 'curated'} onClick={() => setContentMode('curated')}>精选浏览</button>
+        <button type="button" role="tab" id="love-code-search-tab" aria-controls="love-code-mode-panel" aria-selected={contentMode === 'search'} onClick={() => setContentMode('search')}>搜索知乎</button>
       </div>
 
-      {contentMode === 'search' ? (
-        <ZhihuSearchPanel />
-      ) : (
-        <>
+      <section
+        id="love-code-mode-panel"
+        role="tabpanel"
+        aria-labelledby={contentMode === 'curated' ? 'love-code-curated-tab' : 'love-code-search-tab'}
+        className="love-code-mode-panel"
+      >
+        {contentMode === 'search' ? (
+          <ZhihuSearchPanel />
+        ) : (
+          <>
 
       <div style={{ marginBottom: 18, padding: '12px 16px', borderRadius: 16, border: '1px solid rgba(232,116,138,0.18)', background: 'rgba(255,245,248,0.5)', color: 'var(--text-purple)', fontSize: 13 }}>
         当前法典：<strong style={{ color: 'var(--pink-primary)' }}>{getRelationshipStageDisplay({ currentStage, currentStageLabel: undefined })}</strong>。阶段专属文章会随资料页中的关系阶段自动切换，旧文章仍作为通用指南保留。
@@ -381,7 +387,7 @@ export function LoveCodePage() {
               borderRadius: 999,
               fontSize: 13,
               cursor: 'pointer',
-              border: activeCategory === cat.key ? 'none' : '1px solid rgba(232,116,138,0.22)',
+              border: activeCategory === cat.key ? '1px solid transparent' : '1px solid rgba(232,116,138,0.22)',
               background:
                 activeCategory === cat.key
                   ? 'linear-gradient(135deg,#E8748A,#C5956C)'
@@ -515,16 +521,17 @@ export function LoveCodePage() {
         <h2 style={{ margin: 0, color: 'var(--text-rose)', fontSize: 20 }}>知乎精选</h2>
         <p style={{ margin: '8px 0 16px', color: 'var(--text-purple)', fontSize: 13, lineHeight: 1.7 }}>已按关系主题筛选的公开内容。Lumi 推荐理由是独立说明，点击可前往知乎阅读完整讨论。</p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-          <button type="button" onClick={() => setActiveZhihuCategory('all')} style={{ border: activeZhihuCategory === 'all' ? 'none' : '1px solid rgba(232,116,138,0.22)', borderRadius: 999, padding: '7px 12px', background: activeZhihuCategory === 'all' ? 'linear-gradient(135deg,#E8748A,#C5956C)' : 'rgba(255,245,248,0.55)', color: activeZhihuCategory === 'all' ? 'white' : 'var(--text-purple)', cursor: 'pointer', fontSize: 12 }}>全部</button>
-          {zhihuCategories.map((category) => <button key={category.key} type="button" onClick={() => setActiveZhihuCategory(category.key)} style={{ border: activeZhihuCategory === category.key ? 'none' : '1px solid rgba(232,116,138,0.22)', borderRadius: 999, padding: '7px 12px', background: activeZhihuCategory === category.key ? 'linear-gradient(135deg,#E8748A,#C5956C)' : 'rgba(255,245,248,0.55)', color: activeZhihuCategory === category.key ? 'white' : 'var(--text-purple)', cursor: 'pointer', fontSize: 12 }}>{category.label}</button>)}
+          <button type="button" onClick={() => setActiveZhihuCategory('all')} style={{ border: activeZhihuCategory === 'all' ? '1px solid transparent' : '1px solid rgba(232,116,138,0.22)', borderRadius: 999, padding: '7px 12px', background: activeZhihuCategory === 'all' ? 'linear-gradient(135deg,#E8748A,#C5956C)' : 'rgba(255,245,248,0.55)', color: activeZhihuCategory === 'all' ? 'white' : 'var(--text-purple)', cursor: 'pointer', fontSize: 12 }}>全部</button>
+          {zhihuCategories.map((category) => <button key={category.key} type="button" onClick={() => setActiveZhihuCategory(category.key)} style={{ border: activeZhihuCategory === category.key ? '1px solid transparent' : '1px solid rgba(232,116,138,0.22)', borderRadius: 999, padding: '7px 12px', background: activeZhihuCategory === category.key ? 'linear-gradient(135deg,#E8748A,#C5956C)' : 'rgba(255,245,248,0.55)', color: activeZhihuCategory === category.key ? 'white' : 'var(--text-purple)', cursor: 'pointer', fontSize: 12 }}>{category.label}</button>)}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
           {visibleZhihuArticles.map((item) => <ZhihuContentCard key={item.id} item={item} />)}
         </div>
       </section>
-        </>
-      )}
-    </div>
+          </>
+        )}
+      </section>
+    </main>
   );
 }
 
@@ -562,7 +569,7 @@ function ArticleEditor({
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      <div className="responsive-two-column" style={{ gap: 12 }}>
         <Field label="标题">
           <input value={form.title} onChange={(e) => onChange({ ...form, title: e.target.value })} />
         </Field>
@@ -694,7 +701,8 @@ function ArticleDetail({
   };
 
   return (
-    <div style={{ padding: '32px', maxWidth: 900, margin: '0 auto' }} className="page-enter">
+    <div className="love-code-page page-enter">
+      <div className="love-code-reading-column">
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 24 }}>
         <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--pink-primary)', padding: 0 }}>
           <ArrowLeft size={16} /> 返回列表
@@ -776,6 +784,7 @@ function ArticleDetail({
           </div>
         )}
       </GlassCard>
+      </div>
     </div>
   );
 }

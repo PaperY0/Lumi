@@ -119,7 +119,7 @@ const hour = new Date().getHours();
                   </h2>
                   <div style={{ marginTop: 4, fontSize: 12, color: '#7B5C6E', opacity: 0.7 }}>
                     {d.profileCompletion < 100
-                      ? '完善双方资料和问卷后，AI 建议会更贴合你们的情况'
+                      ? '现在已经可以使用；继续完善资料，AI 建议会更贴合你们的情况'
                       : '资料已完善，AI 可以给出更精准的建议'}
                   </div>
                 </div>
@@ -133,10 +133,10 @@ const hour = new Date().getHours();
           </div>
 
           <div style={{ marginTop: 22, display: 'grid', gap: 8 }}>
-            <div style={{ fontSize: 12, color: '#7B5C6E', fontWeight: 700 }}>引导完成度 {d.onboardingProgress.completedCount}/{d.onboardingProgress.totalCount}</div>
+            <div style={{ fontSize: 12, color: '#7B5C6E', fontWeight: 700 }}>可选资料完善度 {d.onboardingProgress.completedCount}/{d.onboardingProgress.totalCount}</div>
             {([
               ['profile', '我的资料', d.onboardingProgress.profileComplete],
-              ['male', '男生问卷', d.onboardingProgress.male],
+              ['male', '沟通方式问卷', d.onboardingProgress.male],
               ['female', '女生问卷', d.onboardingProgress.female],
               ['stage-self', '我的相处方式', d.onboardingProgress.stage.self],
               ['stage-observation', '她的互动观察', d.onboardingProgress.stage.observation],
@@ -153,7 +153,7 @@ const hour = new Date().getHours();
             })}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginTop: 24 }}>
+          <div className="responsive-two-column" style={{ gap: 24, marginTop: 24 }}>
             <div>
               <div style={{ fontSize: 12, color: 'var(--graphite-rose)', opacity: 0.6, marginBottom: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                 {d.girlName ? `${d.girlName} · 当前状态` : '当前关系状态'}

@@ -87,6 +87,7 @@ const pageByKey: Record<OnboardingChecklistKey, PageName> = {
 export function getOnboardingAction({ key, completed, isReturningUser }: { key: OnboardingChecklistKey; completed: boolean; isReturningUser: boolean }): { label: string; page: PageName } {
   if (key === 'profile') return { label: completed ? '修改资料' : '完善资料', page: pageByKey[key] };
   if (!completed) return { label: '开始填写', page: pageByKey[key] };
+  if (key === 'male' && isReturningUser) return { label: '深入了解', page: pageByKey[key] };
   return { label: isReturningUser ? '重新填写' : '已完成', page: pageByKey[key] };
 }
 

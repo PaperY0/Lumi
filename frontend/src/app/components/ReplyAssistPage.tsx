@@ -28,11 +28,11 @@ const CARD_BASE: React.CSSProperties = {
 
 function pillStyle(active: boolean): React.CSSProperties {
   return {
-    padding: '8px 18px',
+    padding: '7px 16px',
     borderRadius: 999,
     fontSize: 13,
     cursor: 'pointer',
-    border: active ? 'none' : '1px solid rgba(212,96,122,0.22)',
+    border: active ? '1px solid transparent' : '1px solid rgba(212,96,122,0.22)',
     background: active
       ? 'linear-gradient(135deg,#D4607A,#C5956C)'
       : 'rgba(255,248,252,0.55)',
@@ -107,10 +107,10 @@ export function ReplyAssistPage({ onNavigate }: Props) {
   };
 
   return (
-    <div style={{ padding: '28px 32px 48px', maxWidth: 1140, margin: '0 auto', width: '100%', overflowX: 'hidden', boxSizing: 'border-box' }}>
+    <div className="reply-assist-page page-enter">
       {/* Header */}
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ marginBottom: 12 }}>
+      <div className="reply-assist__header">
+        <div className="reply-assist__back">
           <PageBackButton />
         </div>
         <BlurText text="帮我回复" startDelay={60} style={{ fontSize: 26, fontWeight: 700, color: '#4A2E38', letterSpacing: '-0.04em', display: 'block' }} />
@@ -120,14 +120,14 @@ export function ReplyAssistPage({ onNavigate }: Props) {
       </div>
 
       {/* Tab 切换 */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
+      <div className="reply-assist__tabs">
         <button
           onClick={() => setActiveView('compose')}
           style={{
             display: 'flex', alignItems: 'center', gap: 6,
             padding: '9px 20px', borderRadius: 999, fontSize: 13, fontWeight: 600,
             cursor: 'pointer', transition: 'all 0.2s ease',
-            border: activeView === 'compose' ? 'none' : '1px solid rgba(212,96,122,0.22)',
+            border: activeView === 'compose' ? '1px solid transparent' : '1px solid rgba(212,96,122,0.22)',
             background: activeView === 'compose' ? 'linear-gradient(135deg,#D4607A,#C5956C)' : 'rgba(255,248,252,0.55)',
             color: activeView === 'compose' ? 'white' : '#7B5C6E',
             boxShadow: activeView === 'compose' ? '0 4px 14px rgba(212,96,122,0.35), 0 1px 3px rgba(212,96,122,0.2)' : '0 1px 3px rgba(0,0,0,0.04)',
@@ -141,7 +141,7 @@ export function ReplyAssistPage({ onNavigate }: Props) {
             display: 'flex', alignItems: 'center', gap: 6,
             padding: '9px 20px', borderRadius: 999, fontSize: 13, fontWeight: 600,
             cursor: 'pointer', transition: 'all 0.2s ease',
-            border: activeView === 'history' ? 'none' : '1px solid rgba(212,96,122,0.22)',
+            border: activeView === 'history' ? '1px solid transparent' : '1px solid rgba(212,96,122,0.22)',
             background: activeView === 'history' ? 'linear-gradient(135deg,#D4607A,#C5956C)' : 'rgba(255,248,252,0.55)',
             color: activeView === 'history' ? 'white' : '#7B5C6E',
             boxShadow: activeView === 'history' ? '0 4px 14px rgba(212,96,122,0.35), 0 1px 3px rgba(212,96,122,0.2)' : '0 1px 3px rgba(0,0,0,0.04)',
@@ -153,16 +153,18 @@ export function ReplyAssistPage({ onNavigate }: Props) {
 
       {/* 历史记录视图 */}
       {activeView === 'history' && (
-        <ReplyHistoryPanel />
+        <div className="reply-assist__history hide-scrollbar">
+          <ReplyHistoryPanel />
+        </div>
       )}
 
       {/* 生成回复视图 */}
       {activeView === 'compose' && (
-      <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: 24, alignItems: 'start', minWidth: 0 }}>
+      <div className="responsive-split-layout reply-assist__workspace">
         {/* ── Left Panel: Input ─────────────────────────────────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
+        <div className="reply-assist__controls hide-scrollbar">
           {/* Message input */}
-          <div className="glass-card hoverable-card" style={{ borderRadius: 28, padding: '22px' }}>
+          <div className="glass-card hoverable-card reply-assist__message-card">
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 14 }}>
               <div style={{ width: 30, height: 30, borderRadius: 9, background: 'linear-gradient(135deg,#D4607A,#BF8E6E)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <MessageSquare size={14} color="white" />
@@ -174,7 +176,7 @@ export function ReplyAssistPage({ onNavigate }: Props) {
               value={userMessage}
               onChange={setUserMessage}
               onKeyDown={handleMessageKeyDown}
-              rows={5}
+              rows={4}
             />
             {!userMessage && (
               <button
@@ -187,7 +189,7 @@ export function ReplyAssistPage({ onNavigate }: Props) {
           </div>
 
           {/* Scene selection */}
-          <div className="glass-card hoverable-card" style={{ borderRadius: 24, padding: '18px 20px' }}>
+          <div className="glass-card hoverable-card reply-assist__choice-card">
             <div style={{ fontSize: 13, fontWeight: 600, color: '#4A2E38', marginBottom: 10 }}>当前场景</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {sceneOptions.map(s => (
@@ -205,7 +207,7 @@ export function ReplyAssistPage({ onNavigate }: Props) {
           </div>
 
           {/* Intent selection */}
-          <div className="glass-card hoverable-card" style={{ borderRadius: 24, padding: '18px 20px' }}>
+          <div className="glass-card hoverable-card reply-assist__choice-card">
             <div style={{ fontSize: 13, fontWeight: 600, color: '#4A2E38', marginBottom: 10 }}>我的目标</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {intentOptions.map(g => (
@@ -256,10 +258,10 @@ export function ReplyAssistPage({ onNavigate }: Props) {
         </div>
 
         {/* ── Right Panel: Results ──────────────────────────────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0, overflow: 'hidden' }}>
+        <div className="reply-assist__results hide-scrollbar">
           {/* State A: Empty */}
           {!data && !loading && !error && (
-            <div className="glass-card" style={{ borderRadius: 28, padding: '60px 32px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+            <div className="glass-card reply-assist__state" style={{ borderRadius: 28, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
               <div style={{ width: 64, height: 64, borderRadius: 20, background: 'rgba(212,96,122,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(212,96,122,0.15)' }}>
                 <MessageSquare size={28} color="#D4607A" style={{ opacity: 0.5 }} />
               </div>
@@ -274,7 +276,7 @@ export function ReplyAssistPage({ onNavigate }: Props) {
 
           {/* State B: Loading */}
           {loading && (
-            <div className="glass-card" style={{ borderRadius: 28, padding: '60px 32px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+            <div className="glass-card reply-assist__state" style={{ borderRadius: 28, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
               <div style={{ width: 64, height: 64, borderRadius: 20, background: 'rgba(212,96,122,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(212,96,122,0.15)', animation: 'breathe 1.5s ease-in-out infinite' }}>
                 <MessageSquare size={28} color="#D4607A" style={{ opacity: 0.5 }} />
               </div>

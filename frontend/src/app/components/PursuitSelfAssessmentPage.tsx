@@ -10,6 +10,7 @@ import { girlProfileRepository, stageQuestionnaireRepository } from '@/lib/db';
 import { useUiStore, useUserStore } from '@/stores';
 import { getRelationshipStageLabel, getRelationshipStageValue, type RelationshipStageValue } from '@/lib/relationshipStage';
 import { getNextStageAssessment } from '@/lib/stageAssessmentNavigation';
+import { StageAssessmentQuestion } from './StageAssessmentQuestion';
 
 interface Props {
   onNavigate: (page: PageName) => void;
@@ -86,7 +87,7 @@ export function PursuitSelfAssessmentPage({ onNavigate }: Props) {
 
   if (showResult) {
     return (
-      <div style={{ padding: '32px', maxWidth: 760, margin: '0 auto' }} className="page-enter">
+      <div style={{ padding: '32px' }} className="page-canvas page-canvas--focus page-enter">
         <LiquidButton variant="secondary" onClick={() => setShowResult(false)} style={{ marginBottom: 24 }}>
           <ArrowLeft size={16} /> 返回题目
         </LiquidButton>
@@ -129,32 +130,24 @@ export function PursuitSelfAssessmentPage({ onNavigate }: Props) {
     );
   }
 
+  const stageLabel = relationshipStage === 'observing' ? '初识接触期' : relationshipStage === 'warming' ? '升温期' : relationshipStage === 'ambiguous' ? '暧昧观察期' : '追求期';
+
   return (
-    <div style={{ padding: '32px', maxWidth: 720, margin: '0 auto' }} className="page-enter">
-      <LiquidButton variant="secondary" onClick={() => onNavigate('stage-questionnaires')} style={{ marginBottom: 24 }}>
-        <ArrowLeft size={16} /> 返回专项问卷
-      </LiquidButton>
-      <div style={{ marginBottom: 20 }}>
-        <h1 style={{ margin: 0, fontSize: 26, color: 'var(--text-rose)' }}>我在关系中的样子</h1>
-        <p style={{ margin: '8px 0 0', fontSize: 14, color: 'var(--text-purple)', lineHeight: 1.7 }}>{relationshipStage === 'observing' ? '初识接触期自我理解' : relationshipStage === 'warming' ? '升温期自我理解' : relationshipStage === 'ambiguous' ? '暧昧观察期自我理解' : '追求期自我理解'} · 第 {current + 1} / {questions.length} 题</p>
-      </div>
-      <div style={{ height: 5, borderRadius: 999, overflow: 'hidden', background: 'rgba(232,116,138,0.12)', marginBottom: 24 }}>
-          <div style={{ width: `${((current + 1) / questions.length) * 100}%`, height: '100%', background: 'linear-gradient(90deg,#E8748A,#C5956C)', transition: 'width .25s ease' }} />
-      </div>
-      <GlassCard hover={false} style={{ marginBottom: 16 }}>
-        <h2 style={{ margin: 0, fontSize: 19, color: 'var(--text-rose)', lineHeight: 1.55 }}>{question.text}</h2>
-        {question.hint && <p style={{ margin: '12px 0 0', fontSize: 13, color: 'var(--text-purple)', lineHeight: 1.7 }}>{question.hint}</p>}
-      </GlassCard>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
-        {question.options.map((option) => {
-          const isSelected = selected === option.id;
-          return <button key={option.id} type="button" onClick={() => setAnswers((previous) => ({ ...previous, [question.id]: option.id }))} style={{ borderRadius: 18, border: isSelected ? '1px solid rgba(232,116,138,0.65)' : '1px solid rgba(232,116,138,0.16)', background: isSelected ? 'rgba(232,116,138,0.12)' : 'rgba(255,255,255,0.44)', color: 'var(--text-rose)', padding: '15px 18px', fontSize: 14, textAlign: 'left', cursor: 'pointer', lineHeight: 1.6 }}>{option.text}</button>;
-        })}
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-        <LiquidButton variant="secondary" onClick={() => setCurrent((value) => Math.max(0, value - 1))} disabled={current === 0}><ArrowLeft size={16} /> 上一题</LiquidButton>
-        <LiquidButton disabled={!selected} onClick={() => current === questions.length - 1 ? setShowResult(true) : setCurrent((value) => value + 1)}>{current === questions.length - 1 ? '查看我的观察' : <>下一题 <ArrowRight size={16} /></>}</LiquidButton>
-      </div>
-    </div>
+    <StageAssessmentQuestion
+      title="我在关系中的样子"
+      eyebrow="专项问卷 · 自我理解"
+      context={`${stageLabel} · 关注感受、边界与表达方式`}
+      current={current}
+      total={questions.length}
+      question={question.text}
+      hint={question.hint}
+      options={question.options}
+      selected={selected}
+      nextLabel={current === questions.length - 1 ? '查看我的观察' : '下一题'}
+      onBack={() => onNavigate('stage-questionnaires')}
+      onPrevious={() => setCurrent((value) => Math.max(0, value - 1))}
+      onNext={() => current === questions.length - 1 ? setShowResult(true) : setCurrent((value) => value + 1)}
+      onSelect={(optionId) => setAnswers((previous) => ({ ...previous, [question.id]: optionId }))}
+    />
   );
 }

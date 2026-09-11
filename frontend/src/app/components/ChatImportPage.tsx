@@ -25,7 +25,7 @@ interface Props {
 
 const CHAT_IMPORT_CONTENT_STYLE: CSSProperties = {
   width: '100%',
-  maxWidth: 800,
+  maxWidth: 960,
   margin: '0 auto',
   boxSizing: 'border-box',
 };
@@ -602,7 +602,7 @@ export function ChatImportPage({ onNavigate }: Props) {
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div className="responsive-two-column" style={{ gap: 16 }}>
           {/* 我是谁 */}
           <div>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--pink-primary)', marginBottom: 10 }}>

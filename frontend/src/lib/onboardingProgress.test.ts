@@ -19,6 +19,7 @@ describe('onboarding progress checklist', () => {
     expect(getOnboardingAction({ key: 'profile', completed: true, isReturningUser: true })).toEqual({ label: '修改资料', page: 'profile' });
     expect(getOnboardingAction({ key: 'male', completed: false, isReturningUser: false })).toEqual({ label: '开始填写', page: 'male-questionnaire' });
     expect(getOnboardingAction({ key: 'female', completed: true, isReturningUser: true })).toEqual({ label: '重新填写', page: 'female-questionnaire' });
+    expect(getOnboardingAction({ key: 'male', completed: true, isReturningUser: true })).toEqual({ label: '深入了解', page: 'male-questionnaire' });
     expect(getOnboardingAction({ key: 'stage-self', completed: false, isReturningUser: true })).toEqual({ label: '开始填写', page: 'pursuit-self-assessment' });
     expect(getOnboardingAction({ key: 'stage-relationship', completed: true, isReturningUser: false })).toEqual({ label: '已完成', page: 'pursuit-relationship-assessment' });
   });

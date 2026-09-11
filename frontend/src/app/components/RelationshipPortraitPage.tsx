@@ -6,16 +6,18 @@ import { IconBadge } from './IconBadge';
 import type { PageName } from './GlassUI';
 import { useSettingsStore } from '@/stores';
 import { useGeneratePortrait } from '@/hooks/useGeneratePortrait';
-import { resolveOnboardingDestination, type OnboardingProgressSummary } from '@/lib/onboardingFlow';
+import type { OnboardingProgressSummary } from '@/lib/onboardingFlow';
 import { loadOnboardingProgress } from '@/lib/onboardingProgress';
 
 interface Props { onNavigate: (page: PageName) => void; }
 
-const steps = ['资料建档', '男生问卷', '女生问卷', '阶段问卷', '关系画像'];
+const fullSteps = ['资料建档', '男生问卷', '女生问卷', '阶段问卷', '关系画像'];
+const quickStartSteps = ['简单建档', '快速了解', '初始画像'];
 
 const stages = ['初识接触期', '升温期', '暧昧观察期'];
 
 export function RelationshipPortraitPage({ onNavigate }: Props) {
+  const onboardingCompleted = useSettingsStore((state) => state.onboardingCompleted);
   const [onboardingProgress, setOnboardingProgress] = useState<OnboardingProgressSummary | null>(null);
   // ✅ 使用 AI 画像生成 hook
   const { data, loading, error, generate, loadCached, profileStage, rhythmCard } = useGeneratePortrait();
@@ -35,19 +37,6 @@ export function RelationshipPortraitPage({ onNavigate }: Props) {
 
   // ✅ 引导完成：标记 onboardingCompleted 并跳转首页
   const handleFinish = () => {
-    if (!onboardingProgress?.isComplete) {
-      const destination = resolveOnboardingDestination({
-        hasUser: true,
-        hasGirl: Boolean(onboardingProgress?.profileComplete),
-        hasMaleQuestionnaire: Boolean(onboardingProgress?.male),
-        hasFemaleQuestionnaire: Boolean(onboardingProgress?.female),
-        onboardingCompleted: false,
-        profileComplete: onboardingProgress?.profileComplete,
-        stageCompleted: onboardingProgress?.stage,
-      });
-      onNavigate(destination === 'dashboard' || destination === 'onboarding' ? 'profile' : destination);
-      return;
-    }
     useSettingsStore.getState().setOnboardingCompleted(true);
     console.log('✅ [RelationshipPortraitPage] 已标记 onboardingCompleted=true，跳转首页');
     onNavigate('dashboard');
@@ -87,7 +76,7 @@ export function RelationshipPortraitPage({ onNavigate }: Props) {
   return (
     <div style={{ padding: '32px', maxWidth: 900, margin: '0 auto' }} className="page-enter">
       <GlassCard hover={false} style={{ marginBottom: 32 }} padding="20px 24px">
-        <ProgressStepper steps={steps} current={4} />
+        <ProgressStepper steps={onboardingCompleted ? fullSteps : quickStartSteps} current={onboardingCompleted ? 4 : 2} />
       </GlassCard>
 
       <div style={{ marginBottom: 28 }}>
@@ -181,7 +170,7 @@ export function RelationshipPortraitPage({ onNavigate }: Props) {
       {onboardingProgress && !onboardingProgress.isComplete && (
         <GlassCard style={{ marginBottom: 20, background: 'rgba(255,236,218,0.72)' }}>
           <p style={{ margin: 0, fontSize: 13, color: 'var(--text-rose)', lineHeight: 1.7 }}>
-            首次引导尚未完成，请先完成资料、基础问卷和当前阶段的三份专项问卷。
+            初始画像只基于当前资料和快速问卷。你已经可以开始使用，之后补充她的观察与阶段问卷，可进一步提高建议的贴合度。
           </p>
         </GlassCard>
       )}
@@ -256,7 +245,7 @@ export function RelationshipPortraitPage({ onNavigate }: Props) {
             <p style={{ margin: 0, fontSize: 12, color: 'var(--champagne-gold)', lineHeight: 1.6 }}>需要避免：{rhythmCard.avoid}</p>
           </GlassCard>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
+          <div className="responsive-two-column" style={{ gap: 20, marginBottom: 20 }}>
             {/* 我的类型卡片 */}
             <GlassCard>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
@@ -362,11 +351,11 @@ export function RelationshipPortraitPage({ onNavigate }: Props) {
       )}
 
       <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
-        <LiquidButton variant="secondary" onClick={() => onNavigate('female-questionnaire')}>
-          重新填写问卷
+        <LiquidButton variant="secondary" onClick={() => onboardingCompleted ? onNavigate('female-questionnaire') : handleFinish()}>
+          {onboardingCompleted ? '完善观察问卷' : data ? '稍后再完善' : '暂时跳过，进入主页'}
         </LiquidButton>
         <LiquidButton onClick={handleFinish} disabled={!data}>
-          开始使用 Lumi <ArrowRight size={16} />
+          {onboardingCompleted ? '返回主页' : '开始使用 Lumi'} <ArrowRight size={16} />
         </LiquidButton>
       </div>
 

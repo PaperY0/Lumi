@@ -229,7 +229,7 @@ export function HistoryCenterPanel({ onNavigate }: Props) {
       </GlassCard>
 
       {/* 四个分类卡片 */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+      <div className="responsive-two-column" style={{ gap: 16, marginBottom: 20 }}>
         {categories.map((cat) => (
           <GlassCard key={cat.label} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

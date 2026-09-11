@@ -168,7 +168,7 @@ function HistoryDetail({ record, onClose }: { record: SimulateHistoryRecord; onC
 
       {/* Meta */}
       <div className="glass-card" style={{ borderRadius: 22, padding: '16px 18px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <div className="responsive-two-column" style={{ gap: 10 }}>
           <MetaField label="场景" value={record.scenario} />
           <MetaField label="难度" value={record.difficulty} />
           <MetaField label="保存时间" value={formatDateTime(record.createdAt)} />

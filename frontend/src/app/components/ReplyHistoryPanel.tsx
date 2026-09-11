@@ -48,7 +48,6 @@ const HISTORY_PANEL_STYLE: React.CSSProperties = {
   flexDirection: 'column',
   gap: 14,
   width: '100%',
-  maxWidth: 800,
   margin: 0,
   minWidth: 0,
   boxSizing: 'border-box',

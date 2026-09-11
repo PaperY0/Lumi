@@ -9,6 +9,7 @@ import { evaluateAmbiguousRelationship, ambiguousRelationshipQuestions } from '@
 import { girlProfileRepository, stageQuestionnaireRepository } from '@/lib/db';
 import { useUiStore, useUserStore } from '@/stores';
 import { getRelationshipStageLabel, getRelationshipStageValue, type RelationshipStageValue } from '@/lib/relationshipStage';
+import { StageAssessmentQuestion } from './StageAssessmentQuestion';
 
 interface Props { onNavigate: (page: PageName) => void; }
 
@@ -48,7 +49,7 @@ export function PursuitRelationshipAssessmentPage({ onNavigate }: Props) {
     } catch (error) { setSaveMessage('保存失败，请稍后重试。'); ui.showToast(`保存失败：${(error as Error).message}`, 'error'); } finally { ui.hideLoading(); }
   };
 
-  if (resultVisible) return <div style={{ padding: 32, maxWidth: 760, margin: '0 auto' }} className="page-enter">
+  if (resultVisible) return <div style={{ padding: 32 }} className="page-canvas page-canvas--focus page-enter">
     <LiquidButton variant="secondary" onClick={() => setResultVisible(false)} style={{ marginBottom: 24 }}><ArrowLeft size={16} /> 返回题目</LiquidButton>
     <h1 style={{ margin: '0 0 10px', fontSize: 28, color: 'var(--text-rose)' }}>关系节奏检查</h1>
     <GlassCard hover={false} style={{ marginBottom: 20, background: result.status === 'pause' ? 'rgba(255,236,218,.72)' : 'rgba(255,245,248,.55)' }}>
@@ -66,11 +67,21 @@ export function PursuitRelationshipAssessmentPage({ onNavigate }: Props) {
     {saveMessage && <p role="status" style={{ margin: '14px 0 0', color: saveMessage.startsWith('已保存') ? '#4A9E6A' : '#C96A6A', fontSize: 13, lineHeight: 1.6 }}>{saveMessage}</p>}
   </div>;
 
-  return <div style={{ padding: 32, maxWidth: 720, margin: '0 auto' }} className="page-enter">
-    <LiquidButton variant="secondary" onClick={() => onNavigate('stage-questionnaires')} style={{ marginBottom: 24 }}><ArrowLeft size={16} /> 返回专项问卷</LiquidButton>
-    <h1 style={{ margin: 0, fontSize: 26, color: 'var(--text-rose)' }}>关系节奏与边界</h1><p style={{ margin: '8px 0 20px', color: 'var(--text-purple)' }}>{relationshipStage === 'observing' ? '初识接触期' : relationshipStage === 'warming' ? '升温期' : relationshipStage === 'ambiguous' ? '暧昧观察期' : '追求期'} · 第 {current + 1} / {questions.length} 题 · 检查自己的推进方式</p>
-    <GlassCard hover={false} style={{ marginBottom: 16 }}><h2 style={{ margin: 0, fontSize: 19, color: 'var(--text-rose)', lineHeight: 1.55 }}>{question.text}</h2></GlassCard>
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>{question.options.map((option) => <button key={option.id} onClick={() => setAnswers((previous) => ({ ...previous, [question.id]: option.id }))} style={{ textAlign: 'left', padding: '14px 17px', borderRadius: 18, cursor: 'pointer', border: selected === option.id ? '1px solid rgba(232,116,138,.65)' : '1px solid rgba(232,116,138,.16)', background: selected === option.id ? 'rgba(232,116,138,.12)' : 'rgba(255,255,255,.44)', color: 'var(--text-rose)', fontSize: 14 }}>{option.text}</button>)}</div>
-    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}><LiquidButton variant="secondary" disabled={current === 0} onClick={() => setCurrent((value) => Math.max(0, value - 1))}><ArrowLeft size={16} /> 上一题</LiquidButton><LiquidButton disabled={!selected} onClick={() => current === questions.length - 1 ? setResultVisible(true) : setCurrent((value) => value + 1)}>{current === questions.length - 1 ? '查看节奏结果' : <>下一题 <ArrowRight size={16} /></>}</LiquidButton></div>
-  </div>;
+  const stageLabel = relationshipStage === 'observing' ? '初识接触期' : relationshipStage === 'warming' ? '升温期' : relationshipStage === 'ambiguous' ? '暧昧观察期' : '追求期';
+
+  return <StageAssessmentQuestion
+    title="关系节奏与边界"
+    eyebrow="专项问卷 · 推进方式"
+    context={`${stageLabel} · 检查推进节奏与边界意识`}
+    current={current}
+    total={questions.length}
+    question={question.text}
+    options={question.options}
+    selected={selected}
+    nextLabel={current === questions.length - 1 ? '查看节奏结果' : '下一题'}
+    onBack={() => onNavigate('stage-questionnaires')}
+    onPrevious={() => setCurrent((value) => Math.max(0, value - 1))}
+    onNext={() => current === questions.length - 1 ? setResultVisible(true) : setCurrent((value) => value + 1)}
+    onSelect={(optionId) => setAnswers((previous) => ({ ...previous, [question.id]: optionId }))}
+  />;
 }

@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: lumi
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /api/health
+    maxShutdownDelaySeconds: 30
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: 10000
+      - key: SERVE_FRONTEND
+        value: "true"
+      - key: MOCK_MODE
+        value: "false"
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: MINERU_TOKEN
+        sync: false
+      - key: ZHIHU_ACCESS_SECRET
+        sync: false
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "900000"
+      - key: RATE_LIMIT_MAX
+        value: "300"
+      - key: AI_RATE_LIMIT_MAX
+        value: "60"
+      - key: ZHIHU_SEARCH_RATE_LIMIT_MAX
+        value: "12"

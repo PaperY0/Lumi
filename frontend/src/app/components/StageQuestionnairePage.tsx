@@ -50,7 +50,7 @@ export function StageQuestionnairePage({ onNavigate }: Props) {
   const catalog = getStageAssessmentCatalog(value);
 
   return (
-    <div style={{ padding: '32px', maxWidth: 820, margin: '0 auto' }} className="page-enter">
+    <div style={{ padding: '32px' }} className="page-canvas page-canvas--focus page-enter">
       <LiquidButton variant="secondary" onClick={() => onNavigate('profile')} style={{ marginBottom: 24 }}>
         <ArrowLeft size={16} /> 返回资料建档
       </LiquidButton>

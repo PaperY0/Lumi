@@ -123,7 +123,7 @@ function StandardPreview({ store, currentUser, currentGirl, onNavigate }: any) {
   if (store.draftMessages.length === 0) return <EmptyState onNavigate={onNavigate} />;
 
   return (
-    <div style={{ padding: 24, maxWidth: 860, margin: '0 auto' }}>
+    <div style={{ padding: 24 }} className="page-canvas page-canvas--content page-enter">
       <Header onNavigate={onNavigate} title="确认发言人" />
       {store.importResult && (
         <GlassCard style={{ marginBottom: 16, padding: 16 }}>
@@ -252,7 +252,7 @@ function MinerUPreview({ store, currentUser, currentGirl, onNavigate }: any) {
   if (store.minerUMessages.length === 0) return <EmptyState onNavigate={onNavigate} />;
 
   return (
-    <div style={{ padding: 24, maxWidth: 860, margin: '0 auto' }}>
+    <div style={{ padding: 24 }} className="page-canvas page-canvas--content page-enter">
       <Header onNavigate={onNavigate} title="确认发言人 (MinerU A/B)" />
 
       {/* 提示 */}
@@ -340,7 +340,7 @@ function MinerUPreview({ store, currentUser, currentGirl, onNavigate }: any) {
 
 function EmptyState({ onNavigate }: { onNavigate: (page: PageName) => void }) {
   return (
-    <div style={{ padding: 24, maxWidth: 720, margin: '0 auto' }}>
+    <div style={{ padding: 24 }} className="page-canvas page-canvas--content page-enter">
       <GlassCard style={{ padding: 32, textAlign: 'center' }}>
         <div style={{ fontSize: 40, marginBottom: 12 }}>📝</div>
         <p style={{ color: 'var(--text-rose)', marginBottom: 20 }}>

@@ -29,7 +29,7 @@ export function ZhihuSearchPanel({ search = searchZhihu }: { search?: (input: { 
   };
 
   return (
-    <section aria-label="知乎实时搜索" style={{ marginTop: 20 }}>
+    <section aria-label="知乎实时搜索" className="zhihu-search-panel">
       <form onSubmit={(event) => { event.preventDefault(); void submit(); }} style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <label style={{ flex: '1 1 260px', position: 'relative' }}>
           <span className="sr-only">搜索知乎内容</span>

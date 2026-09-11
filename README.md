@@ -63,3 +63,9 @@ docker compose up
 ```
 
 Docker frontend: http://localhost:8080
+
+## Production deployment
+
+The repository includes a single production `Dockerfile` and a Render Blueprint. The production image serves the React application and Express API from one origin.
+
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for secret configuration, readiness checks, local container verification, and the production smoke-test checklist.

@@ -2,38 +2,50 @@ import { describe, expect, it } from 'vitest';
 import { getOnboardingProgress, resolveOnboardingDestination } from './onboardingFlow';
 
 describe('resolveOnboardingDestination', () => {
-  it('sends a new user through profile, both questionnaires, then stage questionnaires', () => {
+  it('sends a new user through profile, the quick questionnaire, then the initial portrait', () => {
     expect(resolveOnboardingDestination({ hasUser: false, hasGirl: false, hasMaleQuestionnaire: false, hasFemaleQuestionnaire: false, onboardingCompleted: false })).toBe('onboarding');
     expect(resolveOnboardingDestination({ hasUser: true, hasGirl: false, hasMaleQuestionnaire: false, hasFemaleQuestionnaire: false, onboardingCompleted: false })).toBe('profile');
     expect(resolveOnboardingDestination({ hasUser: true, hasGirl: true, hasMaleQuestionnaire: false, hasFemaleQuestionnaire: false, onboardingCompleted: false })).toBe('male-questionnaire');
-    expect(resolveOnboardingDestination({ hasUser: true, hasGirl: true, hasMaleQuestionnaire: true, hasFemaleQuestionnaire: false, onboardingCompleted: false })).toBe('female-questionnaire');
-    expect(resolveOnboardingDestination({ hasUser: true, hasGirl: true, hasMaleQuestionnaire: true, hasFemaleQuestionnaire: true, onboardingCompleted: false })).toBe('stage-questionnaires');
+    expect(resolveOnboardingDestination({ hasUser: true, hasGirl: true, hasMaleQuestionnaire: true, hasFemaleQuestionnaire: false, onboardingCompleted: false })).toBe('relationship-portrait');
+    expect(resolveOnboardingDestination({ hasUser: true, hasGirl: true, hasMaleQuestionnaire: true, hasFemaleQuestionnaire: true, onboardingCompleted: false })).toBe('relationship-portrait');
   });
 
   it('sends a completed local user directly to the dashboard', () => {
     expect(resolveOnboardingDestination({ hasUser: true, hasGirl: true, hasMaleQuestionnaire: true, hasFemaleQuestionnaire: true, onboardingCompleted: true, profileComplete: true, stageCompleted: { self: true, observation: true, relationship: true } })).toBe('dashboard');
   });
 
-  it.each([
-    ['profile', { profileComplete: false, hasGirl: true }],
-    ['male-questionnaire', { profileComplete: true, hasMaleQuestionnaire: false }],
-    ['female-questionnaire', { profileComplete: true, hasMaleQuestionnaire: true, hasFemaleQuestionnaire: false }],
-    ['stage-questionnaires', { profileComplete: true, hasMaleQuestionnaire: true, hasFemaleQuestionnaire: true, stageCompleted: { self: false, observation: true, relationship: true } }],
-    ['stage-questionnaires', { profileComplete: true, hasMaleQuestionnaire: true, hasFemaleQuestionnaire: true, stageCompleted: { self: true, observation: false, relationship: true } }],
-    ['stage-questionnaires', { profileComplete: true, hasMaleQuestionnaire: true, hasFemaleQuestionnaire: true, stageCompleted: { self: true, observation: true, relationship: false } }],
-  ] as const)('routes to the first missing %s requirement even when completion flag is stale', (expected, overrides) => {
+  it('still repairs missing required profile data when the completion flag is stale', () => {
     expect(resolveOnboardingDestination({
       hasUser: true,
       hasGirl: true,
       hasMaleQuestionnaire: true,
       hasFemaleQuestionnaire: true,
       onboardingCompleted: true,
-      ...overrides,
-      profileComplete: overrides.profileComplete ?? true,
-      stageCompleted: 'stageCompleted' in overrides
-        ? overrides.stageCompleted
-        : { self: true, observation: true, relationship: true },
-    })).toBe(expected);
+      profileComplete: false,
+      stageCompleted: { self: true, observation: true, relationship: true },
+    })).toBe('profile');
+
+    expect(resolveOnboardingDestination({
+      hasUser: true,
+      hasGirl: true,
+      hasMaleQuestionnaire: false,
+      hasFemaleQuestionnaire: true,
+      onboardingCompleted: true,
+      profileComplete: true,
+      stageCompleted: { self: true, observation: true, relationship: true },
+    })).toBe('male-questionnaire');
+  });
+
+  it('does not block a returning user on optional questionnaires', () => {
+    expect(resolveOnboardingDestination({
+      hasUser: true,
+      hasGirl: true,
+      hasMaleQuestionnaire: true,
+      hasFemaleQuestionnaire: false,
+      onboardingCompleted: true,
+      profileComplete: true,
+      stageCompleted: { self: false, observation: false, relationship: false },
+    })).toBe('dashboard');
   });
 });
 
