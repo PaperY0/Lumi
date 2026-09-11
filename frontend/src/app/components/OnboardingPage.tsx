@@ -239,7 +239,8 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
               background: 'linear-gradient(145deg, #3A1F2A 0%, #8A3858 45%, #704060 75%, #904870 100%)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
             }}>
-              让沟通更真诚，让靠近更有分寸
+              <span style={{ display: 'block' }}>让沟通更真诚，</span>
+              <span style={{ display: 'block' }}>让靠近更有分寸</span>
             </h1>
           </div>
 
