@@ -30,12 +30,20 @@ export function BlurText({
   const units = animateBy === 'words' ? text.split(' ') : text.split('');
   const translateY = direction === 'bottom' ? '14px' : '-14px';
 
+  /*
+   * className (typically `gradient-text`, i.e. background-clip:text) must be
+   * applied to the *same box* that paints the glyphs. Each animated unit is an
+   * inline-block with filter/transform, which forces its own paint layer, so a
+   * gradient painted on the wrapper never reaches the child text and the
+   * glyphs render fully transparent. Push the class down onto every unit.
+   */
   return (
-    <span className={className} style={{ display: 'inline', ...style }} aria-label={text}>
+    <span style={{ display: 'inline', ...style }} aria-label={text}>
       {units.map((unit, i) => (
         <span
           key={i}
           aria-hidden
+          className={className || undefined}
           style={{
             display: 'inline-block',
             marginRight: animateBy === 'words' ? '0.28em' : '0.02em',

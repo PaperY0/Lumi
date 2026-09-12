@@ -507,7 +507,7 @@ export function AIAnalysisPage({ onNavigate }: Props) {
                   <div style={{ fontSize: 13, fontWeight: 600, color: '#C96A6A', marginBottom: 12, display: 'flex', gap: 6, alignItems: 'center' }}>
                     <Ban size={14} color="#C96A6A" /> 不建议的回复
                   </div>
-                  <ul style={{ margin: 0, paddingLeft: 16, lineHeight: 2 }}>
+                  <ul style={{ margin: 0, paddingLeft: 16, lineHeight: 1.9, fontSize: 13 }}>
                     {data.avoidReplies.map((s, i) => <li key={i} style={{ color: 'var(--text-purple)', opacity: 0.9 }}>{s}</li>)}
                   </ul>
                 </GlassCard>
@@ -515,11 +515,11 @@ export function AIAnalysisPage({ onNavigate }: Props) {
 
               <WarningNotice text="AI 分析仅供参考，不代表对方真实想法。请结合现实互动，尊重对方表达和边界。" />
 
-              <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
-                <LiquidButton variant="secondary" onClick={() => onNavigate('chat-import')}>
+              <div style={{ display: 'flex', gap: 12, marginTop: 24, flexWrap: 'wrap' }}>
+                <LiquidButton variant="secondary" onClick={() => onNavigate('chat-import')} style={{ whiteSpace: 'nowrap' }}>
                   导入聊天记录
                 </LiquidButton>
-                <LiquidButton onClick={() => onNavigate('reply-assist')}>
+                <LiquidButton onClick={() => onNavigate('reply-assist')} style={{ whiteSpace: 'nowrap' }}>
                   帮我回复她的消息 <ArrowRight size={16} />
                 </LiquidButton>
               </div>

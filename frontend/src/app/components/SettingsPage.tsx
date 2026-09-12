@@ -10,6 +10,7 @@ import { BRAND_NAME, BRAND_SUBTITLE, BRAND_VERSION } from '../brand';
 import type { PageName } from './GlassUI';
 import { useUiStore, useSettingsStore } from '@/stores';
 import { formatDateTime } from '@/utils/date';
+import { AI_API_BASE } from '@/lib/ai/config';
 import {
   getLocalDataSummary,
   exportLocalData,
@@ -38,6 +39,25 @@ export function SettingsPage({ onNavigate }: Props) {
   const [exporting, setExporting] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [resetting, setResetting] = useState(false);
+
+  // ── 后端 AI 服务状态（真实探测 /api/health）──
+  type BackendStatus = { state: 'checking' } | { state: 'offline'; detail: string } | { state: 'online'; mode: 'ai' | 'mock'; checkedAt: Date };
+  const [backend, setBackend] = useState<BackendStatus>({ state: 'checking' });
+  const probeBackend = useCallback(async () => {
+    setBackend({ state: 'checking' });
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 6000);
+      const res = await fetch(`${AI_API_BASE}/api/health`, { signal: ctrl.signal });
+      clearTimeout(timer);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json() as { ok?: boolean; mockMode?: boolean };
+      setBackend({ state: 'online', mode: json.mockMode ? 'mock' : 'ai', checkedAt: new Date() });
+    } catch (e: any) {
+      setBackend({ state: 'offline', detail: e?.name === 'AbortError' ? '请求超时' : (e?.message || '无法连接') });
+    }
+  }, []);
+  useEffect(() => { probeBackend(); }, [probeBackend]);
 
   // ── 清空二次确认 ──
   const [confirmStep, setConfirmStep] = useState<0 | 1 | 2>(0);
@@ -170,7 +190,7 @@ export function SettingsPage({ onNavigate }: Props) {
 
       {/* 页面标题 */}
       <div style={{ marginBottom: 28 }}>
-        <h1 className="gradient-text" style={{ margin: 0, fontSize: 28, letterSpacing: '-0.03em' }}>
+        <h1 style={{ margin: 0, fontSize: 28, letterSpacing: '-0.03em' }}>
           <BlurText text="设置" startDelay={60} className="gradient-text" style={{ fontWeight: 700, display: 'inline' }} />
         </h1>
         <p style={{ margin: '6px 0 0', fontSize: 14, color: 'var(--text-purple)', opacity: 0.75 }}>
@@ -380,17 +400,42 @@ export function SettingsPage({ onNavigate }: Props) {
       {/* ═══════════════════════════════════════════════════════════════════
           7. AI 设置（保留原有）
          ═══════════════════════════════════════════════════════════════════ */}
-      <Section icon={<Brain size={14} color="#D4A5C9" />} title="AI 设置">
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.3)' }}>
-          <div style={{ fontSize: 14, color: 'var(--text-rose)', fontWeight: 500 }}>前端 Mock 偏好</div>
-          <div style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.65, marginTop: 2, lineHeight: 1.5 }}>
-            仅作为前端测试偏好，不代表服务端真实运行模式。后端运行模式以服务端启动日志为准。
+      <Section icon={<Brain size={14} color="#D4A5C9" />} title="AI 服务状态">
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 14, color: 'var(--text-rose)', fontWeight: 500 }}>后端连接</div>
+            <div style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.65, marginTop: 2 }}>
+              {backend.state === 'checking' && '正在探测…'}
+              {backend.state === 'offline' && `无法连接：${backend.detail}`}
+              {backend.state === 'online' && `最近检查 ${formatDateTime(backend.checkedAt.toISOString())}`}
+            </div>
           </div>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 999, fontSize: 12, fontWeight: 600, flexShrink: 0,
+            background: backend.state === 'online' ? 'rgba(76,175,130,0.12)' : backend.state === 'offline' ? 'rgba(201,106,106,0.12)' : 'rgba(200,168,212,0.15)',
+            color: backend.state === 'online' ? '#3E9B72' : backend.state === 'offline' ? '#C96A6A' : 'var(--text-purple)',
+          }}>
+            <span style={{ width: 7, height: 7, borderRadius: 999, background: 'currentColor' }} />
+            {backend.state === 'online' ? '已连接' : backend.state === 'offline' ? '离线' : '检测中'}
+          </span>
+        </div>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 14, color: 'var(--text-rose)', fontWeight: 500 }}>运行模式</div>
+            <div style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.65, marginTop: 2, lineHeight: 1.5 }}>
+              {backend.state === 'online' && backend.mode === 'ai' && '调用真实 DeepSeek 模型生成分析与回复。'}
+              {backend.state === 'online' && backend.mode === 'mock' && '服务端使用本地模拟数据，不消耗 AI 额度，结果仅用于演示。'}
+              {backend.state !== 'online' && '后端可用后显示。'}
+            </div>
+          </div>
+          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-rose)', flexShrink: 0 }}>
+            {backend.state === 'online' ? (backend.mode === 'ai' ? '真实 AI' : 'Mock 演示') : '—'}
+          </span>
         </div>
         <div style={{ padding: '14px 20px' }}>
-          <div style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.6, lineHeight: 1.7 }}>
-            若后端显示"运行模式：AI"，则当前会调用真实 AI；若显示"Mock 模式"，则使用本地模拟数据。
-          </div>
+          <LiquidButton variant="secondary" onClick={probeBackend} disabled={backend.state === 'checking'} style={{ width: '100%' }}>
+            <RefreshCw size={14} /> 重新检测
+          </LiquidButton>
         </div>
       </Section>
 

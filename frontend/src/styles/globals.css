@@ -457,6 +457,7 @@ body {
     justify-content: center;
   }
 
+  /* Mobile: single column, no 3D stage (keeps first paint light and the copy above the fold). */
   .onboarding-preview,
   .onboarding-ring-bottom {
     display: none !important;
@@ -468,6 +469,11 @@ body {
     top: 3% !important;
     right: -42px !important;
   }
+}
+
+@media (min-width: 769px) and (max-width: 1180px) {
+  .onboarding-layout { gap: 40px !important; }
+  .onboarding-hero3d { transform: scale(0.8); transform-origin: center; }
 }
 
 .core-questionnaire {

@@ -157,7 +157,7 @@ export function ImportantDatesPage() {
         <div style={{ marginBottom: 12 }}>
           <PageBackButton />
         </div>
-        <h1 className="gradient-text" style={{ margin: 0, fontSize: 28, letterSpacing: '-0.03em' }}>
+        <h1 style={{ margin: 0, fontSize: 28, letterSpacing: '-0.03em' }}>
           <BlurText text="重要日子" startDelay={60} className="gradient-text" style={{ fontWeight: 700, display: 'inline' }} />
         </h1>
         <p style={{ margin: '6px 0 0', fontSize: 14, color: 'var(--text-purple)', opacity: 0.75 }}>

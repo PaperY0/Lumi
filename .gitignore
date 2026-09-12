@@ -34,3 +34,6 @@ backend/.env
 
 # Agent worktrees
 .worktrees/
+
+# Ad-hoc screenshot output (see frontend/e2e/_shots.mjs)
+.shots/

@@ -1,194 +1,32 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { ArrowRight, Lock, Sparkles, Heart } from 'lucide-react';
-import { BRAND_NAME, BRAND_SUBTITLE, BRAND_SUBTITLE_SHORT } from '../brand';
+import { BRAND_NAME, BRAND_SUBTITLE } from '../brand';
+
+// three.js (~600 KB) only ships for the landing route.
+const HeroScene = lazy(() => import('./HeroScene').then((m) => ({ default: m.HeroScene })));
 
 interface OnboardingPageProps {
   onComplete: () => void;
 }
 
-/* ─── Floating VisionOS-style App Mockup ─────────────────────────────────── */
-function AppMockup() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
-
-  const handleMouseMove = (e: MouseEvent) => {
-    const el = containerRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const rx = ((e.clientY - cy) / (rect.height / 2)) * -9;
-    const ry = ((e.clientX - cx) / (rect.width / 2)) * 9;
-    setTilt({ x: rx, y: ry });
-  };
-  const handleMouseLeave = () => setTilt({ x: 0, y: 0 });
-
+/* ─── Main Onboarding Page ───────────────────────────────────────────────── */
+function useDesktopStage(): boolean {
+  const query = '(min-width: 769px)';
+  const [desktop, setDesktop] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches);
   useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    el.addEventListener('mousemove', handleMouseMove);
-    el.addEventListener('mouseleave', handleMouseLeave);
-    return () => {
-      el.removeEventListener('mousemove', handleMouseMove);
-      el.removeEventListener('mouseleave', handleMouseLeave);
-    };
+    const mq = window.matchMedia(query);
+    const onChange = (e: MediaQueryListEvent) => setDesktop(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
   }, []);
-
-  return (
-    <div
-      ref={containerRef}
-      style={{
-        width: 340,
-        flexShrink: 0,
-        perspective: '1000px',
-        cursor: 'default',
-      }}
-    >
-      <div
-        style={{
-          animation: 'float 5s ease-in-out infinite',
-          transition: 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
-          transform: `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
-          transformStyle: 'preserve-3d',
-        }}
-      >
-        {/* Main panel */}
-        <div
-          style={{
-            width: 340,
-            background: 'linear-gradient(145deg, rgba(255,252,255,0.75) 0%, rgba(255,245,250,0.6) 100%)',
-            backdropFilter: 'blur(40px) saturate(1.8)',
-            WebkitBackdropFilter: 'blur(40px) saturate(1.8)',
-            border: '1px solid rgba(255,255,255,0.65)',
-            borderRadius: 32,
-            padding: '20px 20px 24px',
-            boxShadow: '0 32px 80px rgba(180,120,150,0.28), 0 8px 24px rgba(180,120,150,0.14), inset 0 1px 0 rgba(255,255,255,0.9)',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          {/* Top edge highlight */}
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.95), transparent)' }} />
-          {/* Reflection */}
-          <div style={{ position: 'absolute', top: 0, left: 0, width: '55%', height: '100%', background: 'linear-gradient(to right, rgba(255,255,255,0.1), transparent)', borderRadius: 'inherit', pointerEvents: 'none' }} />
-
-          {/* Status bar */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, paddingBottom: 14, borderBottom: '1px solid rgba(255,255,255,0.4)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-              <div style={{ width: 28, height: 28, borderRadius: 9, background: 'linear-gradient(135deg,#D4607A,#BF8E6E)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 3px 10px rgba(212,96,122,0.35)' }}>
-                <Heart size={14} color="white" fill="white" />
-              </div>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 800, color: '#4A2E38', letterSpacing: '-0.02em' }}>{BRAND_NAME}</div>
-                <div style={{ fontSize: 9, color: 'var(--champagne-gold)', letterSpacing: '0.06em' }}>{BRAND_SUBTITLE_SHORT}</div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 4 }}>
-              {['#FFB3C1', '#FFD4A8', '#B8E0D2'].map((c, i) => <div key={i} style={{ width: 8, height: 8, borderRadius: 999, background: c }} />)}
-            </div>
-          </div>
-
-          {/* Chat bubbles */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
-            {/* Her message */}
-            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-              <div style={{ width: 26, height: 26, borderRadius: 999, background: 'linear-gradient(135deg,#F2BDCC,#C8A8D4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0 }}>🌸</div>
-              <div className="chat-bubble-hers" style={{ padding: '9px 13px', fontSize: 12, lineHeight: 1.5, maxWidth: 200 }}>
-                那天没看到消息，忘了回了 😅
-              </div>
-            </div>
-            {/* My message */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <div className="chat-bubble-mine" style={{ padding: '9px 13px', fontSize: 12, lineHeight: 1.5 }}>
-                没事的，你今天怎么样？
-              </div>
-            </div>
-            {/* Her message */}
-            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-              <div style={{ width: 26, height: 26, borderRadius: 999, background: 'linear-gradient(135deg,#F2BDCC,#C8A8D4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0 }}>🌸</div>
-              <div className="chat-bubble-hers" style={{ padding: '9px 13px', fontSize: 12, lineHeight: 1.5 }}>
-                还行～今天有点累 🥱
-              </div>
-            </div>
-          </div>
-
-          {/* AI Analysis card */}
-          <div style={{ borderRadius: 18, padding: '12px 14px', marginBottom: 10, background: 'linear-gradient(135deg, rgba(212,96,122,0.08), rgba(200,168,212,0.1))', border: '1px solid rgba(212,96,122,0.18)' }}>
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6 }}>
-              <Sparkles size={12} color="#D4607A" />
-              <span style={{ fontSize: 10, fontWeight: 700, color: '#D4607A', letterSpacing: '0.04em', textTransform: 'uppercase' }}>AI 分析</span>
-            </div>
-            <p style={{ margin: 0, fontSize: 11, color: '#4A2E38', lineHeight: 1.5 }}>她在修复关系，不是冷淡。"今天有点累"是在分享状态，回复可以表达关心。</p>
-          </div>
-
-          {/* Reply suggestions */}
-          <div style={{ marginBottom: 10 }}>
-            <div style={{ fontSize: 10, color: '#7B5C6E', opacity: 0.6, marginBottom: 7, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.06em' }}>推荐回复</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {[
-                { style: '自然真诚', text: '辛苦了，早点休息～有什么想聊的吗？' },
-                { style: '轻松幽默', text: '怎么了，被什么榨干了哈哈' },
-              ].map((r, i) => (
-                <div key={i} style={{ background: 'rgba(255,252,255,0.6)', border: '1px solid rgba(255,255,255,0.5)', borderRadius: 12, padding: '8px 11px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                  <div>
-                    <span style={{ fontSize: 9, color: '#D4607A', fontWeight: 600 }}>{r.style}</span>
-                    <div style={{ fontSize: 11, color: '#4A2E38', marginTop: 2, lineHeight: 1.4 }}>{r.text}</div>
-                  </div>
-                  <div style={{ width: 22, height: 22, borderRadius: 7, background: 'linear-gradient(135deg,#D4607A,#BF8E6E)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <ArrowRight size={10} color="white" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Boundary notice */}
-          <div style={{ background: 'rgba(200,168,212,0.12)', border: '1px solid rgba(200,168,212,0.28)', borderRadius: 12, padding: '8px 11px', display: 'flex', gap: 6 }}>
-            <span style={{ fontSize: 11, flexShrink: 0 }}>💜</span>
-            <span style={{ fontSize: 10, color: '#5E4A60', lineHeight: 1.5 }}>先理解，再表达；先尊重，再靠近。</span>
-          </div>
-        </div>
-
-        {/* Floating decorative cards behind main panel */}
-        <div style={{
-          position: 'absolute',
-          bottom: -20,
-          right: -20,
-          width: 220,
-          height: 80,
-          background: 'rgba(242,189,204,0.3)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          borderRadius: 20,
-          border: '1px solid rgba(255,255,255,0.45)',
-          boxShadow: '0 8px 24px rgba(212,96,122,0.12)',
-          transform: 'translateZ(-20px)',
-          animation: 'float 6s ease-in-out 1s infinite',
-        }} />
-        <div style={{
-          position: 'absolute',
-          top: -16,
-          left: -16,
-          width: 100,
-          height: 100,
-          background: 'rgba(200,168,212,0.22)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          borderRadius: 50,
-          border: '1px solid rgba(255,255,255,0.4)',
-          boxShadow: '0 8px 24px rgba(200,168,212,0.15)',
-          transform: 'translateZ(-30px)',
-          animation: 'float 7s ease-in-out 0.5s infinite',
-        }} />
-      </div>
-    </div>
-  );
+  return desktop;
 }
 
-/* ─── Main Onboarding Page ───────────────────────────────────────────────── */
 export function OnboardingPage({ onComplete }: OnboardingPageProps) {
   const [agreed, setAgreed] = useState(false);
   const [visible, setVisible] = useState(false);
+  // Only mount the WebGL stage (and download three.js) on layouts that show it.
+  const showStage = useDesktopStage();
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 80);
@@ -338,10 +176,16 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
           </div>
         </div>
 
-        {/* Right: 3D Mockup */}
-        <div className="onboarding-preview" style={{ ...anim(300), flexShrink: 0, position: 'relative' }}>
-          <AppMockup />
-        </div>
+        {/* Right: Blender-authored 3D hero (three.js) with the glass UI mock floating beneath */}
+        {showStage && (
+          <div className="onboarding-preview" style={{ ...anim(300), flexShrink: 0, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="onboarding-hero3d" style={{ position: 'relative' }}>
+              <Suspense fallback={<div style={{ width: 520, height: 520, borderRadius: '50%', background: 'radial-gradient(circle at 50% 46%, rgba(248,224,232,0.85) 0%, rgba(236,206,222,0.4) 38%, transparent 70%)' }} />}>
+                <HeroScene size={520} />
+              </Suspense>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

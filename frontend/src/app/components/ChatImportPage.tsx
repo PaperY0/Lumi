@@ -65,7 +65,8 @@ export function ChatImportPage({ onNavigate }: Props) {
   const [imported, setImported] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successCount, setSuccessCount] = useState(0);
-  const [helpExpanded, setHelpExpanded] = useState(true);
+  const [helpExpanded, setHelpExpanded] = useState(false);
+  const [formatExpanded, setFormatExpanded] = useState(false);
   const [activeView, setActiveView] = useState<'import' | 'history'>('import');
 
   // OCR 状态
@@ -423,7 +424,7 @@ export function ChatImportPage({ onNavigate }: Props) {
 
   // ── 渲染：帮助面板 ────────────────────────────────────
   const renderHelpPanel = () => (
-    <GlassCard style={{ marginBottom: 24, background: 'rgba(255, 243, 224, 0.3)' }}>
+    <GlassCard style={{ marginBottom: 20, background: 'rgba(255, 243, 224, 0.3)' }}>
       <div
         onClick={() => setHelpExpanded(!helpExpanded)}
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', marginBottom: helpExpanded ? 16 : 0 }}
@@ -471,11 +472,17 @@ export function ChatImportPage({ onNavigate }: Props) {
 
   // ── 渲染：格式示例 ────────────────────────────────────
   const renderFormatExamples = () => (
-    <GlassCard style={{ marginBottom: 24 }}>
-      <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-rose)', marginBottom: 16 }}>
-        ✨ 支持的格式示例
+    <GlassCard style={{ marginBottom: 20 }}>
+      <div
+        onClick={() => setFormatExpanded(!formatExpanded)}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', marginBottom: formatExpanded ? 16 : 0 }}
+      >
+        <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-rose)' }}>✨ 支持的格式示例</span>
+        {formatExpanded ? <ChevronUp size={18} color="var(--text-purple)" /> : <ChevronDown size={18} color="var(--text-purple)" />}
       </div>
 
+      {formatExpanded && (
+      <>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* 格式 1：冒号格式 */}
         <div>
@@ -503,6 +510,8 @@ export function ChatImportPage({ onNavigate }: Props) {
       <div style={{ marginTop: 16, fontSize: 12, color: 'var(--text-purple)', opacity: 0.6, lineHeight: 1.6 }}>
         目前建议使用"昵称：消息内容"的格式。导入前会先显示解析预览，你确认后才会保存。
       </div>
+      </>
+      )}
     </GlassCard>
   );
 
@@ -805,7 +814,7 @@ export function ChatImportPage({ onNavigate }: Props) {
         <div style={{ marginBottom: 12 }}>
           <PageBackButton />
         </div>
-        <h1 className="gradient-text" style={{ margin: 0, fontSize: 28, letterSpacing: '-0.03em' }}>
+        <h1 style={{ margin: 0, fontSize: 28, letterSpacing: '-0.03em' }}>
           <BlurText text="聊天导入" startDelay={60} className="gradient-text" style={{ fontWeight: 700, display: 'inline' }} />
         </h1>
         <p style={{ margin: '6px 0 0', fontSize: 14, color: 'var(--text-purple)', opacity: 0.75 }}>
@@ -862,11 +871,8 @@ export function ChatImportPage({ onNavigate }: Props) {
       {/* 导入聊天视图 */}
       {activeView === 'import' && (
         <>
-          {/* 导入帮助面板 */}
+          {/* 导入帮助面板（默认折叠，保证粘贴框留在首屏） */}
           {renderHelpPanel()}
-
-          {/* 格式示例 */}
-          {renderFormatExamples()}
 
           {/* 错误 */}
           {renderError()}
@@ -1098,6 +1104,9 @@ export function ChatImportPage({ onNavigate }: Props) {
               </div>
             </GlassCard>
           )}
+
+          {/* 格式示例（默认折叠，放在输入区之后） */}
+          {!parseResult && !imported && renderFormatExamples()}
 
           {/* 解析结果 */}
           {parseResult && !imported && (
