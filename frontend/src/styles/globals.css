@@ -451,11 +451,11 @@ body {
 }
 
 .onboarding-title-line-first {
-  transform: translateY(-6px);
+  transform: translateY(-12px);
 }
 
 .onboarding-title-line-second {
-  transform: translateY(6px);
+  transform: translateY(12px);
 }
 
 .onboarding-brand-subtitle {
