@@ -439,11 +439,23 @@ body {
 }
 
 .onboarding-brand-name {
-  color: var(--deep-plum);
+  color: #c06f91;
   font-size: 21px;
   font-weight: 800;
   letter-spacing: -0.045em;
   line-height: 1.05;
+}
+
+.onboarding-title-line {
+  display: block;
+}
+
+.onboarding-title-line-first {
+  transform: translateY(-6px);
+}
+
+.onboarding-title-line-second {
+  transform: translateY(6px);
 }
 
 .onboarding-brand-subtitle {
@@ -545,6 +557,14 @@ body {
   .onboarding-title {
     font-size: clamp(40px, 12vw, 56px) !important;
     line-height: 1.08 !important;
+  }
+
+  .onboarding-title-line-first {
+    transform: translateY(-3px);
+  }
+
+  .onboarding-title-line-second {
+    transform: translateY(3px);
   }
 
   .onboarding-title-wrap {

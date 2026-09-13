@@ -12,5 +12,10 @@ test('defines the approved desktop hero color, placement, and bubble drift', () 
   expect(styles).toContain('.hero-callout-six');
   expect(styles).toContain('--bubble-x: 22px');
   expect(styles).toContain('--bubble-y: -18px');
+  expect(styles).toContain('color: #c06f91;');
+  expect(styles).toContain('.onboarding-title-line-first');
+  expect(styles).toContain('transform: translateY(-6px);');
+  expect(styles).toContain('.onboarding-title-line-second');
+  expect(styles).toContain('transform: translateY(6px);');
   expect(styles).toContain('animation: none;');
 });

@@ -70,8 +70,8 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
               background: 'linear-gradient(145deg, #321923 0%, #77334f 52%, #5c3155 100%)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
             }}>
-              <span style={{ display: 'block' }}>让沟通更真诚，</span>
-              <span style={{ display: 'block' }}>让靠近更有分寸</span>
+              <span className="onboarding-title-line onboarding-title-line-first">让沟通更真诚，</span>
+              <span className="onboarding-title-line onboarding-title-line-second">让靠近更有分寸</span>
             </h1>
             <p className="onboarding-subtitle">
               AI 恋爱沟通陪伴工具，帮你读懂关系信号、组织恰当表达，也尊重彼此的边界。
