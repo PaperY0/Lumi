@@ -5,8 +5,8 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 
 /**
  * HeroScene — Three.js stage for the Blender-authored `lumi-hero.glb`
- * (built by tools/blender-mcp/build_hero.py). Renders a rose crystal heart
- * wrapped in two jewel-tone ribbons and a detailed gold orbit, lit by a
+ * (built by tools/blender-mcp/build_hero.py). Renders a soft rose candy heart
+ * wrapped in pink/pearl ribbons and a detailed gold orbit, lit by a
  * warm/cool studio rig so the silhouette stays clear on the pale canvas.
  * Idle motion is a slow orbital drift; pointer position nudges the
  * whole group for parallax. Honors prefers-reduced-motion and degrades to a
@@ -65,10 +65,10 @@ export function HeroScene({ size = 420, className }: HeroSceneProps) {
 
     // A directional jewellery-style rig: warm key for the rose core, violet
     // fill for ribbon separation, and a crisp rim for the gold orbit.
-    const key = new THREE.DirectionalLight(0xffd7df, 3.2); key.position.set(3.5, 4.5, 5); scene.add(key);
-    const fill = new THREE.DirectionalLight(0xbca7ff, 1.8); fill.position.set(-4, -1.2, 3.5); scene.add(fill);
-    const rim = new THREE.DirectionalLight(0xffbf82, 2.3); rim.position.set(1, 2.5, -5); scene.add(rim);
-    const core = new THREE.PointLight(0xff527d, 7, 8, 2); core.position.set(0, 0.15, 2.4); scene.add(core);
+    const key = new THREE.DirectionalLight(0xffe1e8, 3.35); key.position.set(3.5, 4.5, 5); scene.add(key);
+    const fill = new THREE.DirectionalLight(0xddd1ff, 2.0); fill.position.set(-4, -1.2, 3.5); scene.add(fill);
+    const rim = new THREE.DirectionalLight(0xffcda9, 2.15); rim.position.set(1, 2.5, -5); scene.add(rim);
+    const core = new THREE.PointLight(0xff7698, 6.2, 8, 2); core.position.set(0, 0.15, 2.4); scene.add(core);
     scene.add(new THREE.AmbientLight(0xfff7fb, 0.48));
 
     const group = new THREE.Group();
@@ -88,26 +88,27 @@ export function HeroScene({ size = 420, className }: HeroSceneProps) {
           if (!m) return;
           m.envMapIntensity = 1.55;
           if (mesh.name === 'HeartGem') {
-            m.color.set(0xd1355f);
-            m.roughness = 0.12;
-            m.metalness = 0.04;
-            m.transmission = 0.14;
-            m.thickness = 0.8;
-            m.ior = 1.48;
-            m.attenuationColor = new THREE.Color(0x9d183f);
-            m.attenuationDistance = 1.35;
-            m.clearcoat = 0.78;
+            m.color.set(0xfa6688);
+            m.roughness = 0.17;
+            m.metalness = 0.02;
+            m.transmission = 0.08;
+            m.thickness = 0.65;
+            m.ior = 1.46;
+            m.attenuationColor = new THREE.Color(0xd8466d);
+            m.attenuationDistance = 1.6;
+            m.clearcoat = 0.86;
             m.clearcoatRoughness = 0.08;
-          } else if (mesh.name.includes('RibbonPlum')) {
-            m.color.set(0x5a2346);
-            m.metalness = 0.34;
-            m.roughness = 0.2;
-            m.clearcoat = 0.48;
-          } else if (mesh.name.includes('RibbonLilac')) {
-            m.color.set(0x81509a);
-            m.metalness = 0.28;
+          } else if (mesh.name.includes('RibbonRose')) {
+            m.color.set(0xd65386);
+            m.metalness = 0.16;
             m.roughness = 0.22;
-            m.clearcoat = 0.44;
+            m.clearcoat = 0.68;
+          } else if (mesh.name.includes('RibbonPearl')) {
+            m.color.set(0xe2c9f5);
+            m.metalness = 0.08;
+            m.roughness = 0.18;
+            m.transmission = 0.08;
+            m.clearcoat = 0.74;
           } else if (mesh.name.includes('HaloRing') || mesh.name.includes('GoldNode')) {
             m.color.set(0xd3974e);
             m.metalness = 0.92;
@@ -153,12 +154,14 @@ export function HeroScene({ size = 420, className }: HeroSceneProps) {
       current.x += (target.x - current.x) * 0.06;
       current.y += (target.y - current.y) * 0.06;
       if (!reduced) {
-        group.rotation.y = t * 0.22 + current.x * 0.35;
-        group.rotation.x = Math.sin(t * 0.35) * 0.08 + current.y * 0.25;
+        // Keep the heart readable from the front. A full orbital turn makes
+        // the silhouette collapse into a thin edge for several seconds.
+        group.rotation.y = Math.sin(t * 0.34) * 0.14 + current.x * 0.22;
+        group.rotation.x = Math.sin(t * 0.28) * 0.055 + current.y * 0.16;
         group.position.y = Math.sin(t * 0.8) * 0.07;
       } else {
-        group.rotation.y = current.x * 0.25;
-        group.rotation.x = current.y * 0.18;
+        group.rotation.y = current.x * 0.16;
+        group.rotation.x = current.y * 0.12;
       }
       renderer.render(scene, camera);
       raf = requestAnimationFrame(render);

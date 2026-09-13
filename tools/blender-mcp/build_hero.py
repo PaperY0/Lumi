@@ -33,21 +33,21 @@ def mat(name, base, rough=0.15, metal=0.0, transmission=0.0, ior=1.45, emission=
     return m
 
 # Palette pulled from Lumi's design tokens
-ROSE   = (0.78, 0.20, 0.36)
-PLUM   = (0.35, 0.14, 0.30)
-GOLD   = (0.82, 0.57, 0.31)
-LILAC  = (0.48, 0.29, 0.60)
-PEARL  = (1.0, 0.90, 0.84)
+ROSE   = (0.98, 0.40, 0.57)
+PLUM   = (0.80, 0.30, 0.53)
+GOLD   = (0.84, 0.63, 0.43)
+LILAC  = (0.86, 0.76, 0.96)
+PEARL  = (1.0, 0.93, 0.97)
 
 # Saturated, mostly opaque materials survive the pale page background. The
 # former fully transmissive heart inherited too much white from the scene and
 # disappeared at normal viewing sizes.
-m_gem    = mat("LumiGem",    ROSE,  rough=0.13, metal=0.04, transmission=0.16, ior=1.48, coat=0.72)
-m_ribbon = mat("LumiRibbon", PLUM,  rough=0.20, metal=0.34, coat=0.45)
-m_ribbon2= mat("LumiRibbon2",LILAC, rough=0.22, metal=0.28, coat=0.42)
-m_ring   = mat("LumiRing",   GOLD,  rough=0.16, metal=0.92, coat=0.35)
-m_pearl  = mat("LumiPearl",  PEARL, rough=0.10, metal=0.05, emission=(1.0, 0.54, 0.62), emission_strength=0.32, coat=0.6)
-m_node   = mat("LumiNode",   GOLD,  rough=0.12, metal=0.85, emission=(1.0, 0.48, 0.22), emission_strength=0.18, coat=0.5)
+m_gem    = mat("LumiGem",    ROSE,  rough=0.18, metal=0.02, transmission=0.08, ior=1.46, coat=0.86)
+m_ribbon = mat("LumiRibbon", PLUM,  rough=0.22, metal=0.16, coat=0.68)
+m_ribbon2= mat("LumiRibbon2",LILAC, rough=0.18, metal=0.08, transmission=0.08, coat=0.74)
+m_ring   = mat("LumiRing",   GOLD,  rough=0.18, metal=0.72, coat=0.42)
+m_pearl  = mat("LumiPearl",  PEARL, rough=0.11, metal=0.02, emission=(1.0, 0.65, 0.76), emission_strength=0.22, coat=0.72)
+m_node   = mat("LumiNode",   GOLD,  rough=0.15, metal=0.68, emission=(1.0, 0.60, 0.33), emission_strength=0.10, coat=0.48)
 
 # ── 1. Heart gem core: build a heart profile, extrude with taper, bevel & facet ─
 def heart_curve(t):
@@ -57,13 +57,23 @@ def heart_curve(t):
     return Vector((x / 17.0, y / 17.0, 0.0))
 
 bm = bmesh.new()
-N = 48
-front = [bm.verts.new(heart_curve(2 * math.pi * i / N) + Vector((0, 0, 0.22))) for i in range(N)]
-back  = [bm.verts.new(heart_curve(2 * math.pi * i / N) + Vector((0, 0, -0.22))) for i in range(N)]
-bm.faces.new(front)
-bm.faces.new(reversed(back))
-for i in range(N):
-    bm.faces.new((front[i], front[(i + 1) % N], back[(i + 1) % N], back[i]))
+N = 64
+# Several tapered depth rings create the inflated candy-heart volume seen in
+# the visual reference. A single front/back extrusion reads flat in motion.
+depth_layers = [(-0.50, 0.42), (-0.39, 0.70), (-0.22, 0.91), (0.0, 1.0), (0.22, 0.91), (0.39, 0.70), (0.50, 0.42)]
+rings = []
+for depth, scale in depth_layers:
+    ring_verts = []
+    for i in range(N):
+        p = heart_curve(2 * math.pi * i / N)
+        ring_verts.append(bm.verts.new(Vector((p.x * scale, p.y * scale, depth))))
+    rings.append(ring_verts)
+for layer in range(len(rings) - 1):
+    a, b = rings[layer], rings[layer + 1]
+    for i in range(N):
+        bm.faces.new((a[i], a[(i + 1) % N], b[(i + 1) % N], b[i]))
+bm.faces.new(reversed(rings[0]))
+bm.faces.new(rings[-1])
 bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
 me = bpy.data.meshes.new("HeartGemMesh")
 bm.to_mesh(me); bm.free()
@@ -78,10 +88,10 @@ bpy.ops.mesh.select_all(action='SELECT')
 bpy.ops.mesh.normals_make_consistent(inside=False)
 bpy.ops.object.mode_set(mode='OBJECT')
 gem.select_set(False)
-bev = gem.modifiers.new("Bevel", 'BEVEL'); bev.width = 0.19; bev.segments = 8; bev.limit_method = 'ANGLE'; bev.angle_limit = math.radians(40)
-sub = gem.modifiers.new("Subd", 'SUBSURF'); sub.levels = 1; sub.render_levels = 1
+bev = gem.modifiers.new("Bevel", 'BEVEL'); bev.width = 0.12; bev.segments = 6; bev.limit_method = 'ANGLE'; bev.angle_limit = math.radians(32)
+sub = gem.modifiers.new("Subd", 'SUBSURF'); sub.levels = 2; sub.render_levels = 2
 gem.rotation_euler = (math.radians(90), 0, 0)
-gem.scale = (0.82, 0.82, 0.82)
+gem.scale = (1.06, 0.86, 0.98)
 gem.location = (0, 0, 0.05)
 
 # ── 2. Two ribbons: torus knots-ish sweeps via bezier curves with bevel ───────
@@ -111,8 +121,8 @@ def ribbon(name, material, radius=1.45, twist=1.0, phase=0.0, tilt=0.55, thickne
     ob.data.materials.append(material)
     return ob, prof_obj
 
-r1, p1 = ribbon("RibbonPlum",  m_ribbon,  radius=1.45, tilt=0.62, phase=0.0, width=0.12, thickness=0.05)
-r2, p2 = ribbon("RibbonLilac", m_ribbon2, radius=1.62, tilt=-0.48, phase=1.1, width=0.09, thickness=0.045)
+r1, p1 = ribbon("RibbonRose",  m_ribbon,  radius=1.42, tilt=0.62, phase=0.0, width=0.15, thickness=0.055)
+r2, p2 = ribbon("RibbonPearl", m_ribbon2, radius=1.60, tilt=-0.48, phase=1.1, width=0.105, thickness=0.048)
 
 # ── 3. Thin gold halo ring ────────────────────────────────────────────────────
 bpy.ops.mesh.primitive_torus_add(major_radius=1.95, minor_radius=0.022, major_segments=128, minor_segments=16)

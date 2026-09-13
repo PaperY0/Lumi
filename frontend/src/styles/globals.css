@@ -399,20 +399,95 @@ body {
 /* ─── Stable onboarding questionnaires ────────────────────── */
 
 .onboarding-copy {
-  min-height: min(64vh, 590px);
+  min-height: min(68vh, 640px);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding-block: clamp(24px, 5vh, 52px);
+  padding-block: clamp(18px, 4vh, 42px);
 }
 
 .onboarding-title-wrap {
   margin-block: auto;
-  padding-bottom: clamp(56px, 10vh, 112px);
+  padding-block: clamp(52px, 8vh, 92px) clamp(44px, 7vh, 76px);
 }
 
 .onboarding-actions {
   flex-shrink: 0;
+}
+
+.onboarding-brand-mark {
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, #d1687e, #bf8b70);
+  box-shadow: 0 12px 30px rgba(164, 65, 91, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.34);
+}
+
+.onboarding-brand-name {
+  color: var(--deep-plum);
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+}
+
+.onboarding-brand-subtitle {
+  margin-top: 4px;
+  color: #b9854f;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.onboarding-subtitle {
+  max-width: 500px;
+  margin: 26px 0 0;
+  color: rgba(72, 48, 68, 0.72);
+  font-size: 16px;
+  line-height: 1.75;
+}
+
+.onboarding-hero3d {
+  isolation: isolate;
+}
+
+.hero-callout {
+  position: absolute;
+  z-index: 3;
+  padding: 10px 17px;
+  border: 1px solid rgba(219, 122, 150, 0.2);
+  border-radius: 18px 18px 18px 6px;
+  background: rgba(255, 252, 253, 0.92);
+  box-shadow: 0 12px 34px rgba(98, 47, 78, 0.11), inset 0 1px 0 #fff;
+  color: #b34f70;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  animation: heroCalloutFloat 5.5s ease-in-out infinite;
+}
+
+.hero-callout-one { top: 66px; left: 28px; }
+.hero-callout-two { bottom: 112px; left: -4px; animation-delay: -2s; }
+.hero-callout-three { right: -10px; bottom: 54px; animation-delay: -3.5s; }
+
+.hero-spark {
+  position: absolute;
+  z-index: 3;
+  color: #ee8eae;
+  text-shadow: 0 6px 20px rgba(212, 96, 122, 0.28);
+  pointer-events: none;
+  animation: heroCalloutFloat 4.8s ease-in-out infinite;
+}
+
+.hero-spark-one { top: 126px; right: 20px; font-size: 18px; }
+.hero-spark-two { top: 38px; left: 164px; color: #d4a062; font-size: 20px; animation-delay: -1.6s; }
+
+@keyframes heroCalloutFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
 }
 
 @media (max-width: 768px) {
@@ -437,7 +512,13 @@ body {
   }
 
   .onboarding-brand {
-    margin-bottom: 28px !important;
+    margin-bottom: 0 !important;
+  }
+
+  .onboarding-brand-mark {
+    width: 50px;
+    height: 50px;
+    border-radius: 16px;
   }
 
   .onboarding-title {
@@ -447,7 +528,13 @@ body {
 
   .onboarding-title-wrap {
     margin-block: auto;
-    padding-bottom: 56px;
+    padding-block: 56px;
+  }
+
+  .onboarding-subtitle {
+    margin-top: 22px;
+    font-size: 15px;
+    line-height: 1.7;
   }
 
   .onboarding-actions {
@@ -477,7 +564,14 @@ body {
 
 @media (min-width: 769px) and (max-width: 1180px) {
   .onboarding-layout { gap: 40px !important; }
-  .onboarding-hero3d { transform: scale(0.8); transform-origin: center; }
+  .onboarding-hero3d { transform: scale(0.76); transform-origin: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-callout,
+  .hero-spark {
+    animation: none;
+  }
 }
 
 .core-questionnaire {
