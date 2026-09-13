@@ -639,12 +639,6 @@ body {
     display: none !important;
   }
 
-  .onboarding-ring-top {
-    width: 120px !important;
-    height: 120px !important;
-    top: 3% !important;
-    right: -42px !important;
-  }
 }
 
 @media (min-width: 769px) and (max-width: 1180px) {
