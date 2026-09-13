@@ -19,5 +19,8 @@ test('defines the approved desktop hero color, placement, and bubble drift', () 
   expect(styles).toContain('transform: translateY(12px);');
   expect(styles).toContain('transform: translateY(-3px);');
   expect(styles).toContain('transform: translateY(3px);');
+  expect(styles).toContain('.hero-spark-eight');
+  expect(styles).toContain('.hero-signal-trail');
+  expect(styles).toContain('@keyframes heroSparkDrift');
   expect(styles).toContain('animation: none;');
 });

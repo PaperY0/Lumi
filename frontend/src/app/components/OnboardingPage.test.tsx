@@ -22,6 +22,8 @@ describe('OnboardingPage hero conversation layer', () => {
     const { container } = render(<OnboardingPage onComplete={vi.fn()} />);
 
     expect(container.querySelectorAll('.hero-callout')).toHaveLength(6);
+    expect(container.querySelectorAll('.hero-spark')).toHaveLength(8);
+    expect(container.querySelector('.hero-signal-trail')).toHaveAttribute('aria-hidden', 'true');
     expect(screen.getByRole('heading', { level: 1 })).toHaveStyle({ letterSpacing: '0.005em' });
     expect(container.querySelector('.onboarding-title-line-first')).toHaveTextContent('让沟通更真诚，');
     expect(container.querySelector('.onboarding-title-line-second')).toHaveTextContent('让靠近更有分寸');

@@ -112,6 +112,13 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
               <div className="hero-callout hero-callout-six" aria-hidden>晚安，好梦</div>
               <span className="hero-spark hero-spark-one" aria-hidden>♥</span>
               <span className="hero-spark hero-spark-two" aria-hidden>✦</span>
+              <span className="hero-spark hero-spark-three" aria-hidden>♥</span>
+              <span className="hero-spark hero-spark-four" aria-hidden>✦</span>
+              <span className="hero-spark hero-spark-five" aria-hidden>●</span>
+              <span className="hero-spark hero-spark-six" aria-hidden>♥</span>
+              <span className="hero-spark hero-spark-seven" aria-hidden>●</span>
+              <span className="hero-spark hero-spark-eight" aria-hidden>✧</span>
+              <span className="hero-signal-trail" aria-hidden />
             </div>
           </div>
         )}

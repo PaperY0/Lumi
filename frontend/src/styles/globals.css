@@ -511,12 +511,46 @@ body {
   z-index: 3;
   color: #ee8eae;
   text-shadow: 0 6px 20px rgba(212, 96, 122, 0.28);
+  opacity: 0.76;
   pointer-events: none;
-  animation: heroCalloutFloat 4.8s ease-in-out infinite;
+  animation: heroSparkDrift var(--spark-duration, 7s) ease-in-out var(--spark-delay, 0s) infinite alternate;
 }
 
-.hero-spark-one { top: 126px; right: 20px; font-size: 18px; }
-.hero-spark-two { top: 38px; left: 164px; color: #d4a062; font-size: 20px; animation-delay: -1.6s; }
+.hero-spark-one   { top: 126px; right: 20px; font-size: 18px; --spark-x: 6px; --spark-y: -8px; --spark-duration: 6.2s; --spark-delay: -1s; }
+.hero-spark-two   { top: 38px; left: 164px; color: #d4a062; font-size: 20px; --spark-x: -7px; --spark-y: 6px; --spark-duration: 7.4s; --spark-delay: -2s; }
+.hero-spark-three { top: 92px; left: -24px; color: #dca2c6; font-size: 14px; --spark-x: -8px; --spark-y: -6px; --spark-duration: 8.2s; --spark-delay: -3.2s; }
+.hero-spark-four  { top: 208px; right: -38px; color: #d9ab74; font-size: 16px; --spark-x: 8px; --spark-y: 7px; --spark-duration: 6.8s; --spark-delay: -4.4s; }
+.hero-spark-five  { top: 252px; left: -52px; color: #f1cad8; font-size: 10px; --spark-x: -6px; --spark-y: 9px; --spark-duration: 9s; --spark-delay: -1.8s; }
+.hero-spark-six   { bottom: 18px; left: 210px; color: #ee9bb7; font-size: 15px; --spark-x: 7px; --spark-y: 8px; --spark-duration: 7.8s; --spark-delay: -5s; }
+.hero-spark-seven { top: 16px; right: 92px; color: #f3dbe5; font-size: 11px; --spark-x: 5px; --spark-y: -7px; --spark-duration: 5.8s; --spark-delay: -2.6s; }
+.hero-spark-eight { bottom: 174px; right: 6px; color: #bca9d8; font-size: 17px; --spark-x: -9px; --spark-y: 6px; --spark-duration: 8.6s; --spark-delay: -6s; }
+
+.hero-signal-trail {
+  position: absolute;
+  top: 214px;
+  left: -94px;
+  z-index: 0;
+  width: 330px;
+  height: 112px;
+  border-top: 1px solid rgba(202, 132, 164, 0.2);
+  border-radius: 50%;
+  transform: rotate(12deg);
+  opacity: 0.72;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent, black 24%, black 76%, transparent);
+  mask-image: linear-gradient(90deg, transparent, black 24%, black 76%, transparent);
+  animation: heroTrailBreathe 8s ease-in-out infinite alternate;
+}
+
+@keyframes heroSparkDrift {
+  from { transform: translate3d(0, 0, 0) scale(0.96); }
+  to { transform: translate3d(var(--spark-x), var(--spark-y), 0) scale(1.05); }
+}
+
+@keyframes heroTrailBreathe {
+  from { opacity: 0.38; }
+  to { opacity: 0.72; }
+}
 
 @keyframes heroCalloutFloat {
   0%, 100% { transform: translateY(0); }
@@ -567,6 +601,16 @@ body {
     transform: translateY(3px);
   }
 
+  .hero-spark-three,
+  .hero-spark-four,
+  .hero-spark-five,
+  .hero-spark-six,
+  .hero-spark-seven,
+  .hero-spark-eight,
+  .hero-signal-trail {
+    display: none;
+  }
+
   .onboarding-title-wrap {
     margin-block: auto;
     padding-block: 56px;
@@ -610,8 +654,13 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .hero-callout,
-  .hero-spark {
+  .hero-spark,
+  .hero-signal-trail {
     animation: none;
+  }
+
+  .hero-signal-trail {
+    opacity: 0.55;
   }
 }
 
