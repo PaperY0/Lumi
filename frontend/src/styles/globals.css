@@ -398,6 +398,16 @@ body {
 
 /* ─── Stable onboarding questionnaires ────────────────────── */
 
+@media (min-width: 769px) {
+  .onboarding-brand {
+    transform: translate(-16px, -18px) !important;
+  }
+
+  .onboarding-title {
+    background: linear-gradient(145deg, #6f4058 0%, #ae6d89 52%, #92738e 100%) !important;
+  }
+}
+
 .onboarding-copy {
   min-height: min(68vh, 640px);
   display: flex;
@@ -466,12 +476,20 @@ body {
   font-weight: 650;
   letter-spacing: 0.01em;
   white-space: nowrap;
-  animation: heroCalloutFloat 5.5s ease-in-out infinite;
+  animation: heroBubbleDrift var(--bubble-duration, 8s) ease-in-out var(--bubble-delay, 0s) infinite alternate;
 }
 
-.hero-callout-one { top: 66px; left: 28px; }
-.hero-callout-two { bottom: 112px; left: -4px; animation-delay: -2s; }
-.hero-callout-three { right: -10px; bottom: 54px; animation-delay: -3.5s; }
+.hero-callout-one   { top: 66px; left: 28px; --bubble-x: 10px; --bubble-y: -8px; --bubble-duration: 7.4s; --bubble-delay: -1.2s; }
+.hero-callout-two   { bottom: 112px; left: -4px; --bubble-x: -9px; --bubble-y: 8px; --bubble-duration: 8.6s; --bubble-delay: -4.1s; }
+.hero-callout-three { right: -10px; bottom: 54px; --bubble-x: 12px; --bubble-y: -6px; --bubble-duration: 9.8s; --bubble-delay: -2.8s; }
+.hero-callout-four  { top: 166px; right: 8px; --bubble-x: -10px; --bubble-y: 9px; --bubble-duration: 7.9s; --bubble-delay: -5.3s; }
+.hero-callout-five  { top: 278px; left: -20px; --bubble-x: 8px; --bubble-y: 10px; --bubble-duration: 9.1s; --bubble-delay: -3.6s; }
+.hero-callout-six   { right: 68px; bottom: 6px; --bubble-x: -12px; --bubble-y: -8px; --bubble-duration: 8.2s; --bubble-delay: -6.4s; }
+
+@keyframes heroBubbleDrift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(var(--bubble-x), var(--bubble-y), 0); }
+}
 
 .hero-spark {
   position: absolute;
