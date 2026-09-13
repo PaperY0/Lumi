@@ -14,7 +14,7 @@ for coll in (bpy.data.meshes, bpy.data.materials, bpy.data.curves):
         if b.users == 0:
             coll.remove(b)
 
-def mat(name, base, rough=0.15, metal=0.0, transmission=0.0, ior=1.45, emission=None, emission_strength=0.0):
+def mat(name, base, rough=0.15, metal=0.0, transmission=0.0, ior=1.45, emission=None, emission_strength=0.0, coat=0.0):
     m = bpy.data.materials.new(name)
     m.use_nodes = True
     bsdf = m.node_tree.nodes["Principled BSDF"]
@@ -24,22 +24,30 @@ def mat(name, base, rough=0.15, metal=0.0, transmission=0.0, ior=1.45, emission=
     bsdf.inputs["IOR"].default_value = ior
     if "Transmission Weight" in bsdf.inputs:
         bsdf.inputs["Transmission Weight"].default_value = transmission
+    if "Coat Weight" in bsdf.inputs:
+        bsdf.inputs["Coat Weight"].default_value = coat
+        bsdf.inputs["Coat Roughness"].default_value = 0.08
     if emission:
         bsdf.inputs["Emission Color"].default_value = (*emission, 1.0)
         bsdf.inputs["Emission Strength"].default_value = emission_strength
     return m
 
 # Palette pulled from Lumi's design tokens
-ROSE   = (0.831, 0.376, 0.478)   # #D4607A
-GOLD   = (0.749, 0.557, 0.431)   # #BF8E6E
-LILAC  = (0.784, 0.659, 0.831)   # #C8A8D4
-PEARL  = (1.0, 0.965, 0.98)
+ROSE   = (0.78, 0.20, 0.36)
+PLUM   = (0.35, 0.14, 0.30)
+GOLD   = (0.82, 0.57, 0.31)
+LILAC  = (0.48, 0.29, 0.60)
+PEARL  = (1.0, 0.90, 0.84)
 
-m_gem    = mat("LumiGem",    (0.98, 0.86, 0.90), rough=0.05, transmission=1.0, ior=1.6)
-m_ribbon = mat("LumiRibbon", ROSE,  rough=0.28, metal=0.15)
-m_ribbon2= mat("LumiRibbon2",LILAC, rough=0.32, metal=0.10)
-m_ring   = mat("LumiRing",   GOLD,  rough=0.22, metal=1.0)
-m_pearl  = mat("LumiPearl",  PEARL, rough=0.12, metal=0.05, emission=(1.0, 0.92, 0.95), emission_strength=0.6)
+# Saturated, mostly opaque materials survive the pale page background. The
+# former fully transmissive heart inherited too much white from the scene and
+# disappeared at normal viewing sizes.
+m_gem    = mat("LumiGem",    ROSE,  rough=0.13, metal=0.04, transmission=0.16, ior=1.48, coat=0.72)
+m_ribbon = mat("LumiRibbon", PLUM,  rough=0.20, metal=0.34, coat=0.45)
+m_ribbon2= mat("LumiRibbon2",LILAC, rough=0.22, metal=0.28, coat=0.42)
+m_ring   = mat("LumiRing",   GOLD,  rough=0.16, metal=0.92, coat=0.35)
+m_pearl  = mat("LumiPearl",  PEARL, rough=0.10, metal=0.05, emission=(1.0, 0.54, 0.62), emission_strength=0.32, coat=0.6)
+m_node   = mat("LumiNode",   GOLD,  rough=0.12, metal=0.85, emission=(1.0, 0.48, 0.22), emission_strength=0.18, coat=0.5)
 
 # ── 1. Heart gem core: build a heart profile, extrude with taper, bevel & facet ─
 def heart_curve(t):
@@ -103,23 +111,34 @@ def ribbon(name, material, radius=1.45, twist=1.0, phase=0.0, tilt=0.55, thickne
     ob.data.materials.append(material)
     return ob, prof_obj
 
-r1, p1 = ribbon("RibbonRose",  m_ribbon,  radius=1.45, tilt=0.62, phase=0.0)
-r2, p2 = ribbon("RibbonLilac", m_ribbon2, radius=1.62, tilt=-0.48, phase=1.1, width=0.12)
+r1, p1 = ribbon("RibbonPlum",  m_ribbon,  radius=1.45, tilt=0.62, phase=0.0, width=0.12, thickness=0.05)
+r2, p2 = ribbon("RibbonLilac", m_ribbon2, radius=1.62, tilt=-0.48, phase=1.1, width=0.09, thickness=0.045)
 
 # ── 3. Thin gold halo ring ────────────────────────────────────────────────────
-bpy.ops.mesh.primitive_torus_add(major_radius=1.95, minor_radius=0.012, major_segments=128, minor_segments=12)
+bpy.ops.mesh.primitive_torus_add(major_radius=1.95, minor_radius=0.022, major_segments=128, minor_segments=16)
 ring = bpy.context.active_object; ring.name = "HaloRing"
 ring.data.materials.append(m_ring)
 ring.rotation_euler = (math.radians(78), 0, math.radians(20))
 
 # ── 4. Floating pearls (small emissive spheres) ───────────────────────────────
 pearls = []
-for i, (px, py, pz, s) in enumerate([(1.55, 0.9, 0.7, 0.07), (-1.4, -0.6, 1.1, 0.05), (0.9, -1.5, -0.8, 0.045), (-1.7, 0.7, -0.5, 0.06), (0.2, 1.7, -1.1, 0.04)]):
+for i, (px, py, pz, s) in enumerate([(1.55, 0.9, 0.7, 0.09), (-1.4, -0.6, 1.1, 0.065), (0.9, -1.5, -0.8, 0.06), (-1.7, 0.7, -0.5, 0.075), (0.2, 1.7, -1.1, 0.055)]):
     bpy.ops.mesh.primitive_uv_sphere_add(radius=s, segments=24, ring_count=16, location=(px, py, pz))
     o = bpy.context.active_object; o.name = f"Pearl{i}"; o.data.materials.append(m_pearl); pearls.append(o)
 
+# A necklace of small gold nodes gives the outer orbit a crafted, jewellery-like
+# rhythm instead of reading as one generic wireframe loop.
+nodes = []
+for i in range(8):
+    t = 2 * math.pi * i / 8 + 0.18
+    px = 1.95 * math.cos(t)
+    py = 1.95 * math.sin(t) * math.cos(math.radians(78))
+    pz = 1.95 * math.sin(t) * math.sin(math.radians(78))
+    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=2, radius=0.045 if i % 2 else 0.065, location=(px, py, pz))
+    o = bpy.context.active_object; o.name = f"GoldNode{i}"; o.data.materials.append(m_node); nodes.append(o)
+
 # smooth shading everywhere
-for ob in [gem, ring, *pearls]:
+for ob in [gem, ring, *pearls, *nodes]:
     bpy.context.view_layer.objects.active = ob
     ob.select_set(True)
     bpy.ops.object.shade_smooth()
@@ -134,7 +153,7 @@ for p in (p1, p2):
 
 # ── 5. Group under an empty and export ───────────────────────────────────────
 root = bpy.data.objects.new("LumiHero", None); bpy.context.collection.objects.link(root)
-for ob in [gem, r1, r2, ring, *pearls]:
+for ob in [gem, r1, r2, ring, *pearls, *nodes]:
     ob.parent = root
 
 import os

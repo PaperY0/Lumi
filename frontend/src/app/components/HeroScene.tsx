@@ -5,10 +5,10 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 
 /**
  * HeroScene — Three.js stage for the Blender-authored `lumi-hero.glb`
- * (built by tools/blender-mcp/build_hero.py). Renders a transmissive heart
- * wrapped in two ribbons and a gold halo, lit by a neutral studio env-map so
- * the asset picks up the page's warm pastel palette instead of hard studio
- * whites. Idle motion is a slow orbital drift; pointer position nudges the
+ * (built by tools/blender-mcp/build_hero.py). Renders a rose crystal heart
+ * wrapped in two jewel-tone ribbons and a detailed gold orbit, lit by a
+ * warm/cool studio rig so the silhouette stays clear on the pale canvas.
+ * Idle motion is a slow orbital drift; pointer position nudges the
  * whole group for parallax. Honors prefers-reduced-motion and degrades to a
  * static CSS glow when WebGL is unavailable.
  */
@@ -52,7 +52,7 @@ export function HeroScene({ size = 420, className }: HeroSceneProps) {
     renderer.setSize(size, size);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.05;
+    renderer.toneMappingExposure = 1.12;
     mount.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
@@ -60,14 +60,16 @@ export function HeroScene({ size = 420, className }: HeroSceneProps) {
     scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
     const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 50);
-    camera.position.set(0, 0.35, 7.2);
+    camera.position.set(0, 0.28, 6.7);
     camera.lookAt(0, 0, 0);
 
-    // Warm key + cool fill so the transmissive heart reads pink/lilac, not grey.
-    const key = new THREE.DirectionalLight(0xfff1f4, 2.2); key.position.set(3, 4, 5); scene.add(key);
-    const fill = new THREE.DirectionalLight(0xe6d8ff, 1.1); fill.position.set(-4, -1, 3); scene.add(fill);
-    const rim = new THREE.DirectionalLight(0xffd9c2, 1.4); rim.position.set(0, 2, -5); scene.add(rim);
-    scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+    // A directional jewellery-style rig: warm key for the rose core, violet
+    // fill for ribbon separation, and a crisp rim for the gold orbit.
+    const key = new THREE.DirectionalLight(0xffd7df, 3.2); key.position.set(3.5, 4.5, 5); scene.add(key);
+    const fill = new THREE.DirectionalLight(0xbca7ff, 1.8); fill.position.set(-4, -1.2, 3.5); scene.add(fill);
+    const rim = new THREE.DirectionalLight(0xffbf82, 2.3); rim.position.set(1, 2.5, -5); scene.add(rim);
+    const core = new THREE.PointLight(0xff527d, 7, 8, 2); core.position.set(0, 0.15, 2.4); scene.add(core);
+    scene.add(new THREE.AmbientLight(0xfff7fb, 0.48));
 
     const group = new THREE.Group();
     scene.add(group);
@@ -83,20 +85,46 @@ export function HeroScene({ size = 420, className }: HeroSceneProps) {
           const mesh = o as THREE.Mesh;
           if (!mesh.isMesh) return;
           const m = mesh.material as THREE.MeshPhysicalMaterial;
-          if (m && 'transmission' in m && m.transmission > 0) {
-            // Glass heart: push thickness/ior so refraction is visible at this scale.
-            m.thickness = 1.2; m.ior = 1.5; m.roughness = 0.08;
-            m.attenuationColor = new THREE.Color(0xf7c9d6); m.attenuationDistance = 2.2;
-            m.envMapIntensity = 1.4;
-          } else if (m) {
-            m.envMapIntensity = 1.1;
+          if (!m) return;
+          m.envMapIntensity = 1.55;
+          if (mesh.name === 'HeartGem') {
+            m.color.set(0xd1355f);
+            m.roughness = 0.12;
+            m.metalness = 0.04;
+            m.transmission = 0.14;
+            m.thickness = 0.8;
+            m.ior = 1.48;
+            m.attenuationColor = new THREE.Color(0x9d183f);
+            m.attenuationDistance = 1.35;
+            m.clearcoat = 0.78;
+            m.clearcoatRoughness = 0.08;
+          } else if (mesh.name.includes('RibbonPlum')) {
+            m.color.set(0x5a2346);
+            m.metalness = 0.34;
+            m.roughness = 0.2;
+            m.clearcoat = 0.48;
+          } else if (mesh.name.includes('RibbonLilac')) {
+            m.color.set(0x81509a);
+            m.metalness = 0.28;
+            m.roughness = 0.22;
+            m.clearcoat = 0.44;
+          } else if (mesh.name.includes('HaloRing') || mesh.name.includes('GoldNode')) {
+            m.color.set(0xd3974e);
+            m.metalness = 0.92;
+            m.roughness = 0.15;
+          } else if (mesh.name.includes('Pearl')) {
+            m.color.set(0xffd7d9);
+            m.emissive?.set(0xb83258);
+            m.emissiveIntensity = 0.32;
           }
         });
         // Normalise scale so the halo ring fits the canvas.
         const box = new THREE.Box3().setFromObject(root);
         const dims = box.getSize(new THREE.Vector3());
         const center = box.getCenter(new THREE.Vector3());
-        const k = 3.9 / Math.max(dims.x, dims.y, dims.z);
+        // Leave optical breathing room around the jewellery orbit; a tighter
+        // fit makes the gold ring look accidentally clipped at the canvas edge.
+        const k = 3.78 / Math.max(dims.x, dims.y, dims.z);
         root.scale.setScalar(k);
         root.position.copy(center.multiplyScalar(-k));
         group.add(root);
@@ -173,7 +201,8 @@ export function HeroScene({ size = 420, className }: HeroSceneProps) {
         width: size, height: size, position: 'relative', flexShrink: 0,
         borderRadius: '50%',
         // While the GLB streams in, show the same blush glow so there's no pop.
-        background: 'radial-gradient(circle at 50% 46%, rgba(248,224,232,0.85) 0%, rgba(236,206,222,0.4) 38%, rgba(236,206,222,0.12) 58%, transparent 70%)',
+        background: 'radial-gradient(circle at 50% 46%, rgba(246,194,211,0.5) 0%, rgba(208,176,222,0.24) 32%, rgba(244,209,177,0.14) 54%, transparent 72%)',
+        filter: 'drop-shadow(0 28px 42px rgba(94, 32, 66, 0.15))',
         opacity: fallback || ready ? 1 : 0.7,
         transition: 'opacity 0.8s ease',
       }}
