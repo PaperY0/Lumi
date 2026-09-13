@@ -22,6 +22,7 @@ describe('OnboardingPage hero conversation layer', () => {
     const { container } = render(<OnboardingPage onComplete={vi.fn()} />);
 
     expect(container.querySelectorAll('.hero-callout')).toHaveLength(6);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveStyle({ letterSpacing: '0.005em' });
     expect(screen.getByText('在吗？')).toHaveAttribute('aria-hidden', 'true');
     expect(screen.getByText('慢慢来，也很好')).toHaveAttribute('aria-hidden', 'true');
   });

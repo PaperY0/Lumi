@@ -20,7 +20,7 @@ interface HeroSceneProps {
 }
 
 const MODEL_URL = '/models/lumi-hero.glb';
-export const HEART_GEM_SCALE = { x: 1.14, y: 1.18, z: 1 } as const;
+export const HEART_GEM_SCALE = { x: 1.34, y: 1.42, z: 1 } as const;
 
 function prefersReducedMotion(): boolean {
   return typeof window !== 'undefined'

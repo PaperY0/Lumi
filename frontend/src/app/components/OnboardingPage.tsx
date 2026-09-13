@@ -65,7 +65,7 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
               margin: 0,
               fontSize: 'clamp(44px, 5.5vw, 68px)',
               fontWeight: 800,
-              letterSpacing: '-0.055em',
+              letterSpacing: '0.005em',
               lineHeight: 1.06,
               background: 'linear-gradient(145deg, #321923 0%, #77334f 52%, #5c3155 100%)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',

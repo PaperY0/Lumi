@@ -404,7 +404,7 @@ body {
   }
 
   .onboarding-title {
-    background: linear-gradient(145deg, #6f4058 0%, #ae6d89 52%, #92738e 100%) !important;
+    background: linear-gradient(145deg, #87566f 0%, #c1849f 52%, #a58aa4 100%) !important;
     -webkit-background-clip: text !important;
     background-clip: text !important;
     -webkit-text-fill-color: transparent;
@@ -482,12 +482,12 @@ body {
   animation: heroBubbleDrift var(--bubble-duration, 8s) ease-in-out var(--bubble-delay, 0s) infinite alternate;
 }
 
-.hero-callout-one   { top: 66px; left: 28px; --bubble-x: 10px; --bubble-y: -8px; --bubble-duration: 7.4s; --bubble-delay: -1.2s; }
-.hero-callout-two   { bottom: 112px; left: -4px; --bubble-x: -9px; --bubble-y: 8px; --bubble-duration: 8.6s; --bubble-delay: -4.1s; }
-.hero-callout-three { right: -10px; bottom: 54px; --bubble-x: 12px; --bubble-y: -6px; --bubble-duration: 9.8s; --bubble-delay: -2.8s; }
-.hero-callout-four  { top: 166px; right: 8px; --bubble-x: -10px; --bubble-y: 9px; --bubble-duration: 7.9s; --bubble-delay: -5.3s; }
-.hero-callout-five  { top: 278px; left: -20px; --bubble-x: 8px; --bubble-y: 10px; --bubble-duration: 9.1s; --bubble-delay: -3.6s; }
-.hero-callout-six   { right: 68px; bottom: 6px; --bubble-x: -12px; --bubble-y: -8px; --bubble-duration: 8.2s; --bubble-delay: -6.4s; }
+.hero-callout-one   { top: 66px; left: 28px; --bubble-x: 18px; --bubble-y: -14px; --bubble-duration: 7.4s; --bubble-delay: -1.2s; }
+.hero-callout-two   { bottom: 112px; left: -4px; --bubble-x: -16px; --bubble-y: 18px; --bubble-duration: 8.6s; --bubble-delay: -4.1s; }
+.hero-callout-three { right: -10px; bottom: 54px; --bubble-x: 22px; --bubble-y: -14px; --bubble-duration: 9.8s; --bubble-delay: -2.8s; }
+.hero-callout-four  { top: 166px; right: 8px; --bubble-x: -18px; --bubble-y: 16px; --bubble-duration: 7.9s; --bubble-delay: -5.3s; }
+.hero-callout-five  { top: 278px; left: -20px; --bubble-x: 14px; --bubble-y: 20px; --bubble-duration: 9.1s; --bubble-delay: -3.6s; }
+.hero-callout-six   { right: 68px; bottom: 6px; --bubble-x: -20px; --bubble-y: -18px; --bubble-duration: 8.2s; --bubble-delay: -6.4s; }
 
 @keyframes heroBubbleDrift {
   from { transform: translate3d(0, 0, 0); }
