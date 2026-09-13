@@ -107,6 +107,9 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
               <div className="hero-callout hero-callout-one" aria-hidden>在吗？</div>
               <div className="hero-callout hero-callout-two" aria-hidden>今天想见你</div>
               <div className="hero-callout hero-callout-three" aria-hidden>慢慢来，也很好</div>
+              <div className="hero-callout hero-callout-four" aria-hidden>到家说一声</div>
+              <div className="hero-callout hero-callout-five" aria-hidden>我在听</div>
+              <div className="hero-callout hero-callout-six" aria-hidden>晚安，好梦</div>
               <span className="hero-spark hero-spark-one" aria-hidden>♥</span>
               <span className="hero-spark hero-spark-two" aria-hidden>✦</span>
             </div>
