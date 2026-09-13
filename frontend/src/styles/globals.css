@@ -405,6 +405,9 @@ body {
 
   .onboarding-title {
     background: linear-gradient(145deg, #6f4058 0%, #ae6d89 52%, #92738e 100%) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent;
   }
 }
 
