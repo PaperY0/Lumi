@@ -20,6 +20,7 @@ interface HeroSceneProps {
 }
 
 const MODEL_URL = '/models/lumi-hero.glb';
+export const HEART_GEM_SCALE = { x: 1.14, y: 1.18, z: 1 } as const;
 
 function prefersReducedMotion(): boolean {
   return typeof window !== 'undefined'
@@ -88,6 +89,7 @@ export function HeroScene({ size = 420, className }: HeroSceneProps) {
           if (!m) return;
           m.envMapIntensity = 1.55;
           if (mesh.name === 'HeartGem') {
+            mesh.scale.set(HEART_GEM_SCALE.x, HEART_GEM_SCALE.y, HEART_GEM_SCALE.z);
             m.color.set(0xfa6688);
             m.roughness = 0.17;
             m.metalness = 0.02;
