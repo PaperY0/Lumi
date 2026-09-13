@@ -20,7 +20,47 @@ interface HeroSceneProps {
 }
 
 const MODEL_URL = '/models/lumi-hero.glb';
-export const HEART_GEM_SCALE = { x: 1.34, y: 1.42, z: 1 } as const;
+export const HEART_GEM_SCALE = { x: 1.42, y: 1.43, z: 1.06 } as const;
+export const HEART_GEM_DEFORMATION = {
+  sideBulge: 0.1,
+  upperLobeBulge: 0.05,
+  depthBulge: 0.04,
+} as const;
+
+export function createFullerHeartGeometry(source: THREE.BufferGeometry): THREE.BufferGeometry {
+  const geometry = source.clone();
+  geometry.computeBoundingBox();
+  const box = geometry.boundingBox;
+  const position = geometry.getAttribute('position');
+  if (!box || !position) return geometry;
+
+  const centerX = (box.min.x + box.max.x) / 2;
+  const centerY = (box.min.y + box.max.y) / 2;
+  const halfWidth = Math.max((box.max.x - box.min.x) / 2, Number.EPSILON);
+  const halfHeight = Math.max((box.max.y - box.min.y) / 2, Number.EPSILON);
+
+  for (let index = 0; index < position.count; index += 1) {
+    const x = position.getX(index);
+    const y = position.getY(index);
+    const z = position.getZ(index);
+    const dx = x - centerX;
+    const nx = THREE.MathUtils.clamp(Math.abs(dx) / halfWidth, 0, 1);
+    const ny = THREE.MathUtils.clamp((y - centerY) / halfHeight, -1, 1);
+    const middleWeight = 1 - Math.abs(ny);
+    const upperWeight = Math.max(0, 1 - Math.abs(ny - 0.5) / 0.5) * nx;
+    const widthFactor = 1
+      + HEART_GEM_DEFORMATION.sideBulge * middleWeight
+      + HEART_GEM_DEFORMATION.upperLobeBulge * upperWeight;
+    const depthFactor = 1 + HEART_GEM_DEFORMATION.depthBulge * middleWeight;
+    position.setXYZ(index, centerX + dx * widthFactor, y, z * depthFactor);
+  }
+
+  position.needsUpdate = true;
+  geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
 
 function prefersReducedMotion(): boolean {
   return typeof window !== 'undefined'
@@ -89,6 +129,7 @@ export function HeroScene({ size = 420, className }: HeroSceneProps) {
           if (!m) return;
           m.envMapIntensity = 1.55;
           if (mesh.name === 'HeartGem') {
+            mesh.geometry = createFullerHeartGeometry(mesh.geometry);
             mesh.scale.set(HEART_GEM_SCALE.x, HEART_GEM_SCALE.y, HEART_GEM_SCALE.z);
             m.color.set(0xfa6688);
             m.roughness = 0.17;
