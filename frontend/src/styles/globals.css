@@ -598,6 +598,7 @@ body {
   }
 
   .onboarding-title {
+    display: grid;
     font-size: clamp(40px, 12vw, 56px) !important;
     line-height: 1.08 !important;
     row-gap: 10px;

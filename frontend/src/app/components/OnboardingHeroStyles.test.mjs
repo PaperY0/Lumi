@@ -4,6 +4,23 @@ import { expect, test } from 'vitest';
 
 const styles = readFileSync(resolve(process.cwd(), 'src/styles/globals.css'), 'utf8');
 
+function extractBlock(source, selector, fromIndex = 0) {
+  const selectorIndex = source.indexOf(selector, fromIndex);
+  expect(selectorIndex).toBeGreaterThanOrEqual(0);
+
+  const openingBraceIndex = source.indexOf('{', selectorIndex + selector.length);
+  expect(openingBraceIndex).toBeGreaterThan(selectorIndex);
+
+  let depth = 1;
+  for (let index = openingBraceIndex + 1; index < source.length; index += 1) {
+    if (source[index] === '{') depth += 1;
+    if (source[index] === '}') depth -= 1;
+    if (depth === 0) return source.slice(openingBraceIndex + 1, index);
+  }
+
+  throw new Error(`Unclosed CSS block for ${selector}`);
+}
+
 test('defines the approved desktop hero color, spacing, and glass bubble drift', () => {
   expect(styles).toContain('transform: translate(-16px, -18px)');
   expect(styles).toContain('#87566f 0%, #c1849f 52%, #a58aa4 100%');
@@ -24,7 +41,6 @@ test('defines the approved desktop hero color, spacing, and glass bubble drift',
   expect(styles).toContain('font-size: clamp(38px, 4vw, 50px) !important;');
   expect(styles).toContain('row-gap: 34px;');
   expect(styles).toContain('max-width: 560px;');
-  expect(styles).toContain('row-gap: 10px;');
   expect(styles).toContain('transform: translateY(-3px);');
   expect(styles).toContain('transform: translateY(3px);');
   expect(styles).toContain('.hero-spark-nine');
@@ -34,4 +50,12 @@ test('defines the approved desktop hero color, spacing, and glass bubble drift',
   expect(styles).toContain('.hero-signal-trail');
   expect(styles).toContain('@keyframes heroSparkDrift');
   expect(styles).toContain('animation: none;');
+});
+
+test('applies the approved title gap within the mobile onboarding rule', () => {
+  const mobileOnboardingStyles = extractBlock(styles, '@media (max-width: 768px)');
+  const mobileTitleStyles = extractBlock(mobileOnboardingStyles, '.onboarding-title');
+
+  expect(mobileTitleStyles).toContain('display: grid;');
+  expect(mobileTitleStyles).toContain('row-gap: 10px;');
 });
