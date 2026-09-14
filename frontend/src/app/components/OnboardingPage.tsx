@@ -62,7 +62,7 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
           <div className="onboarding-title-wrap" style={anim(180)}>
             <h1 className="onboarding-title" style={{
               margin: 0,
-              fontSize: 'clamp(44px, 5.5vw, 68px)',
+              fontSize: 'clamp(48px, 5.8vw, 74px)',
               fontWeight: 800,
               letterSpacing: '0.005em',
               lineHeight: 1.06,
@@ -73,7 +73,7 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
               <span className="onboarding-title-line onboarding-title-line-second">让靠近更有分寸</span>
             </h1>
             <p className="onboarding-subtitle">
-              AI 恋爱沟通陪伴工具，帮你读懂关系信号、组织恰当表达，也尊重彼此的边界。
+              读懂关系信号，组织恰当表达，也尊重彼此边界。
             </p>
           </div>
 

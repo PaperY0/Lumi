@@ -405,7 +405,7 @@ body {
 
   .onboarding-title {
     display: grid;
-    row-gap: 28px;
+    row-gap: 40px;
     background: linear-gradient(145deg, #87566f 0%, #c1849f 52%, #a58aa4 100%) !important;
     -webkit-background-clip: text !important;
     background-clip: text !important;
@@ -453,11 +453,11 @@ body {
 }
 
 .onboarding-title-line-first {
-  transform: translateY(-6px);
+  transform: translateY(-8px);
 }
 
 .onboarding-title-line-second {
-  transform: translateY(6px);
+  transform: translateY(8px);
 }
 
 .onboarding-brand-subtitle {
@@ -469,7 +469,7 @@ body {
 }
 
 .onboarding-subtitle {
-  max-width: 500px;
+  max-width: 560px;
   margin: 26px 0 0;
   color: rgba(72, 48, 68, 0.72);
   font-size: 16px;
@@ -648,6 +648,12 @@ body {
 
 @media (min-width: 769px) and (max-width: 1180px) {
   .onboarding-layout { gap: 40px !important; }
+  .onboarding-title {
+    font-size: clamp(38px, 4vw, 50px) !important;
+    row-gap: 34px;
+  }
+  .onboarding-title-line-first { transform: translateY(-6px); }
+  .onboarding-title-line-second { transform: translateY(6px); }
   .onboarding-hero3d { transform: scale(0.76); transform-origin: center; }
 }
 
