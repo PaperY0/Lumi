@@ -404,6 +404,8 @@ body {
   }
 
   .onboarding-title {
+    display: grid;
+    row-gap: 28px;
     background: linear-gradient(145deg, #87566f 0%, #c1849f 52%, #a58aa4 100%) !important;
     -webkit-background-clip: text !important;
     background-clip: text !important;
@@ -451,11 +453,11 @@ body {
 }
 
 .onboarding-title-line-first {
-  transform: translateY(-12px);
+  transform: translateY(-6px);
 }
 
 .onboarding-title-line-second {
-  transform: translateY(12px);
+  transform: translateY(6px);
 }
 
 .onboarding-brand-subtitle {
@@ -482,10 +484,12 @@ body {
   position: absolute;
   z-index: 3;
   padding: 10px 17px;
-  border: 1px solid rgba(219, 122, 150, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.74);
   border-radius: 18px 18px 18px 6px;
-  background: rgba(255, 252, 253, 0.92);
-  box-shadow: 0 12px 34px rgba(98, 47, 78, 0.11), inset 0 1px 0 #fff;
+  background: rgba(255, 252, 253, 0.66);
+  backdrop-filter: blur(18px) saturate(1.3);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  box-shadow: 0 10px 28px rgba(98, 47, 78, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.86);
   color: #b34f70;
   font-size: 13px;
   font-weight: 650;
@@ -494,12 +498,12 @@ body {
   animation: heroBubbleDrift var(--bubble-duration, 8s) ease-in-out var(--bubble-delay, 0s) infinite alternate;
 }
 
-.hero-callout-one   { top: 66px; left: 28px; --bubble-x: 18px; --bubble-y: -14px; --bubble-duration: 7.4s; --bubble-delay: -1.2s; }
-.hero-callout-two   { bottom: 112px; left: -4px; --bubble-x: -16px; --bubble-y: 18px; --bubble-duration: 8.6s; --bubble-delay: -4.1s; }
-.hero-callout-three { right: -10px; bottom: 54px; --bubble-x: 22px; --bubble-y: -14px; --bubble-duration: 9.8s; --bubble-delay: -2.8s; }
-.hero-callout-four  { top: 166px; right: 8px; --bubble-x: -18px; --bubble-y: 16px; --bubble-duration: 7.9s; --bubble-delay: -5.3s; }
-.hero-callout-five  { top: 278px; left: -20px; --bubble-x: 14px; --bubble-y: 20px; --bubble-duration: 9.1s; --bubble-delay: -3.6s; }
-.hero-callout-six   { right: 68px; bottom: 6px; --bubble-x: -20px; --bubble-y: -18px; --bubble-duration: 8.2s; --bubble-delay: -6.4s; }
+.hero-callout-one   { top: -14px; left: 52px; --bubble-x: 8px; --bubble-y: -6px; --bubble-duration: 7.4s; --bubble-delay: -1.2s; }
+.hero-callout-two   { bottom: 96px; left: -52px; --bubble-x: -7px; --bubble-y: 9px; --bubble-duration: 8.6s; --bubble-delay: -4.1s; }
+.hero-callout-three { right: -34px; bottom: 42px; --bubble-x: 10px; --bubble-y: -6px; --bubble-duration: 9.8s; --bubble-delay: -2.8s; }
+.hero-callout-four  { top: 146px; right: -28px; --bubble-x: -8px; --bubble-y: 7px; --bubble-duration: 7.9s; --bubble-delay: -5.3s; }
+.hero-callout-five  { top: 286px; left: -52px; --bubble-x: 6px; --bubble-y: 9px; --bubble-duration: 9.1s; --bubble-delay: -3.6s; }
+.hero-callout-six   { right: 48px; bottom: -18px; --bubble-x: -9px; --bubble-y: -8px; --bubble-duration: 8.2s; --bubble-delay: -6.4s; }
 
 @keyframes heroBubbleDrift {
   from { transform: translate3d(0, 0, 0); }
@@ -591,6 +595,7 @@ body {
   .onboarding-title {
     font-size: clamp(40px, 12vw, 56px) !important;
     line-height: 1.08 !important;
+    row-gap: 10px;
   }
 
   .onboarding-title-line-first {
