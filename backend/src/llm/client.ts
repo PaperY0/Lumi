@@ -36,12 +36,16 @@ export async function callLLM(
     });
 
     // 调用聊天完成接口
+    // deepseek-v4-flash 默认开启思考模式，推理过程会写入 reasoning_content 并占用
+    // completion token 预算；不显式关闭思考模式时，长回复容易把 content 挤空或截断。
+    // 显式禁用思考模式，确保 content 字段直接是可解析的最终 JSON。
     const response = await client.chat.completions.create({
-      model: 'deepseek-chat',
+      model: 'deepseek-v4-flash',
       messages: messages as any,
       response_format: { type: 'json_object' },
       temperature: options.temperature ?? 0.7,
       max_tokens: options.maxTokens,
+      ...({ thinking: { type: 'disabled' } } as any),
     });
 
     // 提取并解析 JSON 响应

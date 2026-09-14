@@ -1319,6 +1319,16 @@ body {
   overscroll-behavior: contain;
 }
 
+/* Direct children (cards, buttons) must keep their natural content height.
+   Without this, flex-shrink:1 (the default) lets the column squash every
+   card shorter than its text once total content exceeds the visible area,
+   and overflow:hidden on each glass-card then clips the squashed-out text —
+   instead of the column scrolling, which is what overflow-y:auto is for. */
+.reply-assist__controls > *,
+.reply-assist__results > * {
+  flex-shrink: 0;
+}
+
 .reply-assist__message-card {
   padding: 17px 18px;
   border-radius: 24px;
@@ -1393,6 +1403,13 @@ body {
 
   .reply-assist__workspace {
     grid-template-columns: minmax(0, 1fr);
+    /* Without this, grid's default align-content:stretch splits the flex-stretched
+       height of .reply-assist__workspace evenly across the two rows (controls/results),
+       ignoring how tall each actually needs to be. Combined with overflow:visible below,
+       a controls block taller than its row then spills straight down and covers the
+       results row instead of scrolling — this is the "内容大部分重叠" bug on mobile. */
+    grid-auto-rows: min-content;
+    align-content: start;
     gap: 16px;
   }
 
