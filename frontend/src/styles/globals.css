@@ -528,6 +528,11 @@ body {
 .hero-spark-six   { bottom: 18px; left: 210px; color: #ee9bb7; font-size: 15px; --spark-x: 7px; --spark-y: 8px; --spark-duration: 7.8s; --spark-delay: -5s; }
 .hero-spark-seven { top: 16px; right: 92px; color: #f3dbe5; font-size: 11px; --spark-x: 5px; --spark-y: -7px; --spark-duration: 5.8s; --spark-delay: -2.6s; }
 .hero-spark-eight { bottom: 174px; right: 6px; color: #bca9d8; font-size: 17px; --spark-x: -9px; --spark-y: 6px; --spark-duration: 8.6s; --spark-delay: -6s; }
+.hero-spark-nine     { top: 86px; left: 22px; color: #f5dce8; font-size: 12px; --spark-x: -5px; --spark-y: -8px; --spark-duration: 7.2s; --spark-delay: -1.4s; }
+.hero-spark-ten      { top: 74px; right: -36px; color: #e98cab; font-size: 18px; --spark-x: 7px; --spark-y: -6px; --spark-duration: 8.8s; --spark-delay: -4.8s; }
+.hero-spark-eleven   { top: 236px; right: 76px; color: #d9aa68; font-size: 10px; --spark-x: -4px; --spark-y: 6px; --spark-duration: 6.6s; --spark-delay: -2.1s; }
+.hero-spark-twelve   { right: -42px; bottom: 118px; color: #c5b0dc; font-size: 15px; --spark-x: 8px; --spark-y: 7px; --spark-duration: 9.6s; --spark-delay: -6.2s; }
+.hero-spark-thirteen { bottom: 54px; left: 54px; color: #efb3ca; font-size: 13px; --spark-x: -6px; --spark-y: 8px; --spark-duration: 8.1s; --spark-delay: -3.9s; }
 
 .hero-signal-trail {
   position: absolute;
@@ -612,6 +617,11 @@ body {
   .hero-spark-six,
   .hero-spark-seven,
   .hero-spark-eight,
+  .hero-spark-nine,
+  .hero-spark-ten,
+  .hero-spark-eleven,
+  .hero-spark-twelve,
+  .hero-spark-thirteen,
   .hero-signal-trail {
     display: none;
   }

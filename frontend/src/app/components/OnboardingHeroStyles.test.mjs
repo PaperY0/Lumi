@@ -27,7 +27,10 @@ test('defines the approved desktop hero color, spacing, and glass bubble drift',
   expect(styles).toContain('row-gap: 10px;');
   expect(styles).toContain('transform: translateY(-3px);');
   expect(styles).toContain('transform: translateY(3px);');
-  expect(styles).toContain('.hero-spark-eight');
+  expect(styles).toContain('.hero-spark-nine');
+  expect(styles).toContain('.hero-spark-thirteen');
+  expect(styles).toContain('top: 86px; left: 22px;');
+  expect(styles).toContain('bottom: 54px; left: 54px;');
   expect(styles).toContain('.hero-signal-trail');
   expect(styles).toContain('@keyframes heroSparkDrift');
   expect(styles).toContain('animation: none;');

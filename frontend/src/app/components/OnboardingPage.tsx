@@ -117,6 +117,11 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
               <span className="hero-spark hero-spark-six" aria-hidden>♥</span>
               <span className="hero-spark hero-spark-seven" aria-hidden>●</span>
               <span className="hero-spark hero-spark-eight" aria-hidden>✧</span>
+              <span className="hero-spark hero-spark-nine" aria-hidden>✧</span>
+              <span className="hero-spark hero-spark-ten" aria-hidden>✦</span>
+              <span className="hero-spark hero-spark-eleven" aria-hidden>✦</span>
+              <span className="hero-spark hero-spark-twelve" aria-hidden>✧</span>
+              <span className="hero-spark hero-spark-thirteen" aria-hidden>✦</span>
               <span className="hero-signal-trail" aria-hidden />
             </div>
           </div>

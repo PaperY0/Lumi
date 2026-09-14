@@ -22,7 +22,9 @@ describe('OnboardingPage hero conversation layer', () => {
     const { container } = render(<OnboardingPage onComplete={vi.fn()} />);
 
     expect(container.querySelectorAll('.hero-callout')).toHaveLength(6);
-    expect(container.querySelectorAll('.hero-spark')).toHaveLength(8);
+    expect(container.querySelectorAll('.hero-spark')).toHaveLength(13);
+    expect(container.querySelector('.hero-spark-nine')).toHaveAttribute('aria-hidden', 'true');
+    expect(container.querySelector('.hero-spark-thirteen')).toHaveAttribute('aria-hidden', 'true');
     expect(container.querySelector('.hero-signal-trail')).toHaveAttribute('aria-hidden', 'true');
     expect(container.querySelector('.onboarding-ring-top')).not.toBeInTheDocument();
     expect(container.querySelector('.onboarding-ring-bottom')).toBeInTheDocument();
