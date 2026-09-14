@@ -35,14 +35,11 @@ test('defines the approved desktop hero color, spacing, and glass bubble drift',
   expect(styles).toContain('right: 48px; bottom: -18px; --bubble-x: -9px; --bubble-y: -8px;');
   expect(styles).toContain('color: #c06f91;');
   expect(styles).toContain('.onboarding-title-line-first');
-  expect(styles).toContain('transform: translateY(-8px);');
+  expect(styles).toContain('transform: translateY(-18px);');
   expect(styles).toContain('.onboarding-title-line-second');
-  expect(styles).toContain('transform: translateY(8px);');
   expect(styles).toContain('font-size: clamp(38px, 4vw, 50px) !important;');
   expect(styles).toContain('row-gap: 34px;');
   expect(styles).toContain('max-width: 560px;');
-  expect(styles).toContain('transform: translateY(-3px);');
-  expect(styles).toContain('transform: translateY(3px);');
   expect(styles).toContain('.hero-spark-nine');
   expect(styles).toContain('.hero-spark-thirteen');
   expect(styles).toContain('top: 86px; left: 22px;');
@@ -55,7 +52,17 @@ test('defines the approved desktop hero color, spacing, and glass bubble drift',
 test('applies the approved title gap within the mobile onboarding rule', () => {
   const mobileOnboardingStyles = extractBlock(styles, '@media (max-width: 768px)');
   const mobileTitleStyles = extractBlock(mobileOnboardingStyles, '.onboarding-title');
+  const mobileFirstLineStyles = extractBlock(mobileOnboardingStyles, '.onboarding-title-line-first');
+  const mobileSecondLineStyles = extractBlock(mobileOnboardingStyles, '.onboarding-title-line-second');
 
   expect(mobileTitleStyles).toContain('display: grid;');
   expect(mobileTitleStyles).toContain('row-gap: 10px;');
+  expect(mobileFirstLineStyles).toContain('transform: translateY(-7px);');
+  expect(mobileSecondLineStyles).toContain('transform: translateY(0);');
+
+  const compactDesktopStyles = extractBlock(styles, '@media (min-width: 769px) and (max-width: 1180px)');
+  const compactFirstLineStyles = extractBlock(compactDesktopStyles, '.onboarding-title-line-first');
+  const compactSecondLineStyles = extractBlock(compactDesktopStyles, '.onboarding-title-line-second');
+  expect(compactFirstLineStyles).toContain('transform: translateY(-14px);');
+  expect(compactSecondLineStyles).toContain('transform: translateY(0);');
 });

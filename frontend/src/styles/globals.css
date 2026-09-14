@@ -453,11 +453,11 @@ body {
 }
 
 .onboarding-title-line-first {
-  transform: translateY(-8px);
+  transform: translateY(-18px);
 }
 
 .onboarding-title-line-second {
-  transform: translateY(8px);
+  transform: translateY(0);
 }
 
 .onboarding-brand-subtitle {
@@ -605,11 +605,11 @@ body {
   }
 
   .onboarding-title-line-first {
-    transform: translateY(-3px);
+    transform: translateY(-7px);
   }
 
   .onboarding-title-line-second {
-    transform: translateY(3px);
+    transform: translateY(0);
   }
 
   .hero-spark-three,
@@ -663,8 +663,8 @@ body {
     font-size: clamp(38px, 4vw, 50px) !important;
     row-gap: 34px;
   }
-  .onboarding-title-line-first { transform: translateY(-6px); }
-  .onboarding-title-line-second { transform: translateY(6px); }
+  .onboarding-title-line-first { transform: translateY(-14px); }
+  .onboarding-title-line-second { transform: translateY(0); }
   .onboarding-hero3d { transform: scale(0.76); transform-origin: center; }
 }
 
