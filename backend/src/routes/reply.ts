@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { callLLM } from '../llm/client.js';
+import { callLLM, getPublicLLMError } from '../llm/client.js';
 import { mockReply } from '../llm/mock.js';
+import { executeLLM } from '../llm/execute.js';
 import { ReplyResponseSchema } from '../schemas/index.js';
 import { buildReplyPrompt } from '../prompts/reply.js';
 import { logRouteEvent, summarizeRequestBody } from '../middleware/security.js';
@@ -68,7 +69,7 @@ router.post('/reply', async (req, res) => {
   }
 
   try {
-    const mockMode = process.env.MOCK_MODE === 'true' || !process.env.DEEPSEEK_API_KEY;
+    const mockMode = process.env.MOCK_MODE === 'true';
     logRouteEvent(res, '/api/reply', 'llm_prepare', {
       useMock: mockMode,
       recentMessagesCount: input.recentMessages?.length ?? 0,
@@ -76,21 +77,17 @@ router.post('/reply', async (req, res) => {
       userMessageLength: input.userMessage.length,
     });
 
-    let raw: any;
-
-    if (mockMode) {
-      raw = mockReply(input);
-    } else {
-      try {
+    const execution = await executeLLM({
+      mockMode,
+      mock: () => mockReply(input),
+      live: async () => {
         const messages = buildReplyPrompt(input);
-        raw = await callLLM(messages);
-      } catch (llmError: any) {
-        logRouteEvent(res, '/api/reply', 'llm_failed_fallback_mock', { message: llmError?.message });
-        raw = mockReply(input);
-      }
-    }
+        return await callLLM(messages);
+      },
+    });
+    res.setHeader('x-lumi-ai-source', execution.source);
 
-    const result = ReplyResponseSchema.parse(raw);
+    const result = ReplyResponseSchema.parse(execution.value);
     logRouteEvent(res, '/api/reply', 'response_ready', {
       recommendedRepliesCount: result?.recommendedReplies?.length ?? 0,
       avoidRepliesCount: result?.avoidReplies?.length ?? 0,
@@ -99,10 +96,11 @@ router.post('/reply', async (req, res) => {
     res.json(result);
   } catch (error: any) {
     logRouteEvent(res, '/api/reply', 'handler_failed', { message: error?.message });
-    res.status(500).json({
+    res.setHeader('x-lumi-ai-source', 'deepseek-error');
+    res.status(502).json({
       success: false,
       message: '回复生成失败',
-      details: error.message,
+      details: getPublicLLMError(error),
     });
   }
 });

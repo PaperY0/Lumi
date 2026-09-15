@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { callLLM } from '../llm/client.js';
+import { callLLM, getPublicLLMError } from '../llm/client.js';
 import { mockSimulate } from '../llm/mock.js';
+import { executeLLM } from '../llm/execute.js';
 import { SimulateResponseSchema } from '../schemas/index.js';
 import { buildSimulatePrompt } from '../prompts/simulate.js';
 import { logRouteEvent, summarizeRequestBody } from '../middleware/security.js';
@@ -51,7 +52,7 @@ router.post('/simulate', async (req, res) => {
   }
 
   try {
-    const mockMode = process.env.MOCK_MODE === 'true' || !process.env.DEEPSEEK_API_KEY;
+    const mockMode = process.env.MOCK_MODE === 'true';
     logRouteEvent(res, '/api/simulate', 'llm_prepare', {
       useMock: mockMode,
       scenario: input.scenario,
@@ -60,21 +61,17 @@ router.post('/simulate', async (req, res) => {
       userReplyLength: input.userReply?.length ?? 0,
     });
 
-    let raw: any;
-
-    if (mockMode) {
-      raw = mockSimulate();
-    } else {
-      try {
+    const execution = await executeLLM({
+      mockMode,
+      mock: () => mockSimulate(),
+      live: async () => {
         const messages = buildSimulatePrompt(input);
-        raw = await callLLM(messages);
-      } catch (llmError: any) {
-        logRouteEvent(res, '/api/simulate', 'llm_failed_fallback_mock', { message: llmError?.message });
-        raw = mockSimulate();
-      }
-    }
+        return await callLLM(messages);
+      },
+    });
+    res.setHeader('x-lumi-ai-source', execution.source);
 
-    const result = SimulateResponseSchema.parse(raw);
+    const result = SimulateResponseSchema.parse(execution.value);
     logRouteEvent(res, '/api/simulate', 'response_ready', {
       hasGirlReply: !!result?.girlReply,
       hasFeedback: !!result?.feedback,
@@ -83,10 +80,11 @@ router.post('/simulate', async (req, res) => {
     res.json(result);
   } catch (error: any) {
     logRouteEvent(res, '/api/simulate', 'handler_failed', { message: error?.message });
-    res.status(500).json({
+    res.setHeader('x-lumi-ai-source', 'deepseek-error');
+    res.status(502).json({
       success: false,
       message: '模拟回复生成失败',
-      details: error.message,
+      details: getPublicLLMError(error),
     });
   }
 });

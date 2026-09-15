@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { callLLM } from '../llm/client.js';
+import { callLLM, getPublicLLMError } from '../llm/client.js';
 import { mockPortrait } from '../llm/mock.js';
+import { executeLLM } from '../llm/execute.js';
 import { getRequestId, logRouteEvent } from '../middleware/security.js';
 import { buildPortraitPrompt } from '../prompts/portrait.js';
 import { PortraitResponseSchema } from '../schemas/index.js';
@@ -44,9 +45,15 @@ router.post('/portrait', async (req, res) => {
     });
 
     try {
+      const mockMode = process.env.MOCK_MODE === 'true';
       const messages = buildPortraitPrompt(input);
-      const raw = await callLLM(messages);
-      const parsed = PortraitResponseSchema.parse(raw);
+      const execution = await executeLLM({
+        mockMode,
+        mock: () => mockPortrait(),
+        live: async () => PortraitResponseSchema.parse(await callLLM(messages)),
+      });
+      const parsed = execution.value;
+      res.setHeader('x-lumi-ai-source', execution.source);
 
       logRouteEvent(res, '/api/portrait', 'portrait_generate_success', {
         maleTypeTagsCount: parsed.maleTypeTags.length,
@@ -58,12 +65,13 @@ router.post('/portrait', async (req, res) => {
 
       res.json(parsed);
     } catch (error: any) {
-      if (error.message === 'MOCK_MODE') {
-        console.warn(`[${getRequestId(res)}] /api/portrait using mock mode`);
-      } else {
-        console.warn(`[${getRequestId(res)}] /api/portrait fallback to mock`, { message: error.message });
-      }
-      res.json(mockPortrait());
+      console.warn(`[${getRequestId(res)}] /api/portrait provider failed`, { message: error.message });
+      res.setHeader('x-lumi-ai-source', 'deepseek-error');
+      res.status(502).json({
+        success: false,
+        message: '关系画像生成失败',
+        details: getPublicLLMError(error),
+      });
     }
   } catch (error: any) {
     console.error(`[${getRequestId(res)}] /api/portrait invalid input`, { message: error?.message });

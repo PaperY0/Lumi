@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { callLLM } from '../llm/client.js';
+import { callLLM, getPublicLLMError } from '../llm/client.js';
 import { mockAnalyze } from '../llm/mock.js';
+import { executeLLM } from '../llm/execute.js';
 import { AnalyzeResponseSchema } from '../schemas/index.js';
 import { buildAnalyzePrompt } from '../prompts/analyze.js';
 import { logRouteEvent, summarizeRequestBody } from '../middleware/security.js';
@@ -49,26 +50,23 @@ router.post('/analyze', async (req, res) => {
   }
 
   try {
-    const mockMode = process.env.MOCK_MODE === 'true' || !process.env.DEEPSEEK_API_KEY;
+    const mockMode = process.env.MOCK_MODE === 'true';
     logRouteEvent(res, '/api/analyze', 'llm_prepare', {
       useMock: mockMode,
       messagesCount: input.messages?.length ?? 0,
     });
 
-    let result: any;
-
-    if (mockMode) {
-      result = mockAnalyze();
-    } else {
-      try {
+    const execution = await executeLLM({
+      mockMode,
+      mock: () => mockAnalyze(),
+      live: async () => {
         const messages = buildAnalyzePrompt(input);
         const raw = await callLLM(messages);
-        result = AnalyzeResponseSchema.parse(raw);
-      } catch (llmError: any) {
-        logRouteEvent(res, '/api/analyze', 'llm_failed_fallback_mock', { message: llmError?.message });
-        result = mockAnalyze();
-      }
-    }
+        return AnalyzeResponseSchema.parse(raw);
+      },
+    });
+    res.setHeader('x-lumi-ai-source', execution.source);
+    const result = execution.value;
 
     logRouteEvent(res, '/api/analyze', 'response_ready', {
       hasSimpleAnswer: !!result?.simpleAnswer,
@@ -79,10 +77,11 @@ router.post('/analyze', async (req, res) => {
     res.json(result);
   } catch (error: any) {
     logRouteEvent(res, '/api/analyze', 'handler_failed', { message: error?.message });
-    res.status(500).json({
+    res.setHeader('x-lumi-ai-source', 'deepseek-error');
+    res.status(502).json({
       success: false,
       message: '分析处理失败',
-      details: error.message,
+      details: getPublicLLMError(error),
     });
   }
 });

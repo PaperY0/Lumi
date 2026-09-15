@@ -5,6 +5,29 @@
 
 import OpenAI from 'openai';
 
+export class LLMProviderError extends Error {
+  constructor(
+    message: string,
+    public readonly providerStatus?: number,
+    public readonly providerCode?: string,
+  ) {
+    super(message);
+    this.name = 'LLMProviderError';
+  }
+}
+
+export function getPublicLLMError(error: unknown) {
+  if (error instanceof LLMProviderError) {
+    return {
+      error: 'DEEPSEEK_REQUEST_FAILED',
+      providerStatus: error.providerStatus,
+      providerCode: error.providerCode,
+    };
+  }
+
+  return { error: 'AI_RESPONSE_INVALID' };
+}
+
 export interface LLMMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -58,7 +81,11 @@ export async function callLLM(
   } catch (error: any) {
     // 如果是 API 错误，包装后抛出
     if (error.name === 'APIError' || error.status) {
-      throw new Error(`DeepSeek API 错误: ${error.message}`);
+      throw new LLMProviderError(
+        'DeepSeek API request failed',
+        typeof error.status === 'number' ? error.status : undefined,
+        typeof error.code === 'string' ? error.code : undefined,
+      );
     }
     throw error;
   }
