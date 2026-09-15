@@ -72,6 +72,7 @@ export function ChatImportPage({ onNavigate }: Props) {
   // OCR 状态
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrProgress, setOcrProgress] = useState(0);
+  const [ocrStage, setOcrStage] = useState('');
   const [ocrResults, setOcrResults] = useState<ImageOcrResult[] | null>(null);
   const [ocrError, setOcrError] = useState<string | null>(null);
 
@@ -167,7 +168,7 @@ export function ChatImportPage({ onNavigate }: Props) {
       return;
     }
     setError(null);
-    const result = parseImportedChatText(rawText);
+    const result = parseImportedChatText(rawText, { userName: currentUser?.nickname, girlName: currentGirl?.nickname });
     setImportResult(result);
     onNavigate('chat-preview');
   };
@@ -327,12 +328,22 @@ export function ChatImportPage({ onNavigate }: Props) {
       const results = await recognizeChatImages(
         Array.from(files),
         (progress) => setOcrProgress(progress),
+        setOcrStage,
       );
 
       setOcrResults(results);
 
       const minerUImageResult = combineMinerUImageResults(results);
       if (minerUImageResult) {
+        const failures = results.filter(result => !result.minerUParse && result.warning);
+        if (failures.length) {
+          minerUImageResult.warnings = [...minerUImageResult.warnings, ...failures.map(result => `${result.fileName}：${result.warning}`)];
+        }
+        if (!minerUImageResult.messages.length) {
+          setRawText(minerUImageResult.rawText || minerUImageResult.originalMarkdown);
+          setOcrError('识别完成，但没有分出聊天消息。原始文本已保留在输入框，请检查后使用文本解析。');
+          return;
+        }
         setMinerUImportResult(minerUImageResult);
         setError(null);
         showToast(`图片识别完成，已生成 ${minerUImageResult.messages.length} 条待确认消息`, 'success');
@@ -1055,7 +1066,7 @@ export function ChatImportPage({ onNavigate }: Props) {
 
                 {ocrLoading && (
                   <span style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.7 }}>
-                    识别进度 {ocrProgress}%
+                    {ocrStage || '正在识别'} · 整体进度 {ocrProgress}%
                   </span>
                 )}
 

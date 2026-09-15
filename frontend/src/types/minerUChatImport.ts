@@ -58,7 +58,7 @@ export interface MinerUParsedMessage {
   /** 初判角色 A/B/unknown */
   speakerRole: DraftSpeakerRole;
   /** 后端返回的角色 A/B */
-  role?: ABRole;
+  role?: DraftSpeakerRole;
   /** 置信度 0~1，越接近 1 越可信 */
   confidence: number;
   /** 判断理由（便于调试和用户理解） */

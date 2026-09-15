@@ -13,15 +13,22 @@
 import type { ChatImportResult } from '@/types';
 import { cleanChatMarkdown } from './chatCleaner';
 import { segmentChatLines } from './chatSegmenter';
+import { parseChatText } from '../chatImportParser';
 
-export function parseImportedChatText(rawText: string): ChatImportResult {
+export function parseImportedChatText(rawText: string, options?: { userName?: string; girlName?: string }): ChatImportResult {
   console.log('📥 [chatImportPipeline] 开始解析导入文本');
 
   // 步骤 1：清洗
   const { cleanedText, removedNoiseCount, warnings } = cleanChatMarkdown(rawText);
 
   // 步骤 2：切分
-  const messages = segmentChatLines(cleanedText);
+  const parsed = parseChatText(cleanedText, options);
+  const messages = parsed.messages.length ? parsed.messages.map(message => ({
+    id: message.id, rawText: message.rawLine, cleanedText: message.content,
+    senderName: message.senderName, timestamp: message.timestamp,
+    senderRole: message.role === 'user' || /^(我|我方)$/.test(message.senderName) ? 'me' as const
+      : message.role === 'girl' || /^(她|对方)$/.test(message.senderName) ? 'her' as const : 'unknown' as const,
+  })) : segmentChatLines(cleanedText);
 
   // 步骤 3：补全 warnings
   if (messages.length === 0) {
@@ -38,6 +45,6 @@ export function parseImportedChatText(rawText: string): ChatImportResult {
     warnings,
   };
 
-  console.log('📤 [chatImportPipeline] 解析完成:', result);
+  console.log('📤 [chatImportPipeline] 解析完成:', { messages: messages.length });
   return result;
 }

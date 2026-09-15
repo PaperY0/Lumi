@@ -61,15 +61,16 @@ function StandardPreview({ store, currentUser, currentGirl, onNavigate }: any) {
     return { total: store.draftMessages.length, me, her, unknown };
   }, [store.draftMessages]);
 
-  const canSave = stats.me >= 1 && stats.her >= 1;
+  const canSave = stats.me + stats.her >= 1 && stats.unknown === 0;
 
   const doSave = async (): Promise<string> => {
+    if (!canSave) throw new Error('请先确认每条有效消息的发言人，或删除无关内容');
     const messagesToSave = store.draftMessages
       .filter((m: any) => m.cleanedText.trim())
       .map((m: any) => ({
         sender: (m.senderRole === 'me' ? 'user' : 'other') as 'user' | 'other',
         content: m.cleanedText.trim(),
-        sentAt: new Date(),
+        sentAt: m.timestamp ? new Date(m.timestamp) : new Date(),
         senderName: m.senderName,
       }));
 
@@ -88,7 +89,7 @@ function StandardPreview({ store, currentUser, currentGirl, onNavigate }: any) {
 
   const handleSaveOnly = async () => {
     setSaveError(null);
-    if (!canSave) { setSaveError('至少需要 1 条"我"和 1 条"她"的消息才能保存'); return; }
+    if (!canSave) { setSaveError('请先确认所有消息的发言人，至少保留 1 条有效消息'); return; }
     if (!currentUser?.id) { setSaveError('请先完成资料建档'); return; }
 
     setSaving(true);
@@ -104,7 +105,7 @@ function StandardPreview({ store, currentUser, currentGirl, onNavigate }: any) {
 
   const handleSaveAndAnalyze = async () => {
     setSaveError(null);
-    if (!canSave) { setSaveError('至少需要 1 条"我"和 1 条"她"的消息才能保存'); return; }
+    if (!canSave) { setSaveError('请先确认所有消息的发言人，至少保留 1 条有效消息'); return; }
     if (!currentUser?.id) { setSaveError('请先完成资料建档'); return; }
 
     setSaving(true);
@@ -172,7 +173,7 @@ function MinerUPreview({ store, currentUser, currentGirl, onNavigate }: any) {
     return { total: store.minerUMessages.length, A, B, unknown };
   }, [store.minerUMessages]);
 
-  const messagesReady = stats.A >= 1 && stats.B >= 1;
+  const messagesReady = stats.A + stats.B >= 1 && stats.unknown === 0;
   const canSave = messagesReady && aIsMe !== null;
 
   const validateBeforeSave = (): boolean => {
@@ -182,7 +183,7 @@ function MinerUPreview({ store, currentUser, currentGirl, onNavigate }: any) {
       return false;
     }
     if (!messagesReady) {
-      setSaveError('至少需要 1 条 A 和 1 条 B 的消息才能保存');
+      setSaveError('请确认所有消息的 A/B 发言人，至少保留 1 条有效消息');
       return false;
     }
     if (!currentUser?.id) {
@@ -194,6 +195,7 @@ function MinerUPreview({ store, currentUser, currentGirl, onNavigate }: any) {
   };
 
   const doSave = async (): Promise<string> => {
+    if (!validateBeforeSave()) throw new Error('消息发言人尚未确认');
     const messagesToSave = store.minerUMessages
       .filter((m: any) => m.cleanedText.trim())
       .map((m: any) => {
@@ -201,7 +203,7 @@ function MinerUPreview({ store, currentUser, currentGirl, onNavigate }: any) {
         const role = m.speakerRole ?? (m.role === 'A' ? 'A' : m.role === 'B' ? 'B' : 'unknown');
         if (role === 'A') sender = aIsMe ? 'user' : 'other';
         else if (role === 'B') sender = aIsMe ? 'other' : 'user';
-        else sender = 'other'; // unknown → other 兜底
+        else throw new Error('存在未确认的消息，请先选择发言人');
         return { sender, content: m.cleanedText.trim(), sentAt: new Date(), senderName: role };
       });
 
@@ -311,20 +313,20 @@ function MinerUPreview({ store, currentUser, currentGirl, onNavigate }: any) {
             {saveError}
           </div>
         )}
-        {stats.unknown > 0 && canSave && (
+        {stats.unknown > 0 && (
           <div style={{ marginBottom: 10, fontSize: 12, color: '#D97706' }}>
-            ⚠️ 还有 {stats.unknown} 条未确定的消息，保存时会归为"她"。
+            ⚠️ 还有 {stats.unknown} 条消息未确定发言人，请逐条确认或删除，避免错误分析。
           </div>
         )}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 12, color: 'var(--text-purple)', opacity: 0.7 }}>
-            {canSave ? '✅ 满足保存条件' : aIsMe === null ? '请先选择 A/B 对应关系' : messagesReady ? '' : '需要至少 1 条 A 和 1 条 B'}
+            {canSave ? '✅ 满足保存条件' : aIsMe === null ? '请先选择 A/B 对应关系' : '请先确认所有消息的发言人'}
           </span>
           <div style={{ display: 'flex', gap: 8 }}>
-            <LiquidButton variant="secondary" onClick={handleSaveOnly} disabled={saving}>
+            <LiquidButton variant="secondary" onClick={handleSaveOnly} disabled={!canSave || saving}>
               {saving ? '保存中...' : '保存'} <Save size={16} />
             </LiquidButton>
-            <LiquidButton onClick={handleSaveAndAnalyze} disabled={saving}>
+            <LiquidButton onClick={handleSaveAndAnalyze} disabled={!canSave || saving}>
               {saving ? '保存中...' : '保存并分析'} <Check size={16} />
             </LiquidButton>
           </div>
@@ -498,9 +500,9 @@ function SaveBar({ mode, canSave, saving, saveError, unknownCount, onSaveOnly, o
           {saveError}
         </div>
       )}
-      {(unknownCount > 0 && canSave) && (
+      {unknownCount > 0 && (
         <div style={{ marginBottom: 10, fontSize: 12, color: '#D97706' }}>
-          ⚠️ 还有 {unknownCount} 条未确定的消息，保存时会归为"她"。
+          ⚠️ 还有 {unknownCount} 条消息未确认发言人，请先确认或删除。
         </div>
       )}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>

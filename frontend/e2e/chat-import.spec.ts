@@ -94,4 +94,37 @@ test.describe('聊天导入 — 解析流程', () => {
     const parseBtn = page.getByRole('button', { name: '解析聊天记录' });
     await expect(parseBtn).toBeDisabled({ timeout: 5000 });
   });
+
+  test('title and favicon use Lumi branding', async ({ page }) => {
+    await expect(page).toHaveTitle('Lumi 恋语 · AI 关系沟通陪伴');
+    await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', '/lumi-heart-icon-v1.png');
+    expect((await page.request.get('/lumi-heart-icon-v1.png')).ok()).toBe(true);
+  });
+
+  test('streamed OCR → preview → save → new text preview stays independent', async ({ page }) => {
+    const result = { originalMarkdown: 'A：图片你好\nB：图片晚上好', rawText: '图片你好\n图片晚上好', warnings: [], messages: [
+      { id: 'a', rawText: '图片你好', cleanedText: '图片你好', role: 'A', confidence: 0.9 },
+      { id: 'b', rawText: '图片晚上好', cleanedText: '图片晚上好', role: 'B', confidence: 0.9 },
+    ] };
+    await page.route('**/api/mineru/parse-image-chat?*', route => route.fulfill({
+      contentType: 'application/x-ndjson', body: [
+        JSON.stringify({ type: 'progress', progress: 40, stage: '正在识别' }),
+        JSON.stringify({ type: 'result', result }),
+      ].join('\n'),
+    }));
+    await page.locator('aside').getByText('聊天导入', { exact: true }).click();
+    await page.locator('input[type="file"][accept*="image/png"]').setInputFiles({
+      name: 'synthetic.png', mimeType: 'image/png', buffer: Buffer.from('synthetic'),
+    });
+    await expect(page.getByText('A 和 B 分别是谁？')).toBeVisible();
+    await page.getByRole('button', { name: 'A 是我，B 是她' }).click();
+    await page.getByRole('button', { name: /^保存$/ }).click();
+    await expect(page.locator('textarea').first()).toBeVisible();
+    await page.locator('textarea').first().fill('我：新的文本消息\n她：新的回复');
+    await page.getByRole('button', { name: '预览(清洗)' }).click();
+    await expect(page.getByText('新的文本消息').first()).toBeVisible();
+    await expect(page.getByText('A 和 B 分别是谁？')).toHaveCount(0);
+    await expect(page.getByText('图片你好', { exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /^保存$/ })).toBeEnabled();
+  });
 });

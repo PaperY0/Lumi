@@ -68,14 +68,15 @@ app.get('/api/ready', (req, res) => {
 
 app.use(globalRateLimiter);
 
-app.use('/api', aiRateLimiter, minerUImageRouter);
+app.use(['/api/mineru/parse-image-chat', '/api/analyze', '/api/reply', '/api/simulate', '/api/portrait', '/api/parse-mineru-chat'], aiRateLimiter);
+app.use('/api', minerUImageRouter);
 app.use('/api/zhihu', zhihuSearchRateLimiter, zhihuRouter);
 app.use('/api', minerUProxyRouter);
-app.use('/api', aiRateLimiter, analyzeRouter);
-app.use('/api', aiRateLimiter, replyRouter);
-app.use('/api', aiRateLimiter, simulateRouter);
-app.use('/api', aiRateLimiter, portraitRouter);
-app.use('/api', aiRateLimiter, minerUChatRouter);
+app.use('/api', analyzeRouter);
+app.use('/api', replyRouter);
+app.use('/api', simulateRouter);
+app.use('/api', portraitRouter);
+app.use('/api', minerUChatRouter);
 
 app.use('/api', (req, res) => {
   res.status(404).json({ error: 'API endpoint not found' });

@@ -101,7 +101,7 @@ export type MinerUParseResponse = z.infer<typeof MinerUParseResponseSchema>;
 export const MinerUParsedMessageSchema = z.object({
   rawText: z.string(),
   cleanedText: z.string(),
-  role: z.enum(['A', 'B']),
+  role: z.enum(['A', 'B', 'unknown']),
   confidence: z.number().optional(),
   reason: z.string().optional(),
 });

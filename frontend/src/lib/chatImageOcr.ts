@@ -9,7 +9,7 @@
 import { AI_API_BASE } from './ai/config';
 import type { MinerUParseResponse } from '@/types/minerUChatImport';
 
-const MAX_FILE_SIZE = 200 * 1024 * 1024;
+const MAX_FILE_SIZE = 20 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/jp2', 'image/webp', 'image/gif', 'image/bmp'];
 const REQUEST_TIMEOUT_MS = 180000;
 
@@ -25,7 +25,7 @@ export interface ImageOcrResult {
 
 function validateFile(file: File): string | null {
   if (file.size > MAX_FILE_SIZE) {
-    return `图片超过 200MB（当前 ${(file.size / 1024 / 1024).toFixed(1)}MB），请压缩后重试。`;
+    return `图片超过 20MB（当前 ${(file.size / 1024 / 1024).toFixed(1)}MB），请压缩后重试。`;
   }
 
   const ext = file.name.split('.').pop()?.toLowerCase();
@@ -47,7 +47,7 @@ function buildNormalized(text: string): string {
     .join('\n');
 }
 
-async function parseImageWithMinerU(file: File): Promise<MinerUParseResponse> {
+async function parseImageWithMinerU(file: File, onStage?: (progress: number, stage: string) => void): Promise<MinerUParseResponse> {
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   const url = `${AI_API_BASE}/api/mineru/parse-image-chat?fileName=${encodeURIComponent(file.name)}`;
@@ -56,9 +56,36 @@ async function parseImageWithMinerU(file: File): Promise<MinerUParseResponse> {
     console.log(`[OCR] MinerU v4 parse start: ${file.name}, ${(file.size / 1024).toFixed(1)}KB`);
     const response = await fetch(url, {
       method: 'POST',
+      headers: { Accept: 'application/x-ndjson' },
       body: file,
       signal: controller.signal,
     });
+
+    if (response.ok && response.headers.get('content-type')?.includes('application/x-ndjson') && response.body) {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let pending = '';
+      let result: MinerUParseResponse | undefined;
+      const consume = (line: string) => {
+        if (!line.trim()) return;
+        const event = JSON.parse(line);
+        if (event.type === 'progress') onStage?.(event.progress, event.stage);
+        if (event.type === 'error') throw new Error(event.message || '云端识别失败');
+        if (event.type === 'result') result = event.result;
+      };
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        pending += decoder.decode(value, { stream: true });
+        const lines = pending.split('\n');
+        pending = lines.pop() || '';
+        lines.forEach(consume);
+      }
+      pending += decoder.decode();
+      consume(pending);
+      if (!result || !Array.isArray(result.messages)) throw new Error('云端识别中断，未收到完整结果，请重试');
+      return result;
+    }
 
     const raw = await response.text();
     let json: any;
@@ -87,24 +114,28 @@ async function parseImageWithMinerU(file: File): Promise<MinerUParseResponse> {
 export async function recognizeChatImages(
   files: File[],
   onProgress?: (progress: number) => void,
+  onStage?: (stage: string) => void,
 ): Promise<ImageOcrResult[]> {
   const results: ImageOcrResult[] = [];
 
   for (let index = 0; index < files.length; index++) {
     const file = files[index];
-    const baseProgress = Math.round((index / files.length) * 100);
     const validationError = validateFile(file);
 
     if (validationError) {
       console.warn(`[OCR] ${file.name}: ${validationError}`);
       results.push({ fileName: file.name, text: '', normalizedText: '', lines: [], warning: validationError });
+      onProgress?.(Math.round(((index + 1) / files.length) * 100));
       continue;
     }
 
     try {
-      onProgress?.(baseProgress + 5);
-      const minerUParse = await parseImageWithMinerU(file);
-      onProgress?.(baseProgress + 100);
+      onProgress?.(Math.round(((index + 0.05) / files.length) * 100));
+      onStage?.(`正在连接识别服务（${index + 1}/${files.length}）`);
+      const minerUParse = await parseImageWithMinerU(file, (progress, stage) => {
+        onProgress?.(Math.round(((index + Math.min(100, Math.max(0, progress)) / 100) / files.length) * 100));
+        onStage?.(`${stage}（${index + 1}/${files.length}）`);
+      });
 
       const rawText = minerUParse.rawText || minerUParse.messages.map((message) => message.cleanedText || message.rawText).join('\n');
       results.push({
@@ -120,6 +151,8 @@ export async function recognizeChatImages(
         : '云端识别失败，请稍后重试或改用文本/文件导入。';
       console.warn(`[OCR] ${file.name}: ${warning}`);
       results.push({ fileName: file.name, text: '', normalizedText: '', lines: [], warning });
+    } finally {
+      onProgress?.(Math.round(((index + 1) / files.length) * 100));
     }
   }
 

@@ -112,6 +112,8 @@ export const useChatImportStore = create<ChatImportState>((set) => ({
     set({
       importResult: result,
       draftMessages: result.messages,
+      minerUImportResult: null,
+      minerUMessages: [],
     }),
 
   updateMessageSender: (id, role) =>
@@ -155,6 +157,8 @@ export const useChatImportStore = create<ChatImportState>((set) => ({
   // ── MinerU A/B 流 ──
   setMinerUImportResult: (result: MinerUImportResult | MinerUParseResponse) =>
     set({
+      importResult: null,
+      draftMessages: [],
       minerUImportResult: {
         originalMarkdown: result.originalMarkdown,
         cleanedRawText: (result as any).cleanedRawText ?? (result as MinerUParseResponse).rawText ?? '',

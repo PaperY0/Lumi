@@ -5,13 +5,17 @@ import { parseMinerUChatMarkdown } from '../services/minerUChatParser.js';
 
 const router = Router();
 const MINERU_ORIGIN = 'https://mineru.net';
-const MAX_FILE_SIZE = 200 * 1024 * 1024;
+const MAX_FILE_SIZE = 20 * 1024 * 1024;
 const POLL_INTERVAL_MS = Number(process.env.MINERU_POLL_INTERVAL_MS || 2000);
 const POLL_MAX_RETRIES = Number(process.env.MINERU_POLL_MAX_RETRIES || 60);
 const ALLOWED_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'jp2', 'webp', 'gif', 'bmp']);
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function upstreamFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  return fetch(url, { ...options, signal: AbortSignal.timeout(25000) });
 }
 
 async function readRequestBuffer(req: any): Promise<Buffer> {
@@ -49,7 +53,7 @@ function makeDataId(fileName: string): string {
 }
 
 function getMinerUToken(): string {
-  const token = process.env.MINERU_TOKEN;
+  const token = process.env.MINERU_TOKEN?.trim();
   if (!token) {
     throw new Error('MINERU_TOKEN_MISSING');
   }
@@ -66,7 +70,7 @@ async function readJson(response: Response): Promise<any> {
 }
 
 async function applyUploadUrl(fileName: string, token: string): Promise<{ batchId: string; uploadUrl: string }> {
-  const response = await fetch(`${MINERU_ORIGIN}/api/v4/file-urls/batch`, {
+  const response = await upstreamFetch(`${MINERU_ORIGIN}/api/v4/file-urls/batch`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -94,7 +98,7 @@ async function applyUploadUrl(fileName: string, token: string): Promise<{ batchI
 }
 
 async function uploadFile(uploadUrl: string, fileBuffer: Buffer): Promise<void> {
-  const response = await fetch(uploadUrl, {
+  const response = await upstreamFetch(uploadUrl, {
     method: 'PUT',
     body: fileBuffer,
   });
@@ -105,13 +109,15 @@ async function uploadFile(uploadUrl: string, fileBuffer: Buffer): Promise<void> 
   }
 }
 
-async function pollBatchResult(batchId: string, token: string): Promise<string> {
+async function pollBatchResult(batchId: string, token: string, onState: (stage: string) => void): Promise<string> {
   const url = `${MINERU_ORIGIN}/api/v4/extract-results/batch/${encodeURIComponent(batchId)}`;
+  const deadline = Date.now() + 120000;
 
   for (let attempt = 0; attempt < POLL_MAX_RETRIES; attempt++) {
+    if (Date.now() >= deadline) break;
     await sleep(POLL_INTERVAL_MS);
 
-    const response = await fetch(url, {
+    const response = await upstreamFetch(url, {
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: '*/*',
@@ -125,6 +131,7 @@ async function pollBatchResult(batchId: string, token: string): Promise<string> 
 
     const result = Array.isArray(json.data?.extract_result) ? json.data.extract_result[0] : null;
     const state = result?.state;
+    onState(state === 'pending' ? 'MinerU 排队中' : state === 'waiting-file' ? 'MinerU 确认上传中' : 'MinerU 正在识别文字');
 
     if (state === 'done' && result.full_zip_url) {
       return result.full_zip_url;
@@ -152,7 +159,7 @@ async function extractFullMarkdown(fullZipUrl: string): Promise<string> {
     throw new Error('FORBIDDEN_MINERU_ZIP_URL');
   }
 
-  const response = await fetch(fullZipUrl);
+  const response = await upstreamFetch(fullZipUrl);
   if (!response.ok) {
     throw new Error(`MINERU_ZIP_DOWNLOAD_FAILED:${response.status}`);
   }
@@ -170,6 +177,10 @@ async function extractFullMarkdown(fullZipUrl: string): Promise<string> {
 router.post('/mineru/parse-image-chat', async (req, res) => {
   const requestId = getRequestId(res);
   const fileName = sanitizeFileName(req.header('x-file-name') || req.query.fileName);
+  const streaming = req.header('accept')?.includes('application/x-ndjson') === true;
+  const progress = (value: number, stage: string) => {
+    if (streaming && !res.destroyed) res.write(`${JSON.stringify({ type: 'progress', progress: value, stage })}\n`);
+  };
 
   try {
     validateImageFileName(fileName);
@@ -179,20 +190,30 @@ router.post('/mineru/parse-image-chat', async (req, res) => {
       return res.status(400).json({ success: false, error: 'EMPTY_FILE', message: 'image file is empty' });
     }
 
+    if (streaming) {
+      res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-store');
+      res.flushHeaders();
+    }
+    progress(10, '正在申请 MinerU 上传地址');
+
     logRouteEvent(res, '/api/mineru/parse-image-chat', 'mineru_v4_apply_upload_url', {
       fileName,
       bytes: fileBuffer.length,
     });
     const { batchId, uploadUrl } = await applyUploadUrl(fileName, token);
+    progress(20, '正在上传图片到 MinerU');
 
     logRouteEvent(res, '/api/mineru/parse-image-chat', 'mineru_v4_upload_file', { batchId });
     await uploadFile(uploadUrl, fileBuffer);
 
     logRouteEvent(res, '/api/mineru/parse-image-chat', 'mineru_v4_poll_batch', { batchId });
-    const fullZipUrl = await pollBatchResult(batchId, token);
+    progress(30, '等待 MinerU 识别');
+    const fullZipUrl = await pollBatchResult(batchId, token, stage => progress(40, stage));
 
     logRouteEvent(res, '/api/mineru/parse-image-chat', 'mineru_v4_extract_markdown', { batchId });
     const originalMarkdown = await extractFullMarkdown(fullZipUrl);
+    progress(80, '识别完成，正在整理聊天草稿');
 
     const parsed = await parseMinerUChatMarkdown(originalMarkdown);
     logRouteEvent(res, '/api/mineru/parse-image-chat', 'mineru_chat_clean_done', {
@@ -202,14 +223,28 @@ router.post('/mineru/parse-image-chat', async (req, res) => {
       warningsCount: parsed.warnings.length,
     });
 
-    res.json({
+    const result = {
       ...parsed,
       fileName,
       batchId,
-    });
+    };
+    if (streaming) {
+      progress(100, '聊天草稿已准备好');
+      res.end(`${JSON.stringify({ type: 'result', result })}\n`);
+    } else res.json(result);
   } catch (error: any) {
     const message = error?.message || 'MinerU image parse failed';
     console.error(`[${requestId}] /api/mineru/parse-image-chat failed`, { message });
+    if (res.headersSent) {
+      const publicMessage = error?.name === 'TimeoutError'
+        ? 'MinerU 服务响应超时，请稍后重试；识别服务可能正在排队。'
+        : message === 'MINERU_EXTRACT_TIMEOUT'
+          ? 'MinerU 排队或识别超过两分钟，请稍后重试。'
+          : message.includes(':401:') || message.includes(':403:')
+            ? 'MinerU 鉴权失败，请管理员检查 Render 中的 MINERU_TOKEN。'
+            : message;
+      return res.end(`${JSON.stringify({ type: 'error', message: publicMessage })}\n`);
+    }
 
     if (message === 'MINERU_TOKEN_MISSING') {
       return res.status(503).json({ success: false, error: 'MINERU_TOKEN_MISSING', message: 'MinerU token is not configured on the backend' });
