@@ -1,6 +1,6 @@
 /**
  * LLM 客户端 - 负责调用 DeepSeek API
- * 支持 mock 模式，当环境变量未配置或 MOCK_MODE=true 时抛出错误由上层处理
+ * 仅显式 MOCK_MODE=true 启用演示模式；缺少 Key 或上游失败必须作为错误呈现。
  */
 
 import OpenAI from 'openai';
@@ -22,10 +22,15 @@ export function getPublicLLMError(error: unknown) {
       error: 'DEEPSEEK_REQUEST_FAILED',
       providerStatus: error.providerStatus,
       providerCode: error.providerCode,
+      message: error.providerStatus === 401
+        ? 'AI 服务鉴权失败：请管理员检查 Render 中的 DEEPSEEK_API_KEY'
+        : error.providerStatus === 402
+          ? 'AI 服务余额不足：请管理员检查 DeepSeek 账户余额'
+          : 'AI 服务暂时不可用，请稍后重试',
     };
   }
 
-  return { error: 'AI_RESPONSE_INVALID' };
+  return { error: 'AI_RESPONSE_INVALID', message: 'AI 返回内容无法解析，请重试' };
 }
 
 export interface LLMMessage {
@@ -40,21 +45,25 @@ export interface CallLLMOptions {
 
 /**
  * 调用 DeepSeek API
- * @throws {Error} 当 MOCK_MODE 启用或未配置 API Key 时抛出 'MOCK_MODE' 错误
+ * @throws {Error} 显式演示模式抛出 MOCK_MODE；鉴权问题抛出 LLMProviderError。
  */
 export async function callLLM(
   messages: LLMMessage[],
   options: CallLLMOptions = {}
 ): Promise<any> {
   // 检查是否应该使用 mock 模式
-  if (process.env.MOCK_MODE === 'true' || !process.env.DEEPSEEK_API_KEY) {
+  const apiKey = process.env.DEEPSEEK_API_KEY?.trim();
+  if (process.env.MOCK_MODE === 'true') {
     throw new Error('MOCK_MODE');
+  }
+  if (!apiKey) {
+    throw new LLMProviderError('DeepSeek API key is missing', 401, 'api_key_missing');
   }
 
   try {
     // 初始化 OpenAI 客户端（使用 DeepSeek 的兼容端点）
     const client = new OpenAI({
-      apiKey: process.env.DEEPSEEK_API_KEY,
+      apiKey,
       baseURL: 'https://api.deepseek.com/v1',
     });
 

@@ -49,7 +49,7 @@ async function postJson<T>(path: string, body: any): Promise<T> {
 
       throw new AIRequestError(
         response.status,
-        parsedError.error || parsedError.message || `请求失败 (${response.status})`,
+        parsedError.details?.message || parsedError.error || parsedError.message || `请求失败 (${response.status})`,
         parsedError
       );
     }
